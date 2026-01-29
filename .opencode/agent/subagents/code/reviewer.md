@@ -7,6 +7,7 @@ type: subagent
 version: 2.0.0
 author: opencode
 mode: subagent
+model: anthropic/claude-sonnet-4-20250514
 temperature: 0.1
 tools:
   read: true
