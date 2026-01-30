@@ -210,7 +210,7 @@ evals/framework/src/types/            # TypeScript types
 
 **Examples**:
 - `.opencode/context/core/standards/code-quality.md`
-- `.opencode/context/development/react-patterns.md`
+- `.opencode/context/development/frontend/react/react-patterns.md`
 - `.opencode/context/content-creation/principles/copywriting-frameworks.md`
 
 ### Tests

@@ -8,13 +8,9 @@
 
 ```
 Frontend Code (development/frontend/):
-├── react/                     # [future]
-│   ├── hooks-patterns.md
-│   ├── component-architecture.md
-│   └── tanstack/
-│       ├── query-patterns.md
-│       └── router-patterns.md
-└── vue/                       # [future]
+└── react/
+    ├── navigation.md
+    └── react-patterns.md
 
 Visual Design (ui/web/):
 ├── animation-patterns.md
@@ -31,8 +27,7 @@ Visual Design (ui/web/):
 
 | Task | Path |
 |------|------|
-| **React patterns** | `frontend/react/hooks-patterns.md` [future] |
-| **TanStack Query** | `frontend/react/tanstack/query-patterns.md` [future] |
+| **React patterns** | `frontend/react/react-patterns.md` |
 | **Animations** | `../../ui/web/animation-patterns.md` |
 | **Styling** | `../../ui/web/ui-styling-standards.md` |
 | **Design systems** | `../../ui/web/design-systems.md` |
@@ -41,13 +36,11 @@ Visual Design (ui/web/):
 
 ## By Framework
 
-**React** → `frontend/react/` [future]
-**Vue** → `frontend/vue/` [future]
-**TanStack** → `frontend/react/tanstack/` [future]
+**React** → `frontend/react/`
 
 ## By Concern
 
-**Code patterns** → `development/frontend/` [future]
+**Code patterns** → `development/frontend/`
 **Visual design** → `ui/web/`
 
 ---

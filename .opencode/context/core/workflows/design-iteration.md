@@ -652,9 +652,9 @@ Before presenting each stage:
 
 ## References
 
-- [Design Systems Context](../development/design-systems.md)
-- [UI Styling Standards](../development/ui-styling-standards.md)
-- [Animation Patterns](../development/animation-patterns.md)
-- [Design Assets](../development/design-assets.md)
+- [Design Systems Context](../ui/web/design-systems.md)
+- [UI Styling Standards](../ui/web/ui-styling-standards.md)
+- [Animation Patterns](../ui/web/animation-patterns.md)
+- [Design Assets](../ui/web/design-assets.md)
 - [ASCII Art Generator](https://www.asciiart.eu/)
 - [WCAG Contrast Checker](https://webaim.org/resources/contrastchecker/)

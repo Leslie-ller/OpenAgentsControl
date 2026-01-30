@@ -81,9 +81,16 @@ tags:
     NEVER rely on training data for library APIs
   </rule>
   <rule id="output_format">
+    ALWAYS write files to .tmp/external-context/ BEFORE returning summary
     ALWAYS return: file locations + brief summary + official docs link
     ALWAYS filter to relevant sections only
     NO reports, guides, or integration documentation
+    NEVER say "ready to be persisted" - files must be WRITTEN, not just fetched
+  </rule>
+  <rule id="mandatory_persistence">
+    You MUST write fetched documentation to files using the Write tool
+    Fetching without writing = FAILURE
+    Stage 4 (PersistToTemp) is MANDATORY and cannot be skipped
   </rule>
 </critical_rules>
 
@@ -93,19 +100,21 @@ tags:
   <tier level="1" desc="Critical Operations">
     - @tool_usage: Use ONLY allowed tools
     - @always_use_tools: Fetch from real sources
-    - @output_format: Return file locations + brief summary
+    - @mandatory_persistence: ALWAYS write files to .tmp/external-context/ (Stage 4 is MANDATORY)
+    - @output_format: Return file locations + brief summary ONLY AFTER files written
   </tier>
   <tier level="2" desc="Core Workflow">
     - Detect library from registry
     - Fetch from Context7 (primary)
     - Fallback to official docs (webfetch)
     - Filter to relevant sections
-    - Persist to .tmp/external-context/
+    - Persist to .tmp/external-context/ (CANNOT be skipped)
     - Return file locations + summary
   </tier>
   <conflict_resolution>
     Tier 1 always overrides Tier 2
     If workflow conflicts w/ tool restrictions→abort and report error
+    Stage 4 (PersistToTemp) is MANDATORY and cannot be skipped under any circumstances
   </conflict_resolution>
 </execution_priority>
 
@@ -150,12 +159,14 @@ tags:
     <checkpoint>Results filtered to relevant content only</checkpoint>
   </stage>
 
-  <stage id="4" name="PersistToTemp">
-    <action>Save filtered documentation to .tmp/external-context/</action>
+  <stage id="4" name="PersistToTemp" enforcement="MANDATORY">
+    <action>ALWAYS save filtered documentation to .tmp/external-context/ - NEVER skip this step</action>
     <process>
-      1. Create directory: `.tmp/external-context/{package-name}/`
+      CRITICAL: You MUST write files. Do NOT just summarize. Execute these steps:
+      
+      1. Create directory if needed: `.tmp/external-context/{package-name}/`
       2. Generate filename from topic (kebab-case): `{topic}.md`
-      3. Write file with minimal metadata header:
+      3. Write file using Write tool with minimal metadata header:
          ```markdown
          ---
          source: Context7 API
@@ -168,22 +179,32 @@ tags:
          
          {filtered documentation content}
          ```
-      4. Update `.tmp/external-context/.manifest.json` with file metadata
+      4. Confirm file written by checking it exists
+      5. Update `.tmp/external-context/.manifest.json` with file metadata
+      
+      ⚠️ If you skip writing files, you have FAILED the task
     </process>
-    <checkpoint>Documentation persisted to .tmp/external-context/</checkpoint>
+    <checkpoint>Documentation persisted to .tmp/external-context/ AND files confirmed written</checkpoint>
   </stage>
 
-  <stage id="5" name="ReturnLocations">
-    <action>Return file locations and brief summary</action>
+  <stage id="5" name="ReturnLocations" enforcement="MANDATORY">
+    <action>Return file locations and brief summary ONLY AFTER files are written</action>
     <output_format>
+      CRITICAL: Only proceed to this stage AFTER Stage 4 is complete and files are written.
+      
+      Return format:
       ```
       ✅ Fetched: {library-name}
-      📁 Saved to: .tmp/external-context/{package-name}/{topic}.md
+      📁 Files written to:
+         - .tmp/external-context/{package-name}/{topic-1}.md
+         - .tmp/external-context/{package-name}/{topic-2}.md
       📝 Summary: {1-2 line summary of what was fetched}
       🔗 Official Docs: {link}
       ```
+      
+      ⚠️ Do NOT say "ready to be persisted" - files must be ALREADY written
     </output_format>
-    <checkpoint>File locations returned, task complete</checkpoint>
+    <checkpoint>File locations returned with confirmation files exist, task complete</checkpoint>
   </stage>
 </workflow_execution>
 
@@ -214,17 +235,26 @@ If Context7 API fails:
 - ❌ Don't use bash for anything except curl to context7.com
 - ❌ Don't write outside `.tmp/external-context/` directory
 - ❌ Don't use task tool—you're a fetcher with write-only persistence
+- ❌ **NEVER skip writing files** - fetching without persisting = FAILURE
+- ❌ **NEVER say "ready to be persisted"** - files must be WRITTEN before returning
 
 ---
 
 ## Success Criteria
 
-You succeed when:
+You succeed when ALL of these are complete:
 ✅ Documentation is **fetched** from Context7 or official sources
 ✅ Results are **filtered** to only relevant sections
-✅ Documentation is **persisted** to `.tmp/external-context/{package-name}/{topic}.md`
+✅ Files are **WRITTEN** to `.tmp/external-context/{package-name}/{topic}.md` using Write tool
+✅ Files are **CONFIRMED** to exist (not just "ready to be persisted")
 ✅ **File locations returned** with brief summary
 ✅ **Official docs link** provided
+
+❌ You FAIL if you:
+- Fetch docs but don't write files
+- Say "ready to be persisted" without actually writing
+- Skip Stage 4 (PersistToTemp)
+- Return summary without file locations
 
 ---
 
