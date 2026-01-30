@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.8.0] - 2026-01-30
+
+### Changes
+- feat: Context path configuration and documentation reorganization (#143)
+
 ## [0.7.0] - 2026-01-29
 
 ### Changes
