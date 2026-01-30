@@ -2119,76 +2119,6 @@
         "category": "standard"
       },
       {
-        "id": "design-assets",
-        "name": "Design Assets",
-        "type": "context",
-        "path": ".opencode/context/development/design-assets.md",
-        "description": "Design Assets",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "ui-styling-standards",
-        "name": "Ui Styling Standards",
-        "type": "context",
-        "path": ".opencode/context/development/ui-styling-standards.md",
-        "description": "UI Styling Standards",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "clean-code",
-        "name": "Clean Code",
-        "type": "context",
-        "path": ".opencode/context/development/clean-code.md",
-        "description": "Clean Code Principles",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "animation-patterns",
-        "name": "Animation Patterns",
-        "type": "context",
-        "path": ".opencode/context/development/animation-patterns.md",
-        "description": "Animation Patterns",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "design-systems",
-        "name": "Design Systems",
-        "type": "context",
-        "path": ".opencode/context/development/design-systems.md",
-        "description": "Design Systems",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "react-patterns",
-        "name": "React Patterns",
-        "type": "context",
-        "path": ".opencode/context/development/react-patterns.md",
-        "description": "React Patterns & Best Practices",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
-        "id": "api-design",
-        "name": "Api Design",
-        "type": "context",
-        "path": ".opencode/context/development/api-design.md",
-        "description": "API Design Patterns",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
         "id": "mastra-config",
         "name": "Mastra Config",
         "type": "context",
@@ -2616,18 +2546,6 @@
         "category": "standard"
       },
       {
-        "id": "development-readme",
-        "name": "Development README",
-        "type": "context",
-        "path": ".opencode/context/development/README.md",
-        "description": "Development context overview and guide",
-        "tags": [
-          "development",
-          "guide"
-        ],
-        "category": "standard"
-      },
-      {
         "id": "learning-readme",
         "name": "Learning README",
         "type": "context",
@@ -2660,19 +2578,6 @@
         "tags": [
           "data",
           "guide"
-        ],
-        "category": "standard"
-      },
-      {
-        "id": "mastra-ai-readme",
-        "name": "Mastra AI README",
-        "type": "context",
-        "path": ".opencode/context/development/ai/mastra-ai/README.md",
-        "description": "Mastra AI framework documentation and guides",
-        "tags": [
-          "mastra-ai",
-          "ai",
-          "development"
         ],
         "category": "standard"
       },
