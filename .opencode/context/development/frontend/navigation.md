@@ -9,6 +9,7 @@
 ```
 frontend/
 ├── navigation.md
+├── when-to-delegate.md
 └── react/
     ├── navigation.md
     └── react-patterns.md
@@ -20,6 +21,7 @@ frontend/
 
 | Task | Path |
 |------|------|
+| **When to delegate** | `when-to-delegate.md` |
 | **React patterns** | `react/react-patterns.md` |
 | **React navigation** | `react/navigation.md` |
 

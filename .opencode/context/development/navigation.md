@@ -28,6 +28,7 @@ development/
 │
 ├── frontend/                  # Client-side
 │   ├── navigation.md
+│   ├── when-to-delegate.md    # When to use frontend-specialist
 │   └── react/
 │       ├── navigation.md
 │       └── react-patterns.md
@@ -64,6 +65,7 @@ development/
 | Task | Path |
 |------|------|
 | **UI/Frontend** | `ui-navigation.md` |
+| **When to delegate frontend** | `frontend/when-to-delegate.md` |
 | **Backend/API** | `backend-navigation.md` |
 | **Full-stack** | `fullstack-navigation.md` |
 | **Clean code** | `principles/clean-code.md` |
