@@ -4,7 +4,7 @@
 
 # OpenAgents Control (OAC)
 
-### Control your AI patterns. Get repeatable results. Zero refactoring.
+### Control your AI patterns. Get repeatable results.
 
 **AI agents that learn YOUR coding patterns and generate matching code every time.**
 
@@ -86,14 +86,17 @@ Use any AI model (Claude, GPT, Gemini, local). No vendor lock-in.
 
 ## 🆚 Quick Comparison
 
-| Feature | OpenAgentsControl | Cursor/Copilot | Aider |
-|---------|-------------------|----------------|-------|
-| **Learn Your Patterns** | ✅ Built-in | ❌ No | ❌ No |
-| **Approval Gates** | ✅ Always | ❌ Auto-executes | ⚠️ Optional |
-| **Token Efficiency** | ✅ MVI principle | ❌ Standard | ❌ Standard |
-| **Team Standards** | ✅ Built-in | ❌ Per-user | ❌ No |
-| **Edit Agent Behavior** | ✅ Markdown files | ❌ Baked-in | ⚠️ Limited |
-| **Model Choice** | ✅ Any model | ❌ Vendor locked | ⚠️ OpenAI only |
+| Feature | OpenAgentsControl | Cursor/Copilot | Aider | Oh My OpenCode |
+|---------|-------------------|----------------|-------|----------------|
+| **Learn Your Patterns** | ✅ Built-in context system | ❌ No pattern learning | ❌ No pattern learning | ⚠️ Manual setup |
+| **Approval Gates** | ✅ Always required | ⚠️ Optional (default off) | ❌ Auto-executes | ❌ Fully autonomous |
+| **Token Efficiency** | ✅ MVI principle (80% reduction) | ❌ Full context loaded | ❌ Full context loaded | ❌ High token usage |
+| **Team Standards** | ✅ Shared context files | ❌ Per-user settings | ❌ No team support | ⚠️ Manual config per user |
+| **Edit Agent Behavior** | ✅ Markdown files you edit | ❌ Proprietary/baked-in | ⚠️ Limited prompts | ✅ Config files |
+| **Model Choice** | ✅ Any model, any provider | ⚠️ Limited options | ⚠️ OpenAI/Claude only | ✅ Multiple models |
+| **Execution Speed** | ⚠️ Sequential with approval | Fast | Fast | ✅ Parallel agents |
+| **Error Recovery** | ✅ Human-guided validation | ⚠️ Auto-retry (can loop) | ⚠️ Auto-retry | ✅ Self-correcting |
+| **Best For** | Production code, teams | Quick prototypes | Solo developers | Power users, complex projects |
 
 **Use AOC when:**
 - ✅ You have established coding patterns
