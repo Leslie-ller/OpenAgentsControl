@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-01-30
+
+### Changes
+- chore: version bump to v0.7.1 and expand comparison table (#146)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
