@@ -2773,7 +2773,7 @@
     },
     "developer": {
       "name": "Developer",
-      "description": "Complete software development environment with code generation, testing, review, and build tools. Use OpenAgent for general tasks (1-4 files) or OpenCoder for complex architecture (4+ files). Recommended for most developers.",
+      "description": "Complete software development environment with code generation, testing, review, and build tools. Includes UI/UX patterns, development principles, and design systems. Use OpenAgent for general tasks (1-4 files) or OpenCoder for complex architecture (4+ files). Recommended for most developers.",
       "badge": "RECOMMENDED",
       "components": [
         "agent:openagent",
@@ -2803,6 +2803,15 @@
         "context:project-intelligence/*",
         "context:to-be-consumed/*",
         "context:adding-skill",
+        "context:ui/*",
+        "context:development/*",
+        "context:design-systems",
+        "context:react-patterns",
+        "context:animation-patterns",
+        "context:ui-styling-standards",
+        "context:design-assets",
+        "context:clean-code",
+        "context:api-design",
         "config:env-example",
         "config:readme"
       ]
@@ -2839,7 +2848,7 @@
     },
     "full": {
       "name": "Full",
-      "description": "Everything included - all agents, subagents, tools, and plugins for maximum functionality.",
+      "description": "Everything included - all agents, subagents, tools, and plugins for maximum functionality. Includes UI/UX patterns, development principles, and design systems.",
       "components": [
         "agent:openagent",
         "agent:opencoder",
@@ -2877,13 +2886,22 @@
         "context:project-intelligence/*",
         "context:to-be-consumed/*",
         "context:adding-skill",
+        "context:ui/*",
+        "context:development/*",
+        "context:design-systems",
+        "context:react-patterns",
+        "context:animation-patterns",
+        "context:ui-styling-standards",
+        "context:design-assets",
+        "context:clean-code",
+        "context:api-design",
         "config:env-example",
         "config:readme"
       ]
     },
     "advanced": {
       "name": "Advanced (Meta-Level)",
-      "description": "Full installation plus System Builder for creating custom AI architectures. For power users and contributors.",
+      "description": "Full installation plus System Builder for creating custom AI architectures. Includes comprehensive context system, system builder templates, and repository management tools. For power users and contributors.",
       "components": [
         "agent:openagent",
         "agent:opencoder",
@@ -2930,6 +2948,25 @@
         "context:project-intelligence/*",
         "context:to-be-consumed/*",
         "context:adding-skill",
+        "context:ui/*",
+        "context:development/*",
+        "context:design-systems",
+        "context:react-patterns",
+        "context:animation-patterns",
+        "context:ui-styling-standards",
+        "context:design-assets",
+        "context:clean-code",
+        "context:api-design",
+        "context:system-builder-guide",
+        "context:orchestrator-template",
+        "context:subagent-template",
+        "context:openagents-repo/*",
+        "context:context-system",
+        "context:context-system/*",
+        "context:registry-dependencies",
+        "context:templates",
+        "context:frontmatter",
+        "context:codebase-references",
         "config:env-example",
         "config:readme"
       ],
