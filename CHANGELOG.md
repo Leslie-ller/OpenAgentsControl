@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.8.0] - 2026-01-31
+
+### Changes
+- feat: OpenCode-compliant agents with centralized metadata system (#151)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
