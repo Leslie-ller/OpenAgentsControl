@@ -78,6 +78,8 @@ Help users add project patterns using Project Intelligence standard. **Easiest w
 
 **Note**: External context files are stored in `.tmp/` directory (e.g., `.tmp/external-context.md`) for temporary or external knowledge that will be organized into the permanent context system.
 
+**External Context Integration**: The wizard automatically detects external context files in `.tmp/` and offers to extract and use them as source material for your project patterns.
+
 ---
 
 ## Usage
@@ -95,6 +97,13 @@ Help users add project patterns using Project Intelligence standard. **Easiest w
 
 **Run**: `/add-context`
 
+**What happens**:
+1. Checks for external context files in `.tmp/` (if found, offers to extract)
+2. Checks for existing project intelligence
+3. Asks 6 questions (~5 min) OR reviews existing patterns
+4. Generates/updates technical-domain.md
+5. Agents now use YOUR patterns
+
 **6 Questions** (~5 min):
 1. Tech stack?
 2. API endpoint example?
@@ -105,9 +114,89 @@ Help users add project patterns using Project Intelligence standard. **Easiest w
 
 **Done!** Agents now use YOUR patterns.
 
+**Management Options**:
+- Update patterns: `/add-context --update`
+- Manage external files: `/add-context` → Choose "Manage external files"
+- Harvest to permanent: `/context harvest`
+- Clean context: `/add-context` → Choose "Clean all"
+
 ---
 
 ## Workflow
+
+### Stage 0: Detect External Context Files
+
+Check: `.tmp/` directory for external context files (e.g., `.tmp/external-context.md`, `.tmp/context-*.md`)
+
+**If external files found**:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Found external context files in .tmp/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files found:
+  📄 .tmp/external-context.md (2.4 KB)
+  📄 .tmp/api-patterns.md (1.8 KB)
+  📄 .tmp/component-guide.md (3.1 KB)
+
+These files can be extracted and used to build your project intelligence.
+
+Options:
+  1. Extract & use these files (recommended)
+  2. Skip external files
+  3. Manage external files (update/remove/clean)
+  4. Harvest to permanent context (via /context harvest)
+
+Choose [1/2/3/4]: _
+```
+
+**If option 1 (Extract & use)**:
+- Read external files
+- Extract patterns (tech stack, APIs, components, naming, standards, security)
+- Merge with existing project intelligence
+- Proceed to Stage 1
+
+**If option 3 (Manage external files)**:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Manage External Context Files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files in .tmp/:
+  A) .tmp/external-context.md (2.4 KB)
+  B) .tmp/api-patterns.md (1.8 KB)
+  C) .tmp/component-guide.md (3.1 KB)
+
+Actions:
+  1. Update file (edit content)
+  2. Remove file (delete from .tmp/)
+  3. Clean all (delete all .tmp/ context files)
+  4. Harvest (move to permanent context via /context harvest)
+  5. Back to main menu
+
+Choose file [A/B/C] then action [1/2/3/4/5]: _
+```
+
+**If option 4 (Harvest)**:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Harvest External Context
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+To harvest external context files to permanent context:
+
+  /context harvest
+
+This will:
+  ✓ Extract knowledge from .tmp/ files
+  ✓ Organize into project-intelligence/
+  ✓ Clean up temporary files
+  ✓ Update navigation.md
+
+Ready? [y/n]: _
+```
+
+---
 
 ### Stage 1: Detect Existing Context
 
@@ -504,6 +593,28 @@ Agents stay synced!
 
 ## Implementation Details
 
+### External Context Detection (Stage 0)
+
+**Process**:
+1. Check: `ls .tmp/external-context.md .tmp/context-*.md .tmp/*-context.md 2>/dev/null`
+2. If files found:
+   - Read each file
+   - Extract patterns (tech stack, APIs, components, naming, standards, security)
+   - Offer options: Extract & use | Skip | Manage | Harvest
+3. If option 1 (Extract & use):
+   - Parse external files for patterns
+   - Merge with existing project intelligence (if exists)
+   - Proceed to Stage 1 with pre-filled patterns
+4. If option 3 (Manage):
+   - Show file list with sizes
+   - Offer: Update | Remove | Clean all | Harvest | Back
+   - Execute selected action
+   - Return to main menu or exit
+5. If option 4 (Harvest):
+   - Guide user to `/context harvest` command
+   - Explain what harvest does
+   - Exit add-context
+
 ### Pattern Detection (Stage 1)
 
 **Process**:
@@ -536,10 +647,11 @@ Agents stay synced!
 ### Delegation to ContextOrganizer
 
 ```yaml
-operation: create | update
+operation: create | update | extract_external | manage_external
 template: technical-domain  # Project Intelligence template
 target_directory: project-intelligence
 
+# For normal create/update
 user_responses:
   tech_stack: {framework, language, database, styling}
   api_pattern: string | null
@@ -548,6 +660,17 @@ user_responses:
   code_standards: string[]
   security_requirements: string[]
 
+# For external context extraction
+external_context:
+  source_files: [".tmp/external-context.md", ".tmp/api-patterns.md"]
+  extracted_patterns: {tech_stack, api_pattern, component_pattern, naming, standards, security}
+  merge_with_existing: boolean
+
+# For external context management
+external_management:
+  action: update | remove | clean_all | harvest
+  target_files: [list of .tmp/ files]
+  
 frontmatter:
   context: project-intelligence/technical
   priority: critical  # @priority_assignment (80% use cases)
@@ -628,6 +751,63 @@ Express: `src/routes/ controllers/ models/ middleware/`
 ✅ Version 1.4 → 1.5
 ```
 
+### Example 4: Extract External Context
+```bash
+/add-context
+
+# Found external context files in .tmp/
+#   📄 .tmp/external-context.md (2.4 KB)
+#   📄 .tmp/api-patterns.md (1.8 KB)
+# 
+# Choose: 1. Extract & use these files
+# 
+# Extracted patterns:
+#   ✓ Tech Stack: Next.js 15 + TypeScript + PostgreSQL + Tailwind
+#   ✓ API Pattern: [from external-context.md]
+#   ✓ Component: [from api-patterns.md]
+#   ✓ Naming: kebab-case files, PascalCase components
+#   ✓ Standards: TypeScript strict, Zod validation
+#   ✓ Security: Input validation, parameterized queries
+#
+# ✅ Created: technical-domain.md (merged with external patterns)
+```
+
+### Example 5: Manage External Files
+```bash
+/add-context
+
+# Found external context files in .tmp/
+# Choose: 3. Manage external files
+#
+# Files in .tmp/:
+#   A) .tmp/external-context.md (2.4 KB)
+#   B) .tmp/api-patterns.md (1.8 KB)
+#
+# Choose file [A/B] then action [1/2/3/4/5]:
+# A
+# 1. Update file
+#
+# ✅ File updated. Ready to extract? [y/n]: y
+# ✅ Patterns extracted and merged
+```
+
+### Example 6: Harvest External Context
+```bash
+/add-context
+
+# Found external context files in .tmp/
+# Choose: 4. Harvest (move to permanent context)
+#
+# To harvest external context files:
+#   /context harvest
+#
+# This will:
+#   ✓ Extract knowledge from .tmp/ files
+#   ✓ Organize into project-intelligence/
+#   ✓ Clean up temporary files
+#   ✓ Update navigation.md
+```
+
 ---
 
 ## Error Handling
@@ -684,6 +864,21 @@ A: Edit directly: `nano ~/.opencode/context/project-intelligence/technical-domai
 
 **Q: Share w/ team?**
 A: Yes! Commit `~/.opencode/context/project-intelligence/` to repo.
+
+**Q: Have external context files in .tmp/?**
+A: Run `/add-context` and choose "Extract & use" or "Manage external files"
+
+**Q: Want to clean up .tmp/ files?**
+A: Run `/add-context` → "Manage external files" → "Clean all"
+
+**Q: Move .tmp/ files to permanent context?**
+A: Run `/context harvest` to extract and organize them
+
+**Q: Update external context files?**
+A: Run `/add-context` → "Manage external files" → "Update file"
+
+**Q: Remove specific external file?**
+A: Run `/add-context` → "Manage external files" → "Remove file"
 
 ---
 
