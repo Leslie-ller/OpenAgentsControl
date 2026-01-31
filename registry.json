@@ -454,6 +454,26 @@
         "category": "essential"
       },
       {
+        "id": "add-context",
+        "name": "Add Context",
+        "type": "command",
+        "path": ".opencode/command/add-context.md",
+        "description": "Interactive wizard to add project patterns using Project Intelligence standard",
+        "tags": [
+          "context",
+          "onboarding",
+          "project-intelligence",
+          "wizard"
+        ],
+        "dependencies": [
+          "subagent:context-organizer",
+          "context:mvi",
+          "context:frontmatter",
+          "context:project-intelligence"
+        ],
+        "category": "essential"
+      },
+      {
         "id": "clean",
         "name": "Clean Project",
         "type": "command",
@@ -2657,6 +2677,7 @@
         "subagent:documentation",
         "skill:task-management",
         "command:context",
+        "command:add-context",
         "command:clean",
         "tool:env",
         "context:essential-patterns",
@@ -2696,6 +2717,7 @@
         "command:commit",
         "command:test",
         "command:context",
+        "command:add-context",
         "command:clean",
         "command:optimize",
         "command:validate-repo",
@@ -2735,6 +2757,7 @@
         "subagent:image-specialist",
         "skill:task-management",
         "command:context",
+        "command:add-context",
         "command:clean",
         "command:prompt-enhancer",
         "tool:env",
@@ -2775,6 +2798,7 @@
         "command:test",
         "command:commit",
         "command:context",
+        "command:add-context",
         "command:clean",
         "command:optimize",
         "command:prompt-enhancer",
@@ -2836,6 +2860,7 @@
         "command:test",
         "command:commit",
         "command:context",
+        "command:add-context",
         "command:clean",
         "command:optimize",
         "command:prompt-enhancer",

@@ -76,6 +76,8 @@ Help users add project patterns using Project Intelligence standard. **Easiest w
 
 **Standards**: @project_intelligence + @mvi_compliance + @frontmatter_required + @codebase_refs
 
+**Note**: External context files are stored in `.tmp/` directory (e.g., `.tmp/external-context.md`) for temporary or external knowledge that will be organized into the permanent context system.
+
 ---
 
 ## Usage
