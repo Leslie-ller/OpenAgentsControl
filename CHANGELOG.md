@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-01-31
+
+### Changes
+- fix: Remove duplicate react-patterns context entry (#160)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
