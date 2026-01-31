@@ -1,10 +1,6 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: BuildAgent
-description: "Type check and build validation agent"
+description: Type check and build validation agent
 mode: subagent
 temperature: 0.1
 tools:
@@ -13,6 +9,9 @@ tools:
   grep: true
   glob: true
   task: true
+  edit: false
+  write: false
+permissions:
   bash:
     "tsc": "allow"
     "mypy": "allow"
@@ -31,19 +30,11 @@ tools:
   task:
     contextscout: "allow"
     "*": "deny"
-  - build
-  - validation
-  - type-check
 ---
 
 # BuildAgent
 
 > **Mission**: Validate type correctness and build success — always grounded in project build standards discovered via ContextScout.
-
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
 
   <rule id="context_first">
     ALWAYS call ContextScout BEFORE running build checks. Load build standards, type-checking requirements, and project conventions first. This ensures you run the right commands for this project.

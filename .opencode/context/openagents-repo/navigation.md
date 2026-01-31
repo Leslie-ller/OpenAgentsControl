@@ -2,7 +2,7 @@
 
 **Purpose**: Context files specific to the OpenAgents Control repository
 
-**Last Updated**: 2026-01-30
+**Last Updated**: 2026-01-31
 
 ---
 
@@ -10,11 +10,23 @@
 
 | Function | Files | Purpose |
 |----------|-------|---------|
+| **Standards** | 2 files | Agent creation standards |
 | **Concepts** | 2 files | Core ideas and principles |
 | **Examples** | 1 file | Working code samples |
 | **Guides** | 10 files | Step-by-step workflows |
 | **Lookup** | 4 files | Quick reference tables |
 | **Errors** | 1 file | Common issues + solutions |
+
+---
+
+## Standards (Agent Creation)
+
+| File | Topic | Priority |
+|------|-------|----------|
+| `standards/agent-frontmatter.md` | Valid OpenCode YAML frontmatter | ⭐⭐⭐⭐⭐ |
+| `standards/subagent-structure.md` | Standard subagent file structure | ⭐⭐⭐⭐⭐ |
+
+**When to read**: Before creating or modifying any agent files
 
 ---
 
@@ -101,11 +113,13 @@
 4. If errors: Load `errors/tool-permission-errors.md`
 
 ### For Agent Creation:
-1. Load `core-concepts/agents.md` (understand structure)
-2. Load `guides/adding-agent.md` (step-by-step)
-3. **If using external libraries**: Load `guides/external-libraries-workflow.md` (fetch docs)
-4. Load `examples/subagent-prompt-structure.md` (if subagent)
-5. Load `guides/testing-agent.md` (validate)
+1. Load `standards/agent-frontmatter.md` (valid YAML frontmatter)
+2. Load `standards/subagent-structure.md` (file structure)
+3. Load `core-concepts/agents.md` (understand system)
+4. Load `guides/adding-agent.md` (step-by-step)
+5. **If using external libraries**: Load `guides/external-libraries-workflow.md` (fetch docs)
+6. Load `examples/subagent-prompt-structure.md` (if subagent)
+7. Load `guides/testing-agent.md` (validate)
 
 ### For Issue Management:
 1. Load `guides/github-issues-workflow.md` (understand workflow)
@@ -124,6 +138,7 @@
 
 All files follow MVI principle (<200 lines):
 
+- ✅ Standards: <200 lines
 - ✅ Concepts: <100 lines
 - ✅ Examples: <100 lines
 - ✅ Guides: <150 lines

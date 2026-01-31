@@ -28,11 +28,12 @@ tools:
     "**/*.secret": "deny"
     "node_modules/**": "deny"
     ".git/**": "deny"
-  - repository
-  - meta
-  - coordination
-  - openagents-repo
-  - lazy-loading
+permissions:
+  bash:
+    "rm -rf *": "ask"
+    "rm -rf /*": "deny"
+    "sudo *": "deny"
+    "> /dev/*": "deny"
 ---
 
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->

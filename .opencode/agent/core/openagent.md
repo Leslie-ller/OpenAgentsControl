@@ -16,18 +16,18 @@ tools:
   bash: true
   task: true
   patch: true
-permission:
+permissions:
   bash:
-    "rm -rf *": ask
-    "rm -rf /*": deny
-    "sudo *": deny
-    "> /dev/*": deny
+    "rm -rf *": "ask"
+    "rm -rf /*": "deny"
+    "sudo *": "deny"
+    "> /dev/*": "deny"
   edit:
-    "**/*.env*": deny
-    "**/*.key": deny
-    "**/*.secret": deny
-    "node_modules/**": deny
-    ".git/**": deny
+    "**/*.env*": "deny"
+    "**/*.key": "deny"
+    "**/*.secret": "deny"
+    "node_modules/**": "deny"
+    ".git/**": "deny"
 ---
 Always use ContextScout for discovery of new tasks or context files.
 ContextScout is exempt from the approval gate rule. ContextScout is your secret weapon for quality, use it where possible.

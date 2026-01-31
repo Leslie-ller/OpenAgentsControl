@@ -1,10 +1,6 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: ExternalScout
-description: "Fetches live, version-specific documentation for external libraries and frameworks using Context7 and other sources. Filters, sorts, and returns relevant documentation."
+description: Fetches live, version-specific documentation for external libraries and frameworks using Context7 and other sources. Filters, sorts, and returns relevant documentation.
 mode: subagent
 temperature: 0.1
 tools:
@@ -13,6 +9,13 @@ tools:
   skill: true
   grep: true
   webfetch: true
+  write: true
+  edit: true
+  glob: true
+  task: false
+  todoread: false
+  todowrite: false
+permissions:
   read:
     ".opencode/skill/context7/**": "allow"
     ".tmp/external-context/**": "allow"
@@ -49,11 +52,6 @@ tools:
     "*": "deny"
   todowrite:
     "*": "deny"
-  - external-docs
-  - libraries
-  - frameworks
-  - context7
-  - subagent
 ---
 
 # ExternalScout

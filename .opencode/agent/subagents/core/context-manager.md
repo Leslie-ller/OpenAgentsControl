@@ -1,10 +1,6 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: ContextManager
-description: "Context organization and lifecycle management specialist - discovers, catalogs, validates, and maintains project context structure with dependency tracking"
+description: Context organization and lifecycle management specialist - discovers, catalogs, validates, and maintains project context structure with dependency tracking
 mode: subagent
 temperature: 0.1
 tools:
@@ -15,6 +11,7 @@ tools:
   write: true
   bash: true
   task: true
+permissions:
   read:
     "**/*": "allow"
   grep:
@@ -41,21 +38,11 @@ tools:
   task:
     "contextscout": "allow"
     "*": "deny"
-  - context
-  - organization
-  - management
-  - lifecycle
-  - catalog
 ---
 
 # ContextManager
 
 > **Mission**: Discover, catalog, validate, and maintain project context structure with dependency tracking and lifecycle management.
-
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
 
   <rule id="context_root">
     The ONLY entry point is `.opencode/context/`. All operations start from navigation.md files. Never hardcode paths — follow navigation dynamically.

@@ -1,10 +1,6 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: OpenFrontendSpecialist
-description: "Frontend UI design specialist - subagent for design systems, themes, animations"
+description: Frontend UI design specialist - subagent for design systems, themes, animations
 mode: subagent
 temperature: 0.2
 tools:
@@ -15,6 +11,7 @@ tools:
   task: true
   glob: true
   grep: true
+permissions:
   task:
     contextscout: "allow"
     externalscout: "allow"
@@ -38,12 +35,7 @@ tools:
 
 # Frontend Design Subagent
 
-> **Mission**: Create complete UI designs with cohesive design systems, themes, and animations — always grounded in current library docs and project standards.
-
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
+> **Mission**: Create complete UI designs with cohesive design systems, themes, animations — always grounded in current library docs and project standards.
 
   <rule id="context_first">
     ALWAYS call ContextScout BEFORE any design or implementation work. Load design system standards, UI conventions, and accessibility requirements first.

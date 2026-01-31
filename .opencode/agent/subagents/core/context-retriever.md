@@ -1,10 +1,6 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: Context Retriever
-description: "Generic context search and retrieval specialist for finding relevant context files, standards, and guides in any repository"
+description: Generic context search and retrieval specialist for finding relevant context files, standards, and guides in any repository
 mode: subagent
 temperature: 0.1
 tools:
@@ -15,18 +11,13 @@ tools:
   bash: false
   edit: false
   write: false
+permissions:
   bash:
     "*": "deny"
   edit:
     "**/*": "deny"
   write:
     "**/*": "deny"
-  context: []
-  tools: []
-  - context
-  - search
-  - retrieval
-  - subagent
 ---
 
 # Context Retriever Agent

@@ -16,23 +16,23 @@ tools:
   glob: true
   bash: true
   patch: true
-permission:
+permissions:
   bash:
-    "rm -rf *": ask
-    "sudo *": deny
-    "chmod *": ask
-    "curl *": ask
-    "wget *": ask
-    "docker *": ask
-    "kubectl *": ask
+    "rm -rf *": "ask"
+    "sudo *": "deny"
+    "chmod *": "ask"
+    "curl *": "ask"
+    "wget *": "ask"
+    "docker *": "ask"
+    "kubectl *": "ask"
   edit:
-    "**/*.env*": deny
-    "**/*.key": deny
-    "**/*.secret": deny
-    "node_modules/**": deny
-    "**/__pycache__/**": deny
-    "**/*.pyc": deny
-    ".git/**": deny
+    "**/*.env*": "deny"
+    "**/*.key": "deny"
+    "**/*.secret": "deny"
+    "node_modules/**": "deny"
+    "**/__pycache__/**": "deny"
+    "**/*.pyc": "deny"
+    ".git/**": "deny"
 ---
 
 # Development Agent
