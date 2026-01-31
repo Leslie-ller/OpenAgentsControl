@@ -6,7 +6,7 @@ description: "Advanced web UI patterns - scroll animations, visual effects, and 
 
 **Purpose**: Advanced web UI patterns - scroll animations, visual effects, and interactive design
 
-**Last Updated**: 2026-01-07
+**Last Updated**: 2026-01-31
 
 ---
 
@@ -26,6 +26,8 @@ description: "Advanced web UI patterns - scroll animations, visual effects, and 
 | File | Description | Priority |
 |------|-------------|----------|
 | [building-scrollytelling-pages.md](guides/building-scrollytelling-pages.md) | Complete implementation guide | high |
+| [premium-dark-ui-quick-start.md](guides/premium-dark-ui-quick-start.md) | Premium dark UI design system quick start | high |
+| [premium-dark-ui-visual-reference.md](guides/premium-dark-ui-visual-reference.md) | Visual reference for premium dark UI | medium |
 
 ### Lookup
 | File | Description | Priority |
@@ -47,6 +49,10 @@ description: "Advanced web UI patterns - scroll animations, visual effects, and 
 3. Load `examples/scrollytelling-headphone.md` (see full code)
 4. Reference `guides/building-scrollytelling-pages.md` (step-by-step)
 
+**For premium dark UI design**:
+1. Load `guides/premium-dark-ui-quick-start.md` (implementation guide)
+2. Reference `guides/premium-dark-ui-visual-reference.md` (visual patterns)
+
 ---
 
 ## Scope
@@ -56,6 +62,8 @@ This subcategory covers:
 - ✅ Canvas-based rendering
 - ✅ Framer Motion patterns
 - ✅ Image sequence generation
+- ✅ Premium dark UI design system
+- ✅ Glassmorphism patterns
 - ⏳ CSS animations (future)
 - ⏳ SVG animations (future)
 - ⏳ WebGL effects (future)
@@ -77,7 +85,7 @@ This subcategory covers:
 ## Statistics
 - Concepts: 1
 - Examples: 1
-- Guides: 1
+- Guides: 3
 - Lookup: 1
 - Errors: 0
-- **Total**: 4 files
+- **Total**: 6 files
