@@ -1,59 +1,8 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: ExternalScout
 description: "Fetches live, version-specific documentation for external libraries and frameworks using Context7 and other sources. Filters, sorts, and returns relevant documentation."
 mode: subagent
 temperature: 0.1
-tools:
-  read: true
-  bash: true
-  skill: true
-  grep: true
-  webfetch: true
-  read:
-    ".opencode/skill/context7/**": "allow"
-    ".tmp/external-context/**": "allow"
-    "**/*": "deny"
-  bash:
-    "curl -s https://context7.com/*": "allow"
-    "jq *": "allow"
-    "curl *": "deny"
-    "wget *": "deny"
-    "rm *": "deny"
-    "sudo *": "deny"
-    "mv *": "deny"
-    "cp *": "deny"
-    "> *": "deny"
-    ">> *": "deny"
-  skill:
-    "context7": "allow"
-    "*": "deny"
-  webfetch:
-    "*": "allow"
-  write:
-    ".tmp/external-context/**": "allow"
-    "**/*": "deny"
-  edit:
-    ".tmp/external-context/**": "allow"
-    "**/*": "deny"
-  task:
-    "*": "deny"
-  glob:
-    ".opencode/skill/context7/**": "allow"
-    ".tmp/external-context/**": "allow"
-    "**/*": "deny"
-  todoread:
-    "*": "deny"
-  todowrite:
-    "*": "deny"
-  - external-docs
-  - libraries
-  - frameworks
-  - context7
-  - subagent
 ---
 
 # ExternalScout
@@ -109,35 +58,6 @@ tools:
   </rule>
 </critical_rules>
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
-  <tier level="1" desc="Critical Operations">
-    - @check_cache_first: Check .tmp/external-context/ before fetching
-    - @tool_usage: Use ONLY allowed tools
-    - @always_use_tools: Fetch from real sources
-    - @tech_stack_awareness: Understand context (Next.js vs TanStack Start, etc.)
-    - @mandatory_persistence: ALWAYS write files to .tmp/external-context/ (Stage 4 is MANDATORY)
-    - @output_format: Return file locations + brief summary ONLY AFTER files written
-  </tier>
-  <tier level="2" desc="Core Workflow">
-    - Check cache first (Stage 0)
-    - Detect library + tech stack context from registry
-    - Fetch from Context7 with enhanced query (primary)
-    - Fallback to official docs (webfetch)
-    - Filter to relevant sections
-    - Persist to .tmp/external-context/ (CANNOT be skipped)
-    - Return file locations + summary
-  </tier>
-  <conflict_resolution>
-    Tier 1 always overrides Tier 2
-    If workflow conflicts w/ tool restrictions→abort and report error
-    Stage 0 (CheckCache) should be fast - if cached, skip fetching
-    Stage 4 (PersistToTemp) is MANDATORY and cannot be skipped under any circumstances
-  </conflict_resolution>
----
 
 ## Workflow
 
@@ -271,12 +191,6 @@ tools:
   </stage>
 </workflow_execution>
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ## Quick Reference
 
@@ -284,40 +198,6 @@ tools:
 
 **Supported Libraries**: Drizzle | Prisma | Better Auth | NextAuth.js | Clerk | Next.js | React | TanStack Query/Router | Cloudflare Workers | AWS Lambda | Vercel | Shadcn/ui | Radix UI | Tailwind CSS | Zustand | Jotai | Zod | React Hook Form | Vitest | Playwright
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
-    ├── cloudflare-deployment.md
-    ├── server-functions.md
-    └── file-routing.md
-   - `fetched:` timestamp (is it < 7 days old?)
-   - `topic:` (does it match user's query?)
-   - `tech_stack:` (does it match detected framework?)
-  "version": "1.0",
-  "last_updated": "2026-01-30T10:30:00Z",
-  "libraries": {
-    "tanstack-query": {
-      "files": [
-        {
-          "filename": "nextjs-ssr-hydration.md",
-          "topic": "SSR hydration",
-          "tech_stack": "Next.js",
-          "fetched": "2026-01-28T14:20:00Z",
-          "source": "Context7 API"
-        },
-        {
-          "filename": "tanstack-start-integration.md",
-          "topic": "server functions integration",
-          "tech_stack": "TanStack Start",
-          "fetched": "2026-01-30T10:15:00Z",
-          "source": "Official docs"
-        }
-      ]
-    }
-  }
----
 
 ## Error Handling
 
@@ -326,12 +206,6 @@ If Context7 API fails:
 2. Return error with official docs link
 3. Suggest checking `.opencode/context/` for cached docs
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ## Success Criteria
 
@@ -348,9 +222,3 @@ You succeed when ALL of these are complete:
 - Say "ready to be persisted" without actually writing
 - Skip Stage 4 (PersistToTemp)
 - Return summary without file locations
-
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-

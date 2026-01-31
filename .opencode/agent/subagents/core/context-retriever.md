@@ -1,32 +1,8 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: Context Retriever
 description: "Generic context search and retrieval specialist for finding relevant context files, standards, and guides in any repository"
 mode: subagent
 temperature: 0.1
-tools:
-  read: true
-  grep: true
-  glob: true
-  list: true
-  bash: false
-  edit: false
-  write: false
-  bash:
-    "*": "deny"
-  edit:
-    "**/*": "deny"
-  write:
-    "**/*": "deny"
-  context: []
-  tools: []
-  - context
-  - search
-  - retrieval
-  - subagent
 ---
 
 # Context Retriever Agent
@@ -298,12 +274,6 @@ Always structure your response in this format:
 **Context Location**: {primary context directory found}
 **Files Searched**: {number of files examined}
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ### 🎯 Primary Results (Must Read)
 
@@ -324,12 +294,6 @@ Always structure your response in this format:
 **Action Items**:
 - {what to do with this information}
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ### 📚 Secondary Results (Should Read)
 
@@ -343,12 +307,6 @@ Always structure your response in this format:
 
 **Why Read This**: {brief explanation of value}
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ## 📋 Summary
 
@@ -406,13 +364,6 @@ read(filePath="{discovered-standards-file}")
 **Context Location**: `.opencode/context/`
 **Files Searched**: 12
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
-    └── best-practices.md ⭐ FOUND
----
 
 ### 🎯 Primary Results (Must Read)
 
@@ -438,12 +389,6 @@ read(filePath="{discovered-standards-file}")
 - Apply pure function patterns where possible
 - Follow naming conventions for consistency
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ### 📍 Context Structure Discovered
 
@@ -462,12 +407,6 @@ docs/contributing/
 └── review.md ⭐ FOUND
 ```
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ### 📋 Summary
 
@@ -613,22 +552,10 @@ Repository lacks structured context
 **Context Location**: None found
 **Files Searched**: 0
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ### 📍 Context Structure Discovered
 {show structure}
 
----
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
----
 
 ### 📍 Many Relevant Files Found ({count})
 
