@@ -2839,16 +2839,6 @@
         "category": "standard"
       },
       {
-        "id": "react-patterns",
-        "name": "React Patterns",
-        "type": "context",
-        "path": ".opencode/context/development/frontend/react/react-patterns.md",
-        "description": "React Patterns & Best Practices",
-        "tags": [],
-        "dependencies": [],
-        "category": "standard"
-      },
-      {
         "id": "navigation",
         "name": "Navigation",
         "type": "context",
