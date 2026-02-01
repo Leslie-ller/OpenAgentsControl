@@ -9,7 +9,6 @@ tools:
   skill: true
   grep: true
   webfetch: true
-  write: true
   edit: true
   glob: true
   task: false
@@ -17,30 +16,20 @@ tools:
   todowrite: false
 permission:
   read:
+    "**/*": "deny"
     ".opencode/skill/context7/**": "allow"
     ".tmp/external-context/**": "allow"
-    "**/*": "deny"
   bash:
     "*": "deny"
     "curl -s https://context7.com/*": "allow"
     "jq *": "allow"
-  skill:
-    "context7": "allow"
-    "*": "deny"
-  webfetch:
-    "*": "allow"
-  write:
-    ".tmp/external-context/**": "allow"
-    "**/*": "deny"
   edit:
-    ".tmp/external-context/**": "allow"
     "**/*": "deny"
-  task:
-    "*": "deny"
+    ".tmp/external-context/**": "allow"
   glob:
+    "**/*": "deny"
     ".opencode/skill/context7/**": "allow"
     ".tmp/external-context/**": "allow"
-    "**/*": "deny"
 ---
 
 # ExternalScout
