@@ -11,7 +11,7 @@ tools:
   task: true
   edit: false
   write: false
-permissions:
+permission:
   bash:
     "tsc": "allow"
     "mypy": "allow"

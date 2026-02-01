@@ -12,7 +12,7 @@ tools:
   bash: false
   patch: true
   task: true
-permissions:
+permission:
   bash:
     "*": "deny"
   edit:

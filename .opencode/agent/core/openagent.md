@@ -16,7 +16,7 @@ tools:
   bash: true
   task: true
   patch: true
-permissions:
+permission:
   bash:
     "rm -rf *": "ask"
     "rm -rf /*": "deny"

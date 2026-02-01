@@ -41,10 +41,12 @@ tools:                               # Tool access
   bash: false
   task: false
 
-permissions:                         # Permission rules
+permission:                          # Permission rules (v1.1.1+)
+  "*": "ask"                         # Catch-all (last-match-wins)
+  read: "allow"                      # Specific override
   bash:
-    "git *": "allow"
     "*": "deny"
+    "git status*": "allow"
   edit:
     "**/*.env*": "deny"
   task:
@@ -72,7 +74,7 @@ tools:
   write: true
   bash: true
   task: true
-permissions:
+permission:
   bash:
     "npx vitest *": "allow"
     "pytest *": "allow"
@@ -108,11 +110,11 @@ tools:
 
 ### 3. Wrong Field Names ❌
 ```yaml
-permission:  # ❌ Should be 'permissions'
+permissions:  # ❌ Deprecated - use 'permission' (singular)
   bash:
     "*": "deny"
 ```
-**Fix**: Use correct field name `permissions:`
+**Fix**: Use correct field name `permission:` (singular, v1.1.1+)
 
 ### 4. Extra Delimiter Blocks ❌
 ```yaml
@@ -158,7 +160,7 @@ dependencies: []      # ❌ Not valid
 - [ ] Only valid OpenCode fields?
 - [ ] No duplicate keys?
 - [ ] No orphaned list items?
-- [ ] Correct field names (`permissions` not `permission`)?
+- [ ] Correct field names (`permission` not `permissions`)?
 - [ ] Only one `---` delimiter at top?
 - [ ] Metadata moved to agent-metadata.json?
 - [ ] Valid YAML syntax?
@@ -178,7 +180,7 @@ grep -A 50 "^---$" agent.md | grep -E "^[a-z_]+:" | sort | uniq -d
 grep -A 50 "^---$" agent.md | grep -E "^[a-z_]+:" | cut -d: -f1
 ```
 
-**Valid keys**: `name`, `description`, `mode`, `temperature`, `model`, `maxSteps`, `disable`, `hidden`, `prompt`, `tools`, `permissions`, `skills`
+**Valid keys**: `name`, `description`, `mode`, `temperature`, `model`, `maxSteps`, `disable`, `hidden`, `prompt`, `tools`, `permission`, `skills`
 
 ---
 
