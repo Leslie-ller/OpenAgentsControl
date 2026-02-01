@@ -13,6 +13,7 @@ tools:
   write: false
 permission:
   bash:
+    "*": "deny"
     "tsc": "allow"
     "mypy": "allow"
     "go build": "allow"
@@ -22,7 +23,6 @@ permission:
     "yarn build": "allow"
     "pnpm build": "allow"
     "python -m build": "allow"
-    "*": "deny"
   edit:
     "**/*": "deny"
   write:

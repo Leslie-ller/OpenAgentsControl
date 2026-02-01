@@ -30,7 +30,7 @@ tools:
     ".git/**": "deny"
 permission:
   bash:
-    "rm -rf *": "ask"
+    "*": "ask"
     "rm -rf /*": "deny"
     "sudo *": "deny"
     "> /dev/*": "deny"

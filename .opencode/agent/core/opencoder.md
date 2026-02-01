@@ -18,7 +18,8 @@ tools:
   patch: true
 permission:
   bash:
-    "rm -rf *": "ask"
+    "*": "allow"
+    "rm -rf /*": "deny"
     "sudo *": "deny"
     "chmod *": "ask"
     "curl *": "ask"
