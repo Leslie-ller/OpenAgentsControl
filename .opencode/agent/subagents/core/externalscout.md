@@ -21,16 +21,9 @@ permission:
     ".tmp/external-context/**": "allow"
     "**/*": "deny"
   bash:
+    "*": "deny"
     "curl -s https://context7.com/*": "allow"
     "jq *": "allow"
-    "curl *": "deny"
-    "wget *": "deny"
-    "rm *": "deny"
-    "sudo *": "deny"
-    "mv *": "deny"
-    "cp *": "deny"
-    "> *": "deny"
-    ">> *": "deny"
   skill:
     "context7": "allow"
     "*": "deny"
@@ -48,10 +41,6 @@ permission:
     ".opencode/skill/context7/**": "allow"
     ".tmp/external-context/**": "allow"
     "**/*": "deny"
-  todoread:
-    "*": "deny"
-  todowrite:
-    "*": "deny"
 ---
 
 # ExternalScout
