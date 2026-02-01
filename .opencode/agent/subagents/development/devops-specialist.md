@@ -11,7 +11,7 @@ tools:
   task: true
   grep: true
   glob: true
-permissions:
+permission:
   task:
     contextscout: "allow"
     "*": "deny"

@@ -11,7 +11,7 @@ tools:
   bash: false
   edit: false
   write: false
-permissions:
+permission:
   bash:
     "*": "deny"
   edit:

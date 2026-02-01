@@ -12,7 +12,7 @@ tools:
   bash: true
   task: true
   patch: true
-permissions:
+permission:
   bash:
     "npx ts-node*task-cli*": "allow"
     "mkdir -p .tmp/tasks*": "allow"

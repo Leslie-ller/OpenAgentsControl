@@ -10,7 +10,7 @@ tools:
   grep: true
   glob: true
   task: true
-permissions:
+permission:
   task:
     contextscout: "allow"
     "*": "deny"

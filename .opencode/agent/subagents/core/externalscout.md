@@ -15,7 +15,7 @@ tools:
   task: false
   todoread: false
   todowrite: false
-permissions:
+permission:
   read:
     ".opencode/skill/context7/**": "allow"
     ".tmp/external-context/**": "allow"

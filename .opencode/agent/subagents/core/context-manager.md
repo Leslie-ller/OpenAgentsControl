@@ -11,7 +11,7 @@ tools:
   write: true
   bash: true
   task: true
-permissions:
+permission:
   read:
     "**/*": "allow"
   grep:

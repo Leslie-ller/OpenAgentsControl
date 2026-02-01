@@ -16,7 +16,7 @@ tools:
   glob: true
   bash: true
   patch: true
-permissions:
+permission:
   bash:
     "rm -rf *": "ask"
     "sudo *": "deny"

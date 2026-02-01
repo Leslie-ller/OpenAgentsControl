@@ -31,7 +31,7 @@ Agent has tool **disabled** or **denied** in frontmatter:
 tools:
   bash: false    # ← Tool disabled
 
-permissions:
+permission:
   bash:
     "*": "deny"  # ← Explicitly denied
 ```
@@ -92,7 +92,7 @@ tools:
   write: false   # ← No file creation
   task: false    # ← No delegation (subagents don't delegate)
 
-permissions:
+permission:
   bash:
     "*": "deny"
   edit:

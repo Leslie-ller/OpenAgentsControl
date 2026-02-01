@@ -15,7 +15,7 @@ description: Brief description
 mode: subagent
 temperature: 0.1
 tools: {...}
-permissions: {...}
+permission: {...}
 ---
 
 # AgentName
@@ -94,7 +94,7 @@ status: "success" | "failure"
 ### Read-Only (Reviewers, Analyzers)
 ```yaml
 tools: {read: true, grep: true, glob: true, bash: false, edit: false, write: false}
-permissions:
+permission:
   bash: {"*": "deny"}
   edit: {"**/*": "deny"}
   task: {contextscout: "allow", "*": "deny"}
@@ -103,7 +103,7 @@ permissions:
 ### Write-Enabled (Coders, Testers)
 ```yaml
 tools: {read: true, edit: true, write: true, bash: true}
-permissions:
+permission:
   bash: {"npm test *": "allow", "git *": "allow", "sudo *": "deny", "*": "deny"}
   edit: {"**/*.env*": "deny", "**/*.key": "deny"}
   task: {contextscout: "allow", "*": "deny"}
@@ -112,7 +112,7 @@ permissions:
 ### Restricted Bash (Task Managers)
 ```yaml
 tools: {read: true, bash: true}
-permissions:
+permission:
   bash: {"npx ts-node*task-cli*": "allow", "mkdir -p .tmp/tasks*": "allow", "*": "deny"}
 ```
 
@@ -163,7 +163,7 @@ permissions:
 
 **Security Pattern**:
 ```markdown
-permissions:
+permission:
   edit:
     "**/*.env*": "deny"
     "**/*.key": "deny"

@@ -11,7 +11,7 @@ tools:
   write: true
   bash: true
   task: true
-permissions:
+permission:
   bash:
     "npx vitest *": "allow"
     "npx jest *": "allow"

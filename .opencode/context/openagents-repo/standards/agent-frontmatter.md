@@ -41,7 +41,7 @@ tools:                               # Tool access
   bash: false
   task: false
 
-permissions:                         # Permission rules
+permission:                          # Permission rules (opencode v1.1.1+)
   bash:
     "git *": "allow"
     "*": "deny"
@@ -72,7 +72,7 @@ tools:
   write: true
   bash: true
   task: true
-permissions:
+permission:
   bash:
     "npx vitest *": "allow"
     "pytest *": "allow"
@@ -108,11 +108,11 @@ tools:
 
 ### 3. Wrong Field Names ❌
 ```yaml
-permission:  # ❌ Should be 'permissions'
+permissions:  # ❌ Deprecated - use 'permission' (singular) for v1.1.1+
   bash:
     "*": "deny"
 ```
-**Fix**: Use correct field name `permissions:`
+**Fix**: Use correct field name `permission:` (singular) for opencode v1.1.1+
 
 ### 4. Extra Delimiter Blocks ❌
 ```yaml
@@ -158,7 +158,7 @@ dependencies: []      # ❌ Not valid
 - [ ] Only valid OpenCode fields?
 - [ ] No duplicate keys?
 - [ ] No orphaned list items?
-- [ ] Correct field names (`permissions` not `permission`)?
+- [ ] Correct field names (`permission` not `permissions` for v1.1.1+)?
 - [ ] Only one `---` delimiter at top?
 - [ ] Metadata moved to agent-metadata.json?
 - [ ] Valid YAML syntax?
@@ -178,7 +178,9 @@ grep -A 50 "^---$" agent.md | grep -E "^[a-z_]+:" | sort | uniq -d
 grep -A 50 "^---$" agent.md | grep -E "^[a-z_]+:" | cut -d: -f1
 ```
 
-**Valid keys**: `name`, `description`, `mode`, `temperature`, `model`, `maxSteps`, `disable`, `hidden`, `prompt`, `tools`, `permissions`, `skills`
+**Valid keys**: `name`, `description`, `mode`, `temperature`, `model`, `maxSteps`, `disable`, `hidden`, `prompt`, `tools`, `permission`, `skills`
+
+**Note**: `permissions` (plural) is deprecated in opencode v1.1.1+. Use `permission` (singular) instead.
 
 ---
 
