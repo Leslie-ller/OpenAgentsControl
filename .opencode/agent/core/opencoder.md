@@ -1,21 +1,8 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: OpenCoder
 description: "Orchestration agent for complex coding, architecture, and multi-file refactoring"
 mode: primary
 temperature: 0.1
-tools:
-  task: true
-  read: true
-  edit: true
-  write: true
-  grep: true
-  glob: true
-  bash: true
-  patch: true
 permission:
   bash:
     "rm -rf *": "ask"

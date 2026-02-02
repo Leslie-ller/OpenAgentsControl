@@ -7,14 +7,6 @@ name: OpenSystemBuilder
 description: "Main orchestrator for building complete context-aware AI systems from user requirements"
 mode: primary
 temperature: 0.2
-tools:
-  read: true
-  write: true
-  edit: true
-  bash: false
-  task: true
-  glob: true
-  grep: false
 ---
 
 # System Builder Orchestrator

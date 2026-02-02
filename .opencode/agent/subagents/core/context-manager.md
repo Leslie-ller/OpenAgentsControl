@@ -3,21 +3,13 @@ name: ContextManager
 description: Context organization and lifecycle management specialist - discovers, catalogs, validates, and maintains project context structure with dependency tracking
 mode: subagent
 temperature: 0.1
-tools:
-  read: true
-  grep: true
-  glob: true
-  edit: true
-  write: true
-  bash: true
-  task: true
 permission:
   read:
-    "**/*": "allow"
+    "*": "allow"
   grep:
-    "**/*": "allow"
+    "*": "allow"
   glob:
-    "**/*": "allow"
+    "*": "allow"
   bash:
     "find .opencode/context*": "allow"
     "ls -la .opencode/context*": "allow"
@@ -26,6 +18,7 @@ permission:
     "*": "deny"
   edit:
     ".opencode/context/**/*.md": "allow"
+    ".opencode/context/**/*.json": "allow"
     "**/*.env*": "deny"
     "**/*.key": "deny"
     "**/*.secret": "deny"
@@ -36,8 +29,8 @@ permission:
     "**/*.key": "deny"
     "**/*.secret": "deny"
   task:
-    "contextscout": "allow"
     "*": "deny"
+    "contextscout": "allow"
 ---
 
 # ContextManager

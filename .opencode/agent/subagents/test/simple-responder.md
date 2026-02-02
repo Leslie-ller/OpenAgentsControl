@@ -7,15 +7,6 @@ name: Simple Responder
 description: "Test agent that responds with 'AWESOME TESTING' - for eval framework testing"
 mode: subagent
 temperature: 0.0
-tools:
-  read: false
-  write: false
-  edit: false
-  grep: false
-  glob: false
-  bash: false
-  task: false
-  patch: false
 ---
 
 # Simple Responder - Test Agent

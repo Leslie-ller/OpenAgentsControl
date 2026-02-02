@@ -3,13 +3,6 @@ name: ContextOrganizer
 description: Organizes and generates context files (domain, processes, standards, templates) for optimal knowledge management
 mode: subagent
 temperature: 0.1
-tools:
-  read: true
-  write: true
-  edit: true
-  grep: true
-  glob: true
-  task: true
 permission:
   task:
     contextscout: "allow"

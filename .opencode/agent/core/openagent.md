@@ -1,23 +1,11 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: OpenAgent
 description: "Universal agent for answering queries, executing tasks, and coordinating workflows across any domain"
 mode: primary
 temperature: 0.2
-tools:
-  read: true
-  write: true
-  edit: true
-  grep: true
-  glob: true
-  bash: true
-  task: true
-  patch: true
 permission:
   bash:
+    "*": "ask"
     "rm -rf *": "ask"
     "rm -rf /*": "deny"
     "sudo *": "deny"

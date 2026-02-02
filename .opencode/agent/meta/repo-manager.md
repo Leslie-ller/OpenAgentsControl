@@ -1,22 +1,9 @@
 ---
-# OpenCode Agent Configuration
-# Metadata (id, name, category, type, version, author, tags, dependencies) is stored in:
-# .opencode/config/agent-metadata.json
-
 name: OpenRepoManager
 description: "Meta agent for managing OpenAgents Control repository development with lazy context loading, smart delegation, and automatic documentation"
 mode: primary
 temperature: 0.2
-tools:
-  read: true
-  write: true
-  edit: true
-  grep: true
-  glob: true
-  bash: true
-  task: true
-  list: true
-  patch: true
+permission:
   bash:
     "rm -rf *": "ask"
     "rm -rf /*": "deny"
@@ -28,12 +15,6 @@ tools:
     "**/*.secret": "deny"
     "node_modules/**": "deny"
     ".git/**": "deny"
-permission:
-  bash:
-    "rm -rf *": "ask"
-    "rm -rf /*": "deny"
-    "sudo *": "deny"
-    "> /dev/*": "deny"
 ---
 
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
