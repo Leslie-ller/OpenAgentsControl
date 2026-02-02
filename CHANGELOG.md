@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-02-02
+
+### Changes
+- fix: correct YAML errors and restore missing permissions in agent configs (#167)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
