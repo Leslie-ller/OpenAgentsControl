@@ -15,12 +15,6 @@ permission:
   skill:
     "*": "deny"
     "*context7*": "allow"
-  write:
-    "**/*": "deny"
-    ".tmp/external-context/**": "allow"
-  edit:
-    "**/*": "deny"
-    ".tmp/external-context/**": "allow"
   task:
     "*": "deny"
 ---

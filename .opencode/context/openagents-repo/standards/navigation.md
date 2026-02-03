@@ -43,7 +43,7 @@ These standards emerged from fixing YAML frontmatter issues across 18 agent file
 - `hidden` - Hide from autocomplete
 - `prompt` - Custom prompt file
 - `tools` - Tool access config
-- `permissions` - Permission rules
+- `permission` - Permission rules
 - `skills` - Skills to load
 
 ### Invalid Fields (Move to agent-metadata.json)

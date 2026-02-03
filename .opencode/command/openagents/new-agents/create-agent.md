@@ -50,15 +50,8 @@ Create a new agent with minimal, high-signal prompts following "right altitude" 
     description: "{one-line purpose}"
     mode: primary
     temperature: 0.1-0.7
-    tools:
-      read: true
-      write: true
-      edit: true
-      bash: true
-      task: {only if delegates}
-      glob: true
-      grep: true
-    permissions:
+
+    permission:
       bash:
         "rm -rf *": "ask"
         "sudo *": "deny"
