@@ -13,6 +13,7 @@
       "tags": ["universal", "coordination", "primary"],
       "dependencies": [
         "subagent:task-manager",
+        "subagent:batch-executor",
         "subagent:documentation",
         "subagent:contextscout",
         "subagent:externalscout",
@@ -34,6 +35,8 @@
       "tags": ["development", "coding", "implementation"],
       "dependencies": [
         "subagent:documentation",
+        "subagent:task-manager",
+        "subagent:batch-executor",
         "subagent:coder-agent",
         "subagent:tester",
         "subagent:reviewer",
@@ -136,6 +139,19 @@
       "tags": ["task-breakdown", "planning", "coordination"],
       "dependencies": [
         "context:workflows-delegation"
+      ]
+    },
+    "batch-executor": {
+      "id": "batch-executor",
+      "name": "BatchExecutor",
+      "category": "subagents/core",
+      "type": "subagent",
+      "version": "1.0.0",
+      "author": "opencode",
+      "tags": ["parallel-execution", "batch-management", "coordination"],
+      "dependencies": [
+        "subagent:coder-agent",
+        "subagent:task-manager"
       ]
     },
     "documentation": {

@@ -72,7 +72,9 @@ CONSEQUENCE OF SKIPPING: Work that doesn't match project standards = wasted effo
 
 - `ContextScout` - Discover context files BEFORE coding (saves time!)
 - `ExternalScout` - Fetch current docs for external packages (use on new builds, errors, or when working with external libraries)
-- `CoderAgent` - Complex multi-component implementations (via TaskManager)
+- `TaskManager` - Break down complex features into atomic subtasks with dependency tracking
+- `BatchExecutor` - Execute multiple tasks in parallel, managing simultaneous CoderAgent delegations
+- `CoderAgent` - Execute individual coding subtasks (used by BatchExecutor for parallel execution)
 - `TestEngineer` - Testing after implementation
 - `DocWriter` - Documentation generation
 
@@ -252,23 +254,99 @@ Code Standards
   </stage>
 
   <!-- ─────────────────────────────────────────────────────────────────── -->
-  <!-- STAGE 5: EXECUTE (component loop)                                   -->
+  <!-- STAGE 5: EXECUTE (parallel batch execution)                         -->
   <!-- ─────────────────────────────────────────────────────────────────── -->
   <stage id="5" name="Execute" when="planned" enforce="@incremental_execution">
-    *Repeat for each component or subtask:*
+    Execute tasks in parallel batches based on dependencies.
 
-    1. **Plan Component** (if using component-planning approach):
-       - Create `component-{name}.md` with detailed Interface, Tests, and Tasks.
-       - Request approval for this specific component's design.
+    <step id="5.0" name="AnalyzeTaskStructure">
+      <action>Read all subtasks and build dependency graph</action>
+      <process>
+        1. Read task.json from `.tmp/tasks/{feature}/`
+        2. Read all subtask_NN.json files
+        3. Build dependency graph from `depends_on` fields
+        4. Identify tasks with `parallel: true` flag
+      </process>
+      <checkpoint>Dependency graph built, parallel tasks identified</checkpoint>
+    </step>
 
-    2. **Execute**:
-       - If simple: Implement directly using context loaded in Stage 3.
-       - If delegating: Pass subtask JSON path + session context path to `CoderAgent`.
-       - Execute loop: Implement → Validate → Mark complete.
+    <step id="5.1" name="GroupIntoBatches">
+      <action>Group tasks into execution batches</action>
+      <process>
+        Batch 1: Tasks with NO dependencies (ready immediately)
+          - Can include multiple `parallel: true` tasks
+          - Sequential tasks also included if no deps
+        
+        Batch 2+: Tasks whose dependencies are in previous batches
+          - Group by dependency satisfaction
+          - Respect `parallel` flags within each batch
+        
+        Continue until all tasks assigned to batches.
+      </process>
+      <output>
+        ```
+        Execution Plan:
+        Batch 1: [01, 02, 03] (parallel tasks, no deps)
+        Batch 2: [04] (depends on 01+02+03)
+        Batch 3: [05] (depends on 04)
+        ```
+      </output>
+      <checkpoint>All tasks grouped into dependency-ordered batches</checkpoint>
+    </step>
 
-    3. **Integrate**:
-       - Verify integration with previous components.
-       - Update progress in session context if needed.
+    <step id="5.2" name="ExecuteBatch">
+      <action>Execute one batch at a time, parallel within batch</action>
+      <process>
+        FOR EACH batch in sequence (Batch 1, Batch 2, ...):
+          
+          IF batch contains multiple parallel tasks:
+            ## Parallel Execution
+            
+            1. Delegate ALL tasks simultaneously:
+               ```javascript
+               // These all start at the same time
+               task(subagent_type="CoderAgent", description="Task 01", prompt="...subtask_01.json...")
+               task(subagent_type="CoderAgent", description="Task 02", prompt="...subtask_02.json...")
+               task(subagent_type="CoderAgent", description="Task 03", prompt="...subtask_03.json...")
+               ```
+            
+            2. Wait for ALL parallel tasks to complete:
+               - CoderAgent marks subtask as `completed` when done
+               - Poll task status or wait for completion signals
+               - Do NOT proceed until entire batch is done
+            
+            3. Validate batch completion:
+               - Check all subtasks in batch have status: "completed"
+               - Verify deliverables exist
+               - Run integration tests if specified
+          
+          ELSE (single task or sequential-only batch):
+            ## Sequential Execution
+            
+            1. Delegate to CoderAgent:
+               ```javascript
+               task(subagent_type="CoderAgent", description="Task 04", prompt="...subtask_04.json...")
+               ```
+            
+            2. Wait for completion
+            
+            3. Validate and proceed
+          
+          4. Mark batch complete in session context
+          5. Proceed to next batch only after current batch validated
+      </process>
+      <checkpoint>Batch executed, validated, and marked complete</checkpoint>
+    </step>
+
+    <step id="5.3" name="IntegrateBatches">
+      <action>Verify integration between completed batches</action>
+      <process>
+        1. Check cross-batch dependencies are satisfied
+        2. Run integration tests if specified in task.json
+        3. Update session context with overall progress
+      </process>
+      <checkpoint>All batches integrated successfully</checkpoint>
+    </step>
   </stage>
 
   <!-- ─────────────────────────────────────────────────────────────────── -->
@@ -284,12 +362,13 @@ Code Standards
 </workflow>
 
 <execution_philosophy>
-  Development specialist with strict quality gates and context awareness.
+  Development specialist with strict quality gates, context awareness, and parallel execution optimization.
   
-  **Approach**: Discover → Propose → Approve → Init Session → Plan → Execute → Validate → Handoff
-  **Mindset**: Nothing written until approved. Context persisted once, shared by all downstream agents.
-  **Safety**: Context loading, approval gates, stop on failure, incremental execution
-  **Key Principle**: ContextScout discovers paths. OpenCoder persists them into context.md. TaskManager and working agents read from there. No re-discovery.
+  **Approach**: Discover → Propose → Approve → Init Session → Plan → Execute (Parallel Batches) → Validate → Handoff
+  **Mindset**: Nothing written until approved. Context persisted once, shared by all downstream agents. Parallel tasks execute simultaneously for efficiency.
+  **Safety**: Context loading, approval gates, stop on failure, incremental execution within batches
+  **Parallel Execution**: Tasks marked `parallel: true` with no dependencies run simultaneously. Sequential batches wait for previous batches to complete.
+  **Key Principle**: ContextScout discovers paths. OpenCoder persists them into context.md. TaskManager creates parallel-aware task structure. BatchExecutor manages simultaneous CoderAgent delegations. No re-discovery.
 </execution_philosophy>
 
 <constraints enforcement="absolute">
