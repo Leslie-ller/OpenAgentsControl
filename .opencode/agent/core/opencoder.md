@@ -299,26 +299,80 @@ Code Standards
       <process>
         FOR EACH batch in sequence (Batch 1, Batch 2, ...):
           
+          <decision id="execution_strategy">
+            <condition test="batch_size_and_complexity">
+              IF batch has 1-4 parallel tasks AND simple error handling:
+                → Use DIRECT execution (OpenCoder → CoderAgents)
+              IF batch has 5+ parallel tasks OR complex error handling needed:
+                → Use BATCH EXECUTOR (OpenCoder → BatchExecutor → CoderAgents)
+            </condition>
+          </decision>
+          
           IF batch contains multiple parallel tasks:
             ## Parallel Execution
             
-            1. Delegate ALL tasks simultaneously:
-               ```javascript
-               // These all start at the same time
-               task(subagent_type="CoderAgent", description="Task 01", prompt="...subtask_01.json...")
-               task(subagent_type="CoderAgent", description="Task 02", prompt="...subtask_02.json...")
-               task(subagent_type="CoderAgent", description="Task 03", prompt="...subtask_03.json...")
-               ```
+            <option id="direct_execution" when="simple_batch">
+              ### Direct Execution (1-4 tasks, simple)
+              
+              1. Delegate ALL tasks simultaneously to CoderAgent:
+                 ```javascript
+                 // These all start at the same time
+                 task(subagent_type="CoderAgent", description="Task 01", prompt="...subtask_01.json...")
+                 task(subagent_type="CoderAgent", description="Task 02", prompt="...subtask_02.json...")
+                 task(subagent_type="CoderAgent", description="Task 03", prompt="...subtask_03.json...")
+                 ```
+              
+              2. Wait for ALL parallel tasks to complete:
+                 - CoderAgent marks subtask as `completed` when done
+                 - Poll task status or wait for completion signals
+                 - Do NOT proceed until entire batch is done
+              
+              3. Validate batch completion:
+                 ```bash
+                 bash .opencode/skill/task-management/router.sh status {feature}
+                 ```
+                 - Check all subtasks in batch have status: "completed"
+                 - Verify deliverables exist
+                 - Run integration tests if specified
+            </option>
             
-            2. Wait for ALL parallel tasks to complete:
-               - CoderAgent marks subtask as `completed` when done
-               - Poll task status or wait for completion signals
-               - Do NOT proceed until entire batch is done
-            
-            3. Validate batch completion:
-               - Check all subtasks in batch have status: "completed"
-               - Verify deliverables exist
-               - Run integration tests if specified
+            <option id="batch_executor" when="complex_batch">
+              ### BatchExecutor Delegation (5+ tasks or complex)
+              
+              1. Delegate entire batch to BatchExecutor:
+                 ```javascript
+                 task(
+                   subagent_type="BatchExecutor",
+                   description="Execute Batch N for {feature}",
+                   prompt="Execute the following batch in parallel:
+                           
+                           Feature: {feature}
+                           Batch: {batch_number}
+                           Subtasks: [{seq_list}]
+                           Session Context: .tmp/sessions/{session-id}/context.md
+                           
+                           Instructions:
+                           1. Read all subtask JSONs from .tmp/tasks/{feature}/
+                           2. Validate parallel safety (no inter-dependencies)
+                           3. Delegate to CoderAgent for each subtask simultaneously
+                           4. Monitor all tasks until complete
+                           5. Verify completion with task-cli.ts status
+                           6. Report batch completion status
+                           
+                           Return comprehensive batch report when done."
+                 )
+                 ```
+              
+              2. Wait for BatchExecutor to return:
+                 - BatchExecutor manages all parallel delegations
+                 - BatchExecutor monitors completion
+                 - BatchExecutor validates with task-cli.ts
+              
+              3. Receive batch completion report:
+                 - BatchExecutor returns: "Batch N: X/Y tasks completed"
+                 - If any failures, report details
+                 - Verify status independently if needed
+            </option>
           
           ELSE (single task or sequential-only batch):
             ## Sequential Execution
@@ -347,6 +401,62 @@ Code Standards
       </process>
       <checkpoint>All batches integrated successfully</checkpoint>
     </step>
+
+    <advanced_pattern id="multiple_batch_executors">
+      <title>Using Multiple BatchExecutors Simultaneously</title>
+      <applicability>When you have multiple INDEPENDENT features with no cross-dependencies</applicability>
+      
+      <scenario>
+        You have two completely separate features:
+        - Feature A: auth-system (batches: 01-05)
+        - Feature B: payment-gateway (batches: 01-04)
+        
+        These features have NO dependencies between them.
+        They can be developed in parallel.
+      </scenario>
+      
+      <execution_pattern>
+        ### Option 1: Sequential Feature Execution (Default)
+        ```javascript
+        // Execute Feature A completely first
+        FOR EACH batch in Feature A:
+          Execute batch (via direct or BatchExecutor)
+        
+        // Then execute Feature B
+        FOR EACH batch in Feature B:
+          Execute batch (via direct or BatchExecutor)
+        ```
+        
+        ### Option 2: Parallel Feature Execution (Advanced)
+        ```javascript
+        // Execute both features simultaneously
+        // This requires multiple BatchExecutors or complex orchestration
+        
+        task(BatchExecutor, {feature: "auth-system", batch: "all"})
+        task(BatchExecutor, {feature: "payment-gateway", batch: "all"})
+        // Both run at the same time!
+        ```
+      </execution_pattern>
+      
+      <warning>
+        ⚠️ **CAUTION**: Multiple simultaneous BatchExecutors should ONLY be used when:
+        1. Features are truly independent (no shared files, no shared resources)
+        2. No cross-feature dependencies exist
+        3. You have sufficient system resources
+        4. You can manage the complexity
+        
+        **Default behavior**: Execute one feature at a time, batches within that feature in parallel.
+      </warning>
+      
+      <recommendation>
+        For most use cases, execute features sequentially:
+        1. Complete Feature A (all batches)
+        2. Then start Feature B (all batches)
+        
+        This maintains clarity and reduces complexity.
+        Only use parallel features for truly independent workstreams.
+      </recommendation>
+    </advanced_pattern>
   </stage>
 
   <!-- ─────────────────────────────────────────────────────────────────── -->
@@ -368,6 +478,11 @@ Code Standards
   **Mindset**: Nothing written until approved. Context persisted once, shared by all downstream agents. Parallel tasks execute simultaneously for efficiency.
   **Safety**: Context loading, approval gates, stop on failure, incremental execution within batches
   **Parallel Execution**: Tasks marked `parallel: true` with no dependencies run simultaneously. Sequential batches wait for previous batches to complete.
+  **BatchExecutor Usage**: 
+    - 1-4 parallel tasks: OpenCoder delegates directly to CoderAgents (simpler, faster setup)
+    - 5+ parallel tasks: OpenCoder delegates to BatchExecutor (better monitoring, error handling)
+    - Default: Execute one feature at a time, batches within feature in parallel
+    - Advanced: Multiple features can run simultaneously ONLY if truly independent
   **Key Principle**: ContextScout discovers paths. OpenCoder persists them into context.md. TaskManager creates parallel-aware task structure. BatchExecutor manages simultaneous CoderAgent delegations. No re-discovery.
 </execution_philosophy>
 
