@@ -284,7 +284,8 @@ Before generating code, ContextScout discovers relevant patterns from your conte
 **2. Editable Agents - Full Control**  
 Unlike Cursor/Copilot where behavior is baked into plugins, AOC agents are markdown files. Edit them directly:
 ```bash
-nano ~/.opencode/agent/core/opencoder.md
+nano .opencode/agent/core/opencoder.md  # local project install
+# Or: nano ~/.config/opencode/agent/core/opencoder.md  # global install
 # Add project rules, change workflows, customize behavior
 ```
 
@@ -506,7 +507,8 @@ Approve? [y/n]
 
 Edit agent files directly:
 ```bash
-nano ~/.opencode/agent/core/opencoder.md
+nano .opencode/agent/core/opencoder.md  # local project install
+# Or: nano ~/.config/opencode/agent/core/opencoder.md  # global install
 ```
 
 Change the model in the frontmatter:
@@ -634,7 +636,7 @@ A: MVI principle: Only load what's needed, when it's needed. Context files <200 
 A: Smart pattern discovery agent. Finds relevant context files before code generation. Ranks by priority. Prevents wasted work.
 
 **Q: Can I edit agent behavior?**  
-A: Yes! Agents are markdown files. Edit them directly: `nano ~/.opencode/agent/core/opencoder.md`
+A: Yes! Agents are markdown files. Edit them directly: `nano .opencode/agent/core/opencoder.md` (local) or `nano ~/.config/opencode/agent/core/opencoder.md` (global)
 
 **Q: How do approval gates work?**  
 A: Agents ALWAYS request approval before execution (write/edit/bash). You review plans before implementation. No surprises.
@@ -665,7 +667,7 @@ A: Bash 3.2+ (macOS default works). Run `bash scripts/tests/test-compatibility.s
 A: No, they're optional. Only install if you want Telegram notifications or Gemini AI features.
 
 **Q: Where should I install - globally or per-project?**  
-A: Global (`~/.opencode/`) works for most. Project-specific (`.opencode/`) if you need different configs per project.
+A: Local (`.opencode/` in your project) is recommended — patterns are committed to git and shared with your team. Global (`~/.config/opencode/`) is good for personal defaults across all projects. The installer asks you to choose. See [OpenCode Config Docs](https://opencode.ai/docs/config/) for how configs merge.
 
 ---
 

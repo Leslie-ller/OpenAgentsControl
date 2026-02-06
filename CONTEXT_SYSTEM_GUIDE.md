@@ -60,11 +60,11 @@ Code matches your standards automatically
 **Step 2: ContextScout discovers**
 - `core/standards/code-quality.md` (modular patterns)
 - `ui/web/react-patterns.md` (React conventions)
-- `project/project-context.md` (YOUR patterns)
+- `project-intelligence/technical-domain.md` (YOUR patterns)
 
 **Step 3: Agent loads context**
 ```markdown
-# From project-context.md
+# From project-intelligence/technical-domain.md
 
 ## React Component Pattern
 
@@ -129,8 +129,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
 │   ├── ui-navigation.md
 │   └── [language-specific patterns]
 │
-└── project/                        # YOUR custom patterns
-    └── project-context.md          # Edit this file!
+└── project-intelligence/            # YOUR custom patterns
+    ├── technical-domain.md          # Tech stack & code patterns
+    ├── business-domain.md           # Business context
+    └── navigation.md                # Quick overview
 ```
 
 ---
@@ -204,8 +206,14 @@ const addToTotal = (value) => { total += value; };
 ### Step 1: Edit Your Project Context
 
 ```bash
-# Open your project context file
-nano ~/.opencode/context/project/project-context.md
+# Recommended: Use the interactive wizard
+/add-context
+
+# Or edit directly (local project install):
+nano .opencode/context/project-intelligence/technical-domain.md
+
+# Global install:
+# nano ~/.config/opencode/context/project-intelligence/technical-domain.md
 ```
 
 ### Step 2: Add Your Patterns
@@ -624,7 +632,7 @@ All API endpoints should be good
 ### 4. Update Regularly
 
 When you change patterns:
-1. Update `project-context.md`
+1. Run `/add-context --update` or edit `project-intelligence/technical-domain.md` directly
 2. Agents will use new patterns immediately
 3. No need to restart anything
 
@@ -635,7 +643,7 @@ When you change patterns:
 ### Problem: Agent isn't following my patterns
 
 **Solution**:
-1. Check that `project-context.md` exists
+1. Check that `project-intelligence/technical-domain.md` exists (run `/add-context` if not)
 2. Verify the pattern is clearly written
 3. Include a real example
 4. Ask agent to "follow project patterns"
@@ -643,7 +651,7 @@ When you change patterns:
 ### Problem: Agent uses old patterns
 
 **Solution**:
-1. Update `project-context.md`
+1. Run `/add-context --update` or edit `project-intelligence/technical-domain.md`
 2. Restart the agent
 3. Ask agent to "load latest context"
 
@@ -657,7 +665,7 @@ When you change patterns:
 ### Problem: Agent creates code that doesn't match
 
 **Solution**:
-1. Check if pattern is in `project-context.md`
+1. Check if pattern is in `project-intelligence/technical-domain.md`
 2. Verify pattern is specific enough
 3. Ask agent to "review against project patterns"
 4. Provide feedback to refine pattern
@@ -681,7 +689,7 @@ Agents load context in this order:
    - `ui/web/react-patterns.md`
 
 4. **Project-Specific** (YOUR patterns) ← Most important!
-   - `project/project-context.md`
+   - `project-intelligence/technical-domain.md`
 
 **Project context overrides everything else!**
 
@@ -698,8 +706,8 @@ Agents load context in this order:
 ✅ **Living documentation** - Patterns stay in sync with code
 
 **Get started**:
-1. Edit `~/.opencode/context/project/project-context.md`
-2. Add your patterns with examples
+1. Run `/add-context` to create project intelligence interactively
+2. Or edit `.opencode/context/project-intelligence/technical-domain.md` directly
 3. Ask agents to create code
 4. Watch them follow your patterns automatically!
 
@@ -707,10 +715,10 @@ Agents load context in this order:
 
 ## Next Steps
 
-1. **Review** your current coding patterns
-2. **Document** them in `project-context.md`
+1. **Run** `/add-context` to create project intelligence interactively
+2. **Review** your current coding patterns
 3. **Include** real examples from your project
 4. **Test** by asking agents to create code
-5. **Refine** patterns based on results
+5. **Refine** patterns with `/add-context --update`
 
 Your agents will become better and better as your context improves!

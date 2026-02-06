@@ -1228,6 +1228,16 @@
         "category": "standard"
       },
       {
+        "id": "migrate",
+        "name": "Migrate",
+        "type": "context",
+        "path": ".opencode/context/core/context-system/operations/migrate.md",
+        "description": "Migrate context from global to local project",
+        "tags": [],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
         "id": "organize",
         "name": "Organize",
         "type": "context",

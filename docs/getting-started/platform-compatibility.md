@@ -334,13 +334,19 @@ If you can't use the installer:
 git clone https://github.com/darrenhinde/OpenAgentsControl.git
 cd OpenAgentsControl
 
-# 2. Copy to OpenCode directory
-mkdir -p ~/.opencode
-cp -r .opencode/agent ~/.opencode/
-cp -r .opencode/command ~/.opencode/
-cp -r .opencode/context ~/.opencode/
-cp -r .opencode/tool ~/.opencode/
-cp -r .opencode/plugin ~/.opencode/
+# 2a. Install locally (recommended - in your project directory):
+bash install.sh developer
+
+# 2b. Or install globally (available to all projects):
+bash install.sh developer --install-dir ~/.config/opencode
+
+# 2c. Or copy manually to global location:
+mkdir -p ~/.config/opencode
+cp -r .opencode/agent ~/.config/opencode/
+cp -r .opencode/command ~/.config/opencode/
+cp -r .opencode/context ~/.config/opencode/
+cp -r .opencode/tool ~/.config/opencode/
+cp -r .opencode/plugin ~/.config/opencode/
 
 # 3. Configure environment
 cp env.example .env
