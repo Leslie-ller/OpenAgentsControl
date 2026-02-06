@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-02-06
+
+### Changes
+- fix: ContextScout global fallback for core files + context resolution docs (#175, #177) (#186)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
