@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.8.0] - 2026-02-06
+
+### Changes
+- feat(lint): resolve all ESLint errors and complete compatibility layer (Issue #141) (#176)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
