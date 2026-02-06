@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [1.0.0] - 2026-02-06
+
+### Changes
+- refactor: Standardize agent naming to TestEngineer and fix permissions (#178)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
