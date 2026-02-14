@@ -849,6 +849,432 @@ oac rollback agent:openagent
 
 ---
 
+### 5. IDE Feature Parity & Capacity Management (CRITICAL)
+
+**Goal**: Support different feature sets per IDE based on their capabilities
+
+**The Problem**:
+- Different IDEs support different features
+- OpenCode and Claude Code: Full feature support (agents, skills, context, plugins, tools)
+- Cursor: Limited (single .cursorrules file, no skills/plugins)
+- Windsurf: Partial support
+- Need to gracefully handle unsupported features
+
+**Feature Support Matrix**:
+
+```typescript
+interface IDECapabilities {
+  id: string;
+  name: string;
+  features: {
+    multipleAgents: boolean;
+    skills: boolean;
+    plugins: boolean;
+    tools: boolean;
+    contexts: boolean;
+    commands: boolean;
+    granularPermissions: boolean;
+    hooks: boolean;
+  };
+  limits?: {
+    maxAgents?: number;
+    maxFileSize?: number;
+    maxContextFiles?: number;
+  };
+}
+
+const IDE_CAPABILITIES: Record<string, IDECapabilities> = {
+  opencode: {
+    id: 'opencode',
+    name: 'OpenCode',
+    features: {
+      multipleAgents: true,
+      skills: true,
+      plugins: true,
+      tools: true,
+      contexts: true,
+      commands: true,
+      granularPermissions: true,
+      hooks: true
+    }
+    // No limits - full support
+  },
+  
+  claude: {
+    id: 'claude',
+    name: 'Claude Code',
+    features: {
+      multipleAgents: true,
+      skills: true,
+      plugins: true,
+      tools: true,
+      contexts: true,
+      commands: false,
+      granularPermissions: false,
+      hooks: true
+    }
+    // Full support except commands and granular permissions
+  },
+  
+  cursor: {
+    id: 'cursor',
+    name: 'Cursor IDE',
+    features: {
+      multipleAgents: false,  // Single .cursorrules file
+      skills: false,
+      plugins: false,
+      tools: false,
+      contexts: true,         // Embedded in .cursorrules
+      commands: false,
+      granularPermissions: false,
+      hooks: false
+    },
+    limits: {
+      maxAgents: 1,           // Merge all agents into one
+      maxFileSize: 100000     // ~100KB limit for .cursorrules
+    }
+  },
+  
+  windsurf: {
+    id: 'windsurf',
+    name: 'Windsurf',
+    features: {
+      multipleAgents: true,
+      skills: false,
+      plugins: false,
+      tools: false,
+      contexts: true,
+      commands: false,
+      granularPermissions: false,
+      hooks: false
+    },
+    limits: {
+      maxAgents: 10
+    }
+  }
+};
+```
+
+**Feature Detection & Warnings**:
+
+```bash
+# User tries to install skill for Cursor
+oac install cursor --profile developer
+
+⚠ Feature Compatibility Warning:
+  
+  IDE: Cursor
+  Profile: developer
+  
+  Unsupported features in this profile:
+  ❌ Skills (8 skills will be skipped)
+  ❌ Plugins (2 plugins will be skipped)
+  ❌ Commands (7 commands will be skipped)
+  ⚠ Multiple agents (2 agents will be merged into .cursorrules)
+  
+  Supported features:
+  ✓ Agents (will merge into single .cursorrules)
+  ✓ Contexts (will embed in .cursorrules)
+  
+? How would you like to proceed?
+  > Continue with supported features only
+    Cancel installation
+    Show detailed compatibility report
+    Create custom profile for Cursor
+
+# Detailed compatibility report
+oac compatibility cursor --profile developer
+
+IDE Compatibility Report: Cursor
+Profile: developer
+
+┌─────────────────────┬──────────┬────────────────────────┐
+│ Feature             │ Status   │ Action                 │
+├─────────────────────┼──────────┼────────────────────────┤
+│ Agents (2)          │ ⚠ Merge  │ Combine into .cursorrules │
+│ Subagents (8)       │ ⚠ Merge  │ Combine into .cursorrules │
+│ Skills (8)          │ ❌ Skip   │ Not supported          │
+│ Plugins (2)         │ ❌ Skip   │ Not supported          │
+│ Commands (7)        │ ❌ Skip   │ Not supported          │
+│ Contexts (15)       │ ✓ Embed  │ Embed in .cursorrules  │
+│ Tools (3)           │ ❌ Skip   │ Not supported          │
+└─────────────────────┴──────────┴────────────────────────┘
+
+Estimated .cursorrules size: 45KB (within 100KB limit)
+
+Recommendations:
+• Use OpenCode or Claude Code for full feature support
+• Create Cursor-specific profile with essential agents only
+• Consider using oac create profile --for cursor
+```
+
+**Adaptive Installation**:
+
+```typescript
+class AdaptiveInstaller {
+  async install(ide: string, profile: string, options: InstallOptions) {
+    const capabilities = IDE_CAPABILITIES[ide];
+    const components = await this.loadProfile(profile);
+    
+    // Filter components based on IDE capabilities
+    const supported = this.filterByCapabilities(components, capabilities);
+    const unsupported = components.filter(c => !supported.includes(c));
+    
+    // Warn user about unsupported features
+    if (unsupported.length > 0 && !options.yolo) {
+      const proceed = await this.warnUnsupportedFeatures(
+        ide,
+        supported,
+        unsupported,
+        capabilities
+      );
+      
+      if (!proceed) {
+        return { cancelled: true };
+      }
+    }
+    
+    // Apply transformations for IDE-specific limitations
+    const transformed = await this.transformForIDE(supported, capabilities);
+    
+    // Install
+    return this.installComponents(transformed, ide, options);
+  }
+  
+  private filterByCapabilities(
+    components: Component[],
+    capabilities: IDECapabilities
+  ): Component[] {
+    return components.filter(component => {
+      switch (component.type) {
+        case 'agent':
+        case 'subagent':
+          return capabilities.features.multipleAgents || 
+                 components.filter(c => c.type === 'agent').length === 1;
+        case 'skill':
+          return capabilities.features.skills;
+        case 'plugin':
+          return capabilities.features.plugins;
+        case 'tool':
+          return capabilities.features.tools;
+        case 'context':
+          return capabilities.features.contexts;
+        case 'command':
+          return capabilities.features.commands;
+        default:
+          return false;
+      }
+    });
+  }
+  
+  private async transformForIDE(
+    components: Component[],
+    capabilities: IDECapabilities
+  ): Promise<Component[]> {
+    // Special handling for Cursor: merge all agents
+    if (capabilities.id === 'cursor') {
+      const agents = components.filter(c => c.type === 'agent' || c.type === 'subagent');
+      const contexts = components.filter(c => c.type === 'context');
+      
+      // Merge agents into single .cursorrules
+      const merged = await this.mergeAgentsForCursor(agents, contexts);
+      
+      return [merged];
+    }
+    
+    return components;
+  }
+}
+```
+
+**IDE-Specific Profiles**:
+
+```bash
+# Create profile optimized for specific IDE
+oac create profile --for cursor --name cursor-essentials
+
+? Select components for Cursor profile:
+  Agents (select up to 3 - will be merged):
+  ✓ openagent
+  ✓ opencoder
+  ✓ frontend-specialist
+  
+  Contexts (will be embedded):
+  ✓ core/standards/code-quality
+  ✓ development/react-patterns
+  
+  ⚠ Skills, plugins, and commands are not supported by Cursor
+
+✓ Created profile: cursor-essentials
+✓ Estimated .cursorrules size: 32KB
+✓ Compatible with Cursor IDE
+
+# List IDE-specific profiles
+oac profiles --for cursor
+  cursor-essentials
+  cursor-minimal
+  cursor-frontend
+
+# Install IDE-specific profile
+oac install cursor --profile cursor-essentials
+```
+
+**Component Creation with IDE Support**:
+
+```bash
+# Create component with IDE compatibility info
+oac create agent rust-specialist
+
+? Which IDEs should support this agent?
+  ✓ OpenCode (full support)
+  ✓ Claude Code (full support)
+  ✓ Cursor (will be merged with other agents)
+  ✓ Windsurf (full support)
+
+? Agent size optimization:
+  > Standard (no optimization)
+    Compact (optimize for Cursor's file size limit)
+    Minimal (essential instructions only)
+
+✓ Created agent with multi-IDE support
+✓ Estimated sizes:
+  - OpenCode: 15KB (standalone)
+  - Claude Code: 15KB (standalone)
+  - Cursor: +15KB (merged into .cursorrules)
+  - Windsurf: 15KB (standalone)
+```
+
+**Capacity Warnings**:
+
+```bash
+# Installing too many components for Cursor
+oac install cursor --profile developer
+
+⚠ Capacity Warning:
+  
+  IDE: Cursor
+  Limit: 100KB for .cursorrules
+  
+  Current profile size: 125KB
+  ❌ Exceeds limit by 25KB
+  
+? How would you like to proceed:
+  > Remove optional components (interactive)
+    Use compact mode (reduce file sizes)
+    Create custom profile
+    Cancel installation
+
+# Interactive component selection
+? Select components to include (max 100KB):
+  
+  Core (required):
+  ✓ openagent (12KB)
+  ✓ opencoder (15KB)
+  
+  Specialists (optional):
+  ✓ frontend-specialist (18KB)
+  ✓ devops-specialist (16KB)
+  ☐ data-analyst (14KB)
+  ☐ copywriter (12KB)
+  
+  Contexts:
+  ✓ core/standards (8KB)
+  ✓ development/patterns (12KB)
+  
+  Current: 81KB / 100KB
+  Remaining: 19KB
+```
+
+**CLI Commands for IDE Management**:
+
+```bash
+# Check IDE compatibility
+oac compatibility <ide>
+  --profile <profile>           # Check profile compatibility
+  --component <component>       # Check component compatibility
+
+# List supported IDEs
+oac ides
+  --features                    # Show feature matrix
+  --limits                      # Show capacity limits
+
+# Show IDE capabilities
+oac ide info <ide>
+  → Shows full feature support matrix
+
+# Optimize for IDE
+oac optimize --for <ide>
+  → Optimizes current installation for IDE
+  → Removes unsupported features
+  → Compacts files if needed
+
+# Validate IDE installation
+oac validate --ide <ide>
+  → Checks if installation is valid for IDE
+  → Warns about unsupported features
+  → Checks capacity limits
+```
+
+**Configuration**:
+
+```json
+{
+  "ides": {
+    "opencode": {
+      "enabled": true,
+      "path": ".opencode",
+      "profile": "developer",
+      "features": "all"
+    },
+    "cursor": {
+      "enabled": true,
+      "path": ".cursor",
+      "profile": "cursor-essentials",
+      "features": "auto-detect",
+      "optimization": {
+        "mergeAgents": true,
+        "embedContexts": true,
+        "compactMode": true,
+        "maxFileSize": 100000
+      }
+    },
+    "claude": {
+      "enabled": true,
+      "path": ".claude",
+      "profile": "developer",
+      "features": "all"
+    }
+  },
+  "compatibility": {
+    "warnUnsupported": true,
+    "autoOptimize": false,
+    "strictMode": false
+  }
+}
+```
+
+**Best Practices**:
+
+**For Full Features** (OpenCode, Claude Code):
+- ✅ Use standard profiles (developer, business, etc.)
+- ✅ Install all component types
+- ✅ No optimization needed
+
+**For Limited IDEs** (Cursor):
+- ✅ Create IDE-specific profiles
+- ✅ Keep agent count low (1-3 agents)
+- ✅ Use compact mode
+- ✅ Embed contexts instead of separate files
+- ✅ Monitor file size limits
+
+**For All IDEs**:
+- ✅ Check compatibility before installing: `oac compatibility <ide>`
+- ✅ Use `--dry-run` to preview changes
+- ✅ Create custom profiles for specific needs
+- ✅ Validate after installation: `oac validate --ide <ide>`
+
+---
+
 ## CLI Commands Reference
 
 **CRITICAL**: All commands run in project root directory. User chooses local (project) or global install.
@@ -941,6 +1367,63 @@ oac apply [ide]
 oac sync
   --yolo                        # Auto-confirm
   --dry-run                     # Preview
+```
+
+### Creation & Scaffolding (Interactive)
+
+```bash
+# Interactive component creation wizard
+oac create
+  ? What would you like to create?
+    > Agent
+      Skill
+      Context
+      Plugin
+      Command
+      Tool
+  
+  ? Component type:
+    > agent
+      subagent
+  
+  ? Name: rust-specialist
+  ? Description: Expert in Rust programming
+  ? Category: development
+  
+  ✓ Created .opencode/agent/development/rust-specialist.md
+  ✓ Created tests/smoke-test.yaml
+  ✓ Added to registry
+  
+  Next steps:
+  1. Edit agent prompt
+  2. Add tests
+  3. Test: oac test agent:rust-specialist
+
+# Create specific component types
+oac create agent [name]
+  --category <category>         # Agent category
+  --template <template>         # Use template
+  --with-tests                  # Include test scaffold
+  --interactive                 # Interactive wizard (default)
+
+oac create skill [name]
+  --trigger <pattern>           # Skill trigger pattern
+  --template <template>
+
+oac create context [name]
+  --category <category>
+  --template <template>
+
+oac create plugin [name]
+  --type <type>                 # Plugin type
+
+# List available templates
+oac templates
+  --type <type>                 # Filter by type
+  
+# Use template
+oac create agent --template specialist
+  → Uses specialist agent template
 ```
 
 ### Publishing (Community)

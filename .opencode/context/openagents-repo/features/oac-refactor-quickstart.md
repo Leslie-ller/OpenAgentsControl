@@ -13,8 +13,26 @@
 - Context file created
 - GitHub issue #206 created
 - Feature branch created and pushed
+- **CRITICAL features defined**:
+  - User approval system with YOLO mode
+  - Layered context resolution (project + global)
 
 📝 **Next: Phase 1 - Core CLI Infrastructure**
+
+## Critical Features Overview
+
+### 1. User Approval System
+- **Default**: Interactive approval for ALL file operations
+- **YOLO Mode** (`--yolo`): Skip confirmations, auto-resolve, report at end
+- **Always asks**: Local vs global install location
+- **Conflict handling**: Show diffs, ask user, create backups
+- **Safety**: Git detection, rollback support, audit log
+
+### 2. Context Resolution
+- **6-layer priority**: Project override → Project → IDE → Docs → User global → OAC official
+- **Smart resolution**: Based on agent location (global vs local)
+- **Configurable**: `preferLocal` option
+- **CLI tools**: `oac context resolve`, `list`, `validate`, `override`, `sync`
 
 ---
 
@@ -44,7 +62,7 @@ gh issue view 206
 
 1. **Set up TypeScript project structure**
    ```bash
-   mkdir -p src/{cli/{commands,config},core,types,utils}
+   mkdir -p src/{cli/{commands,config},core/{context,installer,approval},types,utils}
    npm install --save-dev typescript @types/node tsx vitest
    npx tsc --init
    ```
@@ -55,57 +73,105 @@ gh issue view 206
    npm install --save-dev @types/inquirer
    ```
 
-3. **Create configuration schema**
+3. **Create configuration schema** (CRITICAL)
    - File: `src/cli/config/schema.ts`
    - Use Zod for validation
    - Define OACConfig interface
+   - **Include**: `confirmOverwrites`, `yoloMode`, `preferLocal`, context resolution config
 
 4. **Create configuration manager**
    - File: `src/cli/config/manager.ts`
    - Read/write config files
-   - Merge global and local configs
+   - Merge global and local configs (priority: local > global)
    - Validate with schema
+   - **Support**: `~/.config/oac/config.json` (global) and `.oac/config.json` (local)
 
-5. **Implement basic CLI commands**
+5. **Create approval system** (CRITICAL)
+   - File: `src/core/approval/manager.ts`
+   - Interactive prompts for file operations
+   - YOLO mode support
+   - Conflict resolution strategies
+   - Backup management
+   - Audit logging
+
+6. **Create context resolver** (CRITICAL)
+   - File: `src/core/context/resolver.ts`
+   - 6-layer priority resolution
+   - Agent location detection (global vs local)
+   - `preferLocal` configuration
+   - Fallback support
+   - Validation and suggestions
+
+7. **Implement basic CLI commands**
    - File: `src/cli/index.ts` (Commander setup)
    - File: `src/cli/commands/configure.ts`
    - File: `src/cli/commands/list.ts`
    - File: `src/cli/commands/init.ts`
+   - **Add global flags**: `--yolo`, `--dry-run`, `--local`, `--global`
 
-6. **Update bin/oac.js**
+8. **Update bin/oac.js**
    - Point to compiled TypeScript
    - Handle both legacy and new commands
+   - Detect current working directory
 
-7. **Write tests**
+9. **Write tests**
    - Test configuration schema
-   - Test config manager
+   - Test config manager (global + local merge)
+   - Test approval system (interactive + YOLO)
+   - Test context resolver (all 6 layers)
    - Test CLI commands
 
 ### Deliverables
 
 - [ ] TypeScript project configured
-- [ ] Configuration schema defined
-- [ ] Configuration manager working
+- [ ] Configuration schema defined (with approval + context config)
+- [ ] Configuration manager working (global + local merge)
+- [ ] **Approval system working** (interactive + YOLO mode)
+- [ ] **Context resolver working** (6-layer priority)
 - [ ] `oac configure` command works
 - [ ] `oac list` command works
-- [ ] `oac init` command works
-- [ ] Tests passing
+- [ ] `oac init` command works (asks local vs global)
+- [ ] `oac context resolve` command works
+- [ ] Tests passing (including approval + context tests)
 
 ### Validation
 
 ```bash
-# Test configuration
+# Test configuration (global + local)
 oac configure show
 oac configure set agents.permissions.bash auto
 oac configure get agents.permissions.bash
+oac configure set preferences.yoloMode true
 
 # Test list
 oac list
 oac list --agents
+oac list --local
+oac list --global
 
-# Test init
+# Test init (should ask local vs global)
 cd /tmp/test-project
 oac init developer
+# Should prompt: "Install locally or globally?"
+
+# Test approval system
+cd /tmp/test-project
+oac install opencode
+# Should show file list and ask for confirmation
+
+# Test YOLO mode
+oac install opencode --yolo
+# Should auto-confirm and report at end
+
+# Test context resolution
+oac context resolve 'core/standards/code-quality.md'
+# Should show resolved path and priority
+
+oac context list
+# Should show all context files from all layers
+
+oac context validate
+# Should validate all context references
 ```
 
 ---
@@ -119,21 +185,36 @@ oac init developer
 ├── src/
 │   ├── cli/
 │   │   ├── commands/
-│   │   │   ├── configure.ts    # NEW
-│   │   │   ├── list.ts         # NEW
-│   │   │   └── init.ts         # NEW
+│   │   │   ├── configure.ts    # NEW - Config management
+│   │   │   ├── list.ts         # NEW - List components
+│   │   │   ├── init.ts         # NEW - Initialize (asks local/global)
+│   │   │   └── context.ts      # NEW - Context commands (resolve, list, validate)
 │   │   ├── config/
-│   │   │   ├── manager.ts      # NEW
-│   │   │   ├── schema.ts       # NEW
-│   │   │   └── defaults.ts     # NEW
-│   │   └── index.ts            # NEW (Commander setup)
+│   │   │   ├── manager.ts      # NEW - Global + local merge
+│   │   │   ├── schema.ts       # NEW - Zod schema (approval + context config)
+│   │   │   └── defaults.ts     # NEW - Default config
+│   │   └── index.ts            # NEW - Commander setup (global flags)
+│   ├── core/
+│   │   ├── approval/
+│   │   │   ├── manager.ts      # NEW - Approval system (CRITICAL)
+│   │   │   ├── strategies.ts   # NEW - Conflict strategies
+│   │   │   └── backup.ts       # NEW - Backup management
+│   │   ├── context/
+│   │   │   ├── resolver.ts     # NEW - 6-layer resolution (CRITICAL)
+│   │   │   ├── locator.ts      # NEW - Find context files
+│   │   │   └── validator.ts    # NEW - Validate references
+│   │   └── installer/
+│   │       └── location.ts     # NEW - Detect local vs global
 │   ├── types/
-│   │   └── config.ts           # NEW
+│   │   ├── config.ts           # NEW - Config types
+│   │   ├── approval.ts         # NEW - Approval types
+│   │   └── context.ts          # NEW - Context types
 │   └── utils/
-│       ├── logger.ts           # NEW
-│       └── prompts.ts          # NEW
+│       ├── logger.ts           # NEW - Logging
+│       ├── prompts.ts          # NEW - Interactive prompts
+│       └── git.ts              # NEW - Git detection
 ├── config/
-│   └── oac.config.json         # NEW (default config)
+│   └── oac.config.json         # NEW - Default config
 ├── tsconfig.json               # NEW
 ├── package.json                # UPDATED
 └── .opencode/                  # EXISTING

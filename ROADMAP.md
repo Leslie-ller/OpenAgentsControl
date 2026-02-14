@@ -82,3 +82,4 @@ gh issue view 123 --repo darrenhinde/OpenAgentsControl
 ---
 
 **Last Updated:** December 4, 2025
+
