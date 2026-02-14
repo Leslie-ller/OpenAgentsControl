@@ -849,7 +849,504 @@ oac rollback agent:openagent
 
 ---
 
-### 5. IDE Feature Parity & Capacity Management (CRITICAL)
+### 5. Agent Customization & Personal Presets (CRITICAL)
+
+**Goal**: Allow users to view, customize, and save personal agent configurations
+
+**The Problem**:
+- Users want to customize agent prompts for their workflow
+- Users want to save personal presets
+- Updates shouldn't overwrite customizations
+- Need easy way to view and edit agent configs
+
+**The Solution: Multi-Layer Customization System**
+
+#### Layer 1: View Agent Configuration
+
+```bash
+# View agent prompt and config
+oac show agent:openagent
+  → Opens agent file in pager (less/bat)
+  → Shows: prompt, config, metadata
+
+# View in editor
+oac edit agent:openagent
+  → Opens in $EDITOR (vim/vscode/etc.)
+  → Read-only by default (shows warning)
+
+# View config only
+oac config show agent:openagent
+  → Shows just the configuration (YAML frontmatter)
+
+# Export agent
+oac export agent:openagent --output ./my-openagent.md
+  → Exports to file for inspection
+```
+
+#### Layer 2: Create Personal Preset
+
+```bash
+# Create personal preset (copy to user space)
+oac customize agent:openagent
+
+? What would you like to customize?
+  > Create personal preset (recommended)
+    Edit in place (advanced)
+    Fork to new agent
+
+? Preset name: my-openagent
+? Description: My customized OpenAgent with stricter approval gates
+
+✓ Created preset: ~/.config/oac/presets/agents/my-openagent.md
+✓ Linked to: agent:openagent (base)
+
+📝 Edit your preset:
+  oac edit preset:my-openagent
+
+💡 Use your preset:
+  oac use preset:my-openagent
+```
+
+**Preset Structure**:
+```
+~/.config/oac/
+├── presets/
+│   ├── agents/
+│   │   ├── my-openagent.md          # User's custom version
+│   │   ├── my-opencoder.md
+│   │   └── strict-reviewer.md
+│   ├── skills/
+│   │   └── my-git-workflow.md
+│   └── .presets.json                # Preset metadata
+```
+
+**Preset Metadata** (`.presets.json`):
+```json
+{
+  "presets": {
+    "my-openagent": {
+      "type": "agent",
+      "base": "agent:openagent",
+      "baseVersion": "0.7.1",
+      "created": "2026-02-14T10:30:00Z",
+      "modified": "2026-02-14T15:45:00Z",
+      "customizations": [
+        "Modified approval gates",
+        "Added custom context paths",
+        "Changed delegation threshold"
+      ],
+      "autoUpdate": false,
+      "updateStrategy": "manual"
+    }
+  }
+}
+```
+
+#### Layer 3: Edit Personal Preset
+
+```bash
+# Edit preset in default editor
+oac edit preset:my-openagent
+  → Opens ~/.config/oac/presets/agents/my-openagent.md in $EDITOR
+
+# Edit with specific editor
+oac edit preset:my-openagent --editor code
+  → Opens in VS Code
+
+# Interactive customization wizard
+oac customize preset:my-openagent --interactive
+
+? What would you like to customize?
+  ✓ Approval gates behavior
+  ✓ Context loading strategy
+  ☐ Delegation threshold
+  ☐ Tool permissions
+
+? Approval gates:
+  > Always ask (current)
+    Auto-approve reads
+    YOLO mode by default
+
+? Context loading:
+  > Lazy (current)
+    Eager (load all upfront)
+    Manual (user specifies)
+
+✓ Updated preset: my-openagent
+✓ Changes saved to ~/.config/oac/presets/agents/my-openagent.md
+```
+
+#### Layer 4: Use Personal Preset
+
+```bash
+# Use preset instead of base agent
+oac use preset:my-openagent
+  → Activates preset in current project
+
+# Use preset globally
+oac use preset:my-openagent --global
+  → Sets as default for all projects
+
+# Use preset for specific IDE
+oac use preset:my-openagent --ide opencode
+  → Applies to OpenCode only
+
+# List active presets
+oac presets list --active
+  opencode: preset:my-openagent
+  cursor: agent:openagent (base)
+  claude: preset:strict-reviewer
+
+# Switch back to base
+oac use agent:openagent
+  → Deactivates preset, uses base agent
+```
+
+#### Layer 5: Update Management (CRITICAL)
+
+**Problem**: Updates shouldn't overwrite user customizations
+
+**Solution**: Smart update strategy with user control
+
+```bash
+# Check for updates to base agent
+oac update --check
+
+📦 Updates Available:
+
+agent:openagent (base for preset:my-openagent)
+  Current: 0.7.1
+  Latest:  0.8.0
+  
+  Changes:
+  - Added new context loading patterns
+  - Improved delegation logic
+  - Fixed approval gate bug
+  
+  ⚠️ You have a personal preset based on this agent
+  
+? How would you like to update?
+  > Review changes first (recommended)
+    Update base, keep my customizations
+    Update base, merge my customizations
+    Skip this update
+    Auto-update base (don't ask again)
+
+# Review changes before updating
+oac diff agent:openagent 0.7.1 0.8.0
+  → Shows diff between versions
+
+# Update with merge strategy
+oac update agent:openagent --merge-preset my-openagent
+
+⚡ Updating agent:openagent (0.7.1 → 0.8.0)
+
+📝 Merging with preset:my-openagent...
+
+✓ Base agent updated
+⚠️ Conflicts detected in preset:
+
+  Section: Approval Gates
+  Base (new):    "Always ask before execution"
+  Your preset:   "Auto-approve read operations"
+  
+? Keep your customization? (Y/n) y
+
+✓ Preset updated with merge
+✓ Backup saved: ~/.config/oac/presets/.backups/my-openagent.2026-02-14.md
+
+📊 Summary:
+  - Base agent: Updated to 0.8.0
+  - Your preset: Merged (3 conflicts resolved)
+  - Customizations: Preserved
+```
+
+**Update Strategies**:
+```typescript
+enum PresetUpdateStrategy {
+  MANUAL = 'manual',           // User reviews every update
+  AUTO_BASE = 'auto-base',     // Auto-update base, keep preset unchanged
+  AUTO_MERGE = 'auto-merge',   // Auto-merge, prompt on conflicts
+  LOCKED = 'locked'            // Never update base
+}
+```
+
+**Configuration**:
+```json
+{
+  "presets": {
+    "my-openagent": {
+      "updateStrategy": "manual",
+      "autoUpdate": false,
+      "mergeStrategy": {
+        "onConflict": "ask",     // ask | keep-mine | keep-theirs
+        "backupOnMerge": true,
+        "maxBackups": 10
+      }
+    }
+  }
+}
+```
+
+#### Layer 6: Preset Sharing
+
+```bash
+# Export preset for sharing
+oac export preset:my-openagent --output ./my-openagent-preset.md
+  → Exports with metadata
+
+# Share preset with team
+oac share preset:my-openagent
+  → Generates shareable link or file
+
+# Import preset from teammate
+oac import preset ./teammate-preset.md
+  → Imports as new preset
+
+# Publish preset to community
+oac publish preset:my-openagent --public
+  → Publishes to community registry (optional)
+```
+
+#### Layer 7: In-Place Editing (Advanced)
+
+**Warning**: Editing installed agents directly is risky
+
+```bash
+# Edit installed agent (not recommended)
+oac edit agent:openagent --in-place
+
+⚠️  WARNING: Editing installed agent directly
+  
+  This will modify the installed agent file.
+  Updates will overwrite your changes.
+  
+  Recommended: Create a preset instead
+    oac customize agent:openagent
+  
+? Are you sure you want to edit in-place? (y/N) n
+
+# Force in-place edit (advanced users)
+oac edit agent:openagent --in-place --force
+
+⚠️  Editing: .opencode/agent/core/openagent.md
+⚠️  Changes will be overwritten on update
+⚠️  Creating backup: .opencode/.backups/openagent.md.2026-02-14
+
+[Opens in editor]
+
+✓ Saved changes
+⚠️ Remember: Updates will overwrite this file
+💡 Tip: Create a preset to preserve customizations
+```
+
+#### CLI Commands Summary
+
+```bash
+# View
+oac show agent:openagent              # View agent
+oac config show agent:openagent       # View config only
+oac export agent:openagent            # Export to file
+
+# Customize
+oac customize agent:openagent         # Create preset (wizard)
+oac edit preset:my-openagent          # Edit preset
+oac customize preset:my-openagent --interactive  # Interactive wizard
+
+# Use
+oac use preset:my-openagent           # Activate preset
+oac use preset:my-openagent --global  # Set as default
+oac presets list                      # List presets
+oac presets list --active             # Show active presets
+
+# Update
+oac update --check                    # Check for updates
+oac diff agent:openagent 0.7.1 0.8.0  # Show changes
+oac update agent:openagent --merge-preset my-openagent
+
+# Share
+oac export preset:my-openagent        # Export preset
+oac import preset ./preset.md         # Import preset
+oac share preset:my-openagent         # Share with team
+oac publish preset:my-openagent       # Publish to community
+
+# Advanced
+oac edit agent:openagent --in-place   # Edit installed agent (risky)
+oac fork agent:openagent my-agent     # Fork to new agent
+```
+
+#### Configuration Schema
+
+```json
+{
+  "presets": {
+    "enabled": true,
+    "location": "~/.config/oac/presets",
+    "defaultUpdateStrategy": "manual",
+    "backupOnEdit": true,
+    "maxBackups": 10,
+    "warnOnInPlaceEdit": true
+  },
+  "customization": {
+    "allowInPlaceEdit": true,
+    "requireConfirmation": true,
+    "autoBackup": true,
+    "showDiffOnUpdate": true
+  }
+}
+```
+
+#### Preset File Format
+
+```markdown
+---
+# Preset Metadata
+preset:
+  name: my-openagent
+  base: agent:openagent
+  baseVersion: 0.7.1
+  type: agent
+  created: 2026-02-14T10:30:00Z
+  modified: 2026-02-14T15:45:00Z
+  
+# Customizations
+customizations:
+  - section: "Approval Gates"
+    description: "Auto-approve read operations"
+  - section: "Context Loading"
+    description: "Changed to eager loading"
+  
+# Update Strategy
+update:
+  strategy: manual
+  autoUpdate: false
+  mergeStrategy: ask
+---
+
+# My Custom OpenAgent
+
+[Your customized agent prompt here]
+
+<!-- CUSTOMIZATION: Approval Gates -->
+**Modified Behavior**: Auto-approve read operations (glob, read, grep)
+<!-- END CUSTOMIZATION -->
+
+[Rest of agent prompt...]
+```
+
+#### Visual Workflow
+
+```
+User wants to customize agent:openagent
+              ↓
+    oac customize agent:openagent
+              ↓
+    ┌─────────────────────────────┐
+    │ Create Personal Preset      │
+    │                             │
+    │ Name: my-openagent          │
+    │ Base: agent:openagent       │
+    │ Location: ~/.config/oac/    │
+    └─────────────────────────────┘
+              ↓
+    Copy base agent to preset location
+              ↓
+    ┌─────────────────────────────┐
+    │ Edit Preset                 │
+    │                             │
+    │ oac edit preset:my-openagent│
+    │ [Opens in $EDITOR]          │
+    └─────────────────────────────┘
+              ↓
+    User makes changes, saves
+              ↓
+    ┌─────────────────────────────┐
+    │ Activate Preset             │
+    │                             │
+    │ oac use preset:my-openagent │
+    └─────────────────────────────┘
+              ↓
+    Preset is now active
+              ↓
+    Base agent updates (0.7.1 → 0.8.0)
+              ↓
+    ┌─────────────────────────────┐
+    │ Update Check                │
+    │                             │
+    │ ⚠️ Preset based on updated  │
+    │    agent                    │
+    │                             │
+    │ ? How to update?            │
+    │   > Review changes          │
+    │     Merge                   │
+    │     Skip                    │
+    └─────────────────────────────┘
+              ↓
+    User reviews diff
+              ↓
+    ┌─────────────────────────────┐
+    │ Merge Strategy              │
+    │                             │
+    │ Conflicts:                  │
+    │ - Approval gates (yours)    │
+    │ - Context loading (theirs)  │
+    │                             │
+    │ ? Keep your changes? Y/n    │
+    └─────────────────────────────┘
+              ↓
+    Preset updated with merge
+    Backup created
+    Customizations preserved
+```
+
+#### Best Practices
+
+**For Users**:
+- ✅ Always create presets instead of editing in-place
+- ✅ Use descriptive preset names
+- ✅ Document your customizations in preset metadata
+- ✅ Review updates before merging
+- ✅ Keep backups of important presets
+
+**For OAC**:
+- ✅ Default to preset creation (safest)
+- ✅ Warn loudly on in-place edits
+- ✅ Always create backups before updates
+- ✅ Show clear diffs before merging
+- ✅ Preserve user customizations by default
+- ✅ Make it easy to revert to base agent
+
+#### Edge Cases Handled
+
+1. **User edits in-place, then update arrives**
+   - Detect local modifications
+   - Warn user
+   - Offer to create preset from modifications
+   - Backup before overwriting
+
+2. **Preset based on old version, multiple updates behind**
+   - Show all changes since preset creation
+   - Offer step-by-step merge or bulk merge
+   - Highlight breaking changes
+
+3. **User has multiple presets for same base agent**
+   - Allow multiple presets
+   - Each preset tracks its own base version
+   - Update each independently
+
+4. **Preset conflicts with IDE limitations**
+   - Warn if preset won't work with IDE
+   - Suggest compatible alternatives
+   - Auto-adapt if possible
+
+5. **User deletes base agent but has preset**
+   - Preset becomes standalone
+   - Warn that updates won't work
+   - Offer to reinstall base
+
+---
+
+### 6. IDE Feature Parity & Capacity Management (CRITICAL)
 
 **Goal**: Support different feature sets per IDE based on their capabilities
 
