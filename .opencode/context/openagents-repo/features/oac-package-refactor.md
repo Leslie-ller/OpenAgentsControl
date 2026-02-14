@@ -18,6 +18,7 @@ Transform `@nextsystems/oac` from a simple installer into a comprehensive CLI pa
 - ✅ Handles context files from multiple locations
 - ✅ Enables version management and updates
 - ✅ Maintains backward compatibility with existing workflows
+- ✅ **CRITICAL**: User runs in project root, chooses local or global install, always confirms overwrites (unless YOLO mode)
 
 ---
 
@@ -52,7 +53,14 @@ oac update --all
 
 **Goal**: User-controlled agent behavior and permissions
 
-**Configuration File**: `~/.config/oac/config.json` or `.oac/config.json`
+**Configuration File**: `~/.config/oac/config.json` (global) or `.oac/config.json` (local/project)
+
+**CRITICAL BEHAVIOR**:
+- User runs `oac` commands in their project root directory
+- Always asks: "Install locally (this project) or globally?"
+- Always confirms before overwriting files (unless `--yolo` flag)
+- YOLO mode (`--yolo`): Auto-confirms all, reports changes at end
+- Default mode: Interactive approval for every file conflict
 
 ```json
 {
@@ -61,7 +69,9 @@ oac update --all
     "defaultIDE": "opencode",
     "installLocation": "local",
     "autoUpdate": false,
-    "updateChannel": "stable"
+    "updateChannel": "stable",
+    "confirmOverwrites": true,
+    "yoloMode": false
   },
   "ides": {
     "opencode": {
@@ -111,7 +121,220 @@ oac configure reset
 
 ---
 
-### 3. Community Component Registry (shadcn-like)
+### 3. User Approval & YOLO Mode (CRITICAL)
+
+**Goal**: User maintains full control over their project, with optional fast mode
+
+**Default Behavior: Interactive Approval**
+
+Every operation that modifies files asks for confirmation:
+
+```bash
+# User runs in project root
+cd ~/my-project
+oac install opencode
+
+# OAC asks:
+? Install location:
+  > Local (this project: ~/my-project/.opencode)
+    Global (~/.config/oac)
+
+# User selects "Local"
+
+# OAC shows what will be installed:
+📦 Installing OpenCode Developer Profile
+  
+  Will create/modify:
+  ✓ .opencode/agent/core/openagent.md
+  ✓ .opencode/agent/core/opencoder.md
+  ⚠ .opencode/agent/TestEngineer.md (exists - will overwrite)
+  ✓ .opencode/context/core/standards/code-quality.md
+  ✓ .opencode/config.json
+  
+  Total: 15 files (2 new, 12 updated, 1 conflict)
+
+? Proceed with installation? (Y/n)
+
+# If conflicts exist:
+⚠ File exists: .opencode/agent/TestEngineer.md
+  
+  Current: 245 lines, modified 2 days ago
+  New:     312 lines, version 0.8.0
+  
+? What would you like to do?
+  > Skip (keep existing)
+    Overwrite (replace with new)
+    Backup (save as .bak, install new)
+    Diff (show changes)
+    Skip all conflicts
+    Overwrite all conflicts
+```
+
+**YOLO Mode: Fast & Furious**
+
+Skip all confirmations, auto-resolve conflicts, report at end:
+
+```bash
+# Enable YOLO mode
+oac install opencode --yolo
+
+# Or set in config
+oac configure set preferences.yoloMode true
+
+# YOLO mode behavior:
+📦 Installing OpenCode Developer Profile (YOLO MODE)
+  
+  ⚡ Auto-confirming all operations...
+  ✓ Created .opencode/agent/core/openagent.md
+  ✓ Created .opencode/agent/core/opencoder.md
+  ⚠ Overwrote .opencode/agent/TestEngineer.md (backed up to .bak)
+  ✓ Created .opencode/context/core/standards/code-quality.md
+  ✓ Created .opencode/config.json
+  
+  ✅ Installation complete!
+  
+  📊 Summary:
+  - 13 files created
+  - 2 files overwritten (backups in .opencode/.backups/)
+  - 0 files skipped
+  - Total time: 1.2s
+  
+  ⚠ Review changes: git diff
+```
+
+**Conflict Resolution Strategies**
+
+```typescript
+enum ConflictStrategy {
+  ASK = 'ask',           // Ask user for each conflict (default)
+  SKIP = 'skip',         // Skip all conflicts, keep existing
+  OVERWRITE = 'overwrite', // Overwrite all conflicts
+  BACKUP = 'backup',     // Backup existing, install new
+  YOLO = 'yolo'          // Auto-resolve (backup + overwrite)
+}
+```
+
+**Configuration**
+
+```json
+{
+  "preferences": {
+    "confirmOverwrites": true,
+    "yoloMode": false,
+    "conflictStrategy": "ask",
+    "autoBackup": true,
+    "backupLocation": ".opencode/.backups"
+  }
+}
+```
+
+**Commands with Approval Control**
+
+```bash
+# Interactive (default)
+oac install opencode
+oac update
+oac add agent:rust-specialist
+
+# YOLO mode (skip confirmations)
+oac install opencode --yolo
+oac update --yolo
+oac add agent:rust-specialist --yolo
+
+# Force overwrite (no backups)
+oac install opencode --force
+
+# Skip conflicts (keep existing)
+oac install opencode --skip-existing
+
+# Dry run (show what would happen)
+oac install opencode --dry-run
+```
+
+**Safety Features**
+
+- ✅ Always create backups before overwriting (unless `--force`)
+- ✅ Show diff before overwriting
+- ✅ Maintain backup history in `.opencode/.backups/`
+- ✅ Git integration: detect uncommitted changes, warn user
+- ✅ Rollback support: `oac rollback` to undo last operation
+- ✅ Audit log: `.oac/audit.log` tracks all operations
+
+**Example: Full Interactive Flow**
+
+```bash
+cd ~/my-awesome-project
+oac install opencode
+
+# Step 1: Location
+? Install location:
+  > Local (this project: ~/my-awesome-project/.opencode)
+    Global (~/.config/oac)
+
+# Step 2: Profile
+? Select profile:
+  > developer (Full development setup)
+    essential (Minimal setup)
+    business (Content and product focus)
+    custom (Choose components)
+
+# Step 3: Review
+📦 Installing OpenCode Developer Profile
+  
+  Will install to: ~/my-awesome-project/.opencode
+  
+  Components:
+  - 2 core agents (openagent, opencoder)
+  - 8 subagents (tester, reviewer, coder-agent, ...)
+  - 7 commands (commit, test, context, ...)
+  - 15 context files
+  
+  Total size: ~2.5 MB
+
+? Proceed? (Y/n) y
+
+# Step 4: Conflict Resolution (if any)
+⚠ 3 files already exist:
+  
+  1. .opencode/agent/TestEngineer.md
+     Current: 245 lines, modified 2 days ago
+     New:     312 lines, version 0.8.0
+     
+? Action:
+  > Backup and overwrite
+    Skip (keep existing)
+    Show diff
+    
+# Step 5: Installation
+⚡ Installing...
+  ✓ Created .opencode/agent/core/openagent.md
+  ✓ Created .opencode/agent/core/opencoder.md
+  ⚠ Backed up .opencode/agent/TestEngineer.md → .backups/TestEngineer.md.2026-02-14
+  ✓ Overwrote .opencode/agent/TestEngineer.md
+  ...
+  
+# Step 6: Summary
+✅ Installation complete!
+
+📊 Summary:
+- 13 files created
+- 2 files updated
+- 3 files backed up
+- 0 files skipped
+
+📁 Installed to: ~/my-awesome-project/.opencode
+
+🔍 Next steps:
+  1. Review changes: git diff
+  2. Test setup: oac doctor
+  3. Configure: oac configure
+  
+💡 Tip: Use 'oac --yolo' to skip confirmations next time
+```
+
+---
+
+### 4. Community Component Registry (shadcn-like)
 
 **Goal**: Enable users to create and share custom agents, skills, and contexts
 
@@ -200,56 +423,394 @@ my-custom-agent/
 
 ---
 
-### 4. Context File Location Flexibility
+### 4. Context Resolution System (CRITICAL)
 
-**Goal**: Support context files in multiple locations with priority resolution
+**Goal**: Intelligent context resolution for agents running locally or globally
 
-**Problem**: Context files can be in:
-- `.opencode/context/`
-- `.claude/context/`
-- `docs/`
-- Custom user locations
-- Global shared contexts
+**The Problem**:
+- Agents can run from **global install** (`~/.config/oac/`) or **local install** (`./opencode/`)
+- Context files exist in **project-specific** locations AND **global** locations
+- Need to resolve: "Which context file should the agent use?"
+- User preferences (global) vs project requirements (local)
 
-**Solution**: Context Locator Service
+**The Solution: Layered Context Resolution**
 
-```typescript
-// Context resolution with priority
-const locator = new ContextLocator(config);
+#### Context Layers (Priority Order)
 
-// Resolves from configured locations in priority order
-const path = await locator.resolve('core/standards/code-quality.md');
-// Checks:
-// 1. .opencode/context/core/standards/code-quality.md
-// 2. .claude/context/core/standards/code-quality.md
-// 3. docs/context/core/standards/code-quality.md
-// 4. ~/global-context/core/standards/code-quality.md
-
-// Discover all context files
-const allContexts = await locator.discover();
-
-// Validate references
-const validation = await locator.validate([
-  'core/standards/code-quality.md',
-  'development/react-patterns.md'
-]);
+```
+1. PROJECT OVERRIDE    (./.oac/context/)           [Highest Priority]
+   ↓ User's project-specific overrides
+   
+2. PROJECT CONTEXT     (./.opencode/context/)
+   ↓ Project-specific context files
+   
+3. IDE CONTEXT         (./.cursor/context/, ./.claude/context/)
+   ↓ IDE-specific context (if different IDE)
+   
+4. PROJECT DOCS        (./docs/, ./docs/context/)
+   ↓ Project documentation
+   
+5. USER GLOBAL         (~/.config/oac/context/)
+   ↓ User's personal preferences/standards
+   
+6. OAC GLOBAL          (~/.config/oac/official/)   [Lowest Priority]
+   ↓ Official OAC context files
 ```
 
-**Configuration**:
-```json
-{
-  "context": {
-    "locations": [
-      ".opencode/context",
-      ".claude/context",
-      "docs/context",
-      "~/global-context"
-    ],
-    "autoDiscover": true,
-    "cacheEnabled": true
+#### Resolution Algorithm
+
+```typescript
+class ContextResolver {
+  async resolve(ref: string, options: ResolveOptions): Promise<string | null> {
+    const { 
+      agentLocation,  // 'global' | 'local'
+      projectRoot,    // Current working directory
+      preferLocal     // User preference
+    } = options;
+    
+    // Build search paths based on agent location and preferences
+    const searchPaths = this.buildSearchPaths(agentLocation, projectRoot, preferLocal);
+    
+    // Search in priority order
+    for (const basePath of searchPaths) {
+      const fullPath = path.join(basePath, ref);
+      if (await fs.pathExists(fullPath)) {
+        return fullPath;
+      }
+    }
+    
+    return null; // Not found
+  }
+  
+  private buildSearchPaths(
+    agentLocation: 'global' | 'local',
+    projectRoot: string,
+    preferLocal: boolean
+  ): string[] {
+    const paths: string[] = [];
+    
+    // If agent is running locally OR user prefers local context
+    if (agentLocation === 'local' || preferLocal) {
+      // Prioritize project context
+      paths.push(
+        path.join(projectRoot, '.oac/context'),        // Project override
+        path.join(projectRoot, '.opencode/context'),   // Project context
+        path.join(projectRoot, '.cursor/context'),     // IDE context
+        path.join(projectRoot, '.claude/context'),
+        path.join(projectRoot, 'docs/context'),        // Project docs
+        path.join(projectRoot, 'docs')
+      );
+    }
+    
+    // Always include global context (fallback)
+    paths.push(
+      path.join(os.homedir(), '.config/oac/context'),     // User global
+      path.join(os.homedir(), '.config/oac/official')     // OAC official
+    );
+    
+    // If agent is running globally AND user prefers global
+    if (agentLocation === 'global' && !preferLocal) {
+      // Reverse priority: global first, then project
+      return [
+        path.join(os.homedir(), '.config/oac/context'),
+        path.join(os.homedir(), '.config/oac/official'),
+        ...paths.slice(0, -2) // Add project paths after global
+      ];
+    }
+    
+    return paths;
   }
 }
 ```
+
+#### Configuration
+
+```json
+{
+  "context": {
+    "resolution": {
+      "preferLocal": true,           // Prefer project context over global
+      "allowOverrides": true,        // Allow .oac/context/ overrides
+      "fallbackToGlobal": true,      // Fall back to global if not found locally
+      "cacheResolution": true        // Cache resolved paths
+    },
+    "locations": {
+      "project": [
+        ".oac/context",              // Project overrides (highest priority)
+        ".opencode/context",         // Project context
+        ".cursor/context",           // IDE-specific
+        ".claude/context",
+        "docs/context",              // Project docs
+        "docs"
+      ],
+      "global": [
+        "~/.config/oac/context",     // User global context
+        "~/.config/oac/official"     // OAC official context
+      ]
+    },
+    "autoDiscover": true,
+    "validation": {
+      "warnOnMissing": true,
+      "errorOnMissing": false,
+      "suggestAlternatives": true
+    }
+  }
+}
+```
+
+#### Example Scenarios
+
+**Scenario 1: Agent runs locally, context exists in project**
+
+```bash
+# User is in project directory
+cd ~/my-project
+
+# Agent runs locally
+oac install opencode --local
+
+# Agent needs: 'core/standards/code-quality.md'
+# Resolution:
+# 1. Check: ~/my-project/.oac/context/core/standards/code-quality.md ❌
+# 2. Check: ~/my-project/.opencode/context/core/standards/code-quality.md ✅
+# → Uses project-specific context
+```
+
+**Scenario 2: Agent runs globally, no project context**
+
+```bash
+# User is in project directory
+cd ~/my-project
+
+# Agent runs from global install
+oac install opencode --global
+
+# Agent needs: 'core/standards/code-quality.md'
+# Resolution:
+# 1. Check: ~/.config/oac/context/core/standards/code-quality.md ✅
+# → Uses global context
+```
+
+**Scenario 3: Project override**
+
+```bash
+# User wants custom code quality standards for this project
+mkdir -p ~/my-project/.oac/context/core/standards
+cp ~/.config/oac/official/core/standards/code-quality.md \
+   ~/my-project/.oac/context/core/standards/code-quality.md
+
+# Edit project-specific version
+vim ~/my-project/.oac/context/core/standards/code-quality.md
+
+# Agent needs: 'core/standards/code-quality.md'
+# Resolution:
+# 1. Check: ~/my-project/.oac/context/core/standards/code-quality.md ✅
+# → Uses project override (highest priority)
+```
+
+**Scenario 4: Mixed context (project + global)**
+
+```bash
+# Project has some context
+~/my-project/.opencode/context/
+  └── project/
+      └── architecture.md
+
+# Global has standard context
+~/.config/oac/official/
+  └── core/
+      └── standards/
+          └── code-quality.md
+
+# Agent needs both:
+# - 'project/architecture.md' → Found in project ✅
+# - 'core/standards/code-quality.md' → Falls back to global ✅
+```
+
+#### Context Merging (Advanced)
+
+For certain context types, we can **merge** instead of override:
+
+```typescript
+interface ContextMergeStrategy {
+  type: 'override' | 'merge' | 'append';
+  mergeKey?: string; // For merge strategy
+}
+
+// Example: Merge project and global standards
+const merged = await contextResolver.resolveWithMerge(
+  'core/standards/code-quality.md',
+  {
+    strategy: 'merge',
+    mergeKey: 'standards', // Merge 'standards' sections
+    preferLocal: true      // Local takes precedence on conflicts
+  }
+);
+
+// Result:
+// - Global standards: base rules
+// - Project standards: additional/override rules
+// - Final: combined ruleset
+```
+
+#### CLI Commands for Context Management
+
+```bash
+# Show context resolution for a reference
+oac context resolve 'core/standards/code-quality.md'
+  → Resolved to: ~/my-project/.opencode/context/core/standards/code-quality.md
+  → Source: project
+  → Fallbacks checked: 2
+
+# List all available context files
+oac context list
+  --local                       # Project context only
+  --global                      # Global context only
+  --all                         # All (default)
+  --tree                        # Show as tree
+
+# Validate context references
+oac context validate
+  → Checking 45 context references...
+  ✓ 42 resolved
+  ⚠ 3 missing (using fallbacks)
+  
+# Create project override
+oac context override 'core/standards/code-quality.md'
+  → Copied from: ~/.config/oac/official/core/standards/code-quality.md
+  → To: ~/my-project/.oac/context/core/standards/code-quality.md
+  → Edit this file to customize for your project
+
+# Show context sources
+oac context sources
+  Project Context:
+    .oac/context/              (2 files)
+    .opencode/context/         (15 files)
+    docs/                      (8 files)
+  
+  Global Context:
+    ~/.config/oac/context/     (5 files)
+    ~/.config/oac/official/    (42 files)
+  
+  Total: 72 context files
+
+# Sync global context to project
+oac context sync --to-project
+  → Copying global context to project...
+  ✓ Copied 42 files to .opencode/context/
+
+# Sync project context to global
+oac context sync --to-global
+  → Copying project context to global...
+  ⚠ This will affect all projects using global context
+  ? Proceed? (y/N)
+```
+
+#### Agent Context Loading
+
+Agents need to know where they're running from:
+
+```typescript
+// In agent prompt or configuration
+class AgentContext {
+  location: 'global' | 'local';
+  projectRoot: string | null;
+  contextResolver: ContextResolver;
+  
+  async loadContext(ref: string): Promise<string> {
+    const resolved = await this.contextResolver.resolve(ref, {
+      agentLocation: this.location,
+      projectRoot: this.projectRoot || process.cwd(),
+      preferLocal: true
+    });
+    
+    if (!resolved) {
+      throw new Error(`Context not found: ${ref}`);
+    }
+    
+    return fs.readFile(resolved, 'utf-8');
+  }
+}
+```
+
+#### Environment Variables
+
+```bash
+# Override context resolution behavior
+OAC_CONTEXT_PREFER_LOCAL=true        # Prefer project context
+OAC_CONTEXT_PREFER_GLOBAL=true       # Prefer global context
+OAC_CONTEXT_PROJECT_ROOT=/path/to/project
+OAC_CONTEXT_GLOBAL_ROOT=~/.config/oac
+OAC_CONTEXT_CACHE_ENABLED=true
+OAC_CONTEXT_VALIDATION=strict        # strict | warn | off
+```
+
+#### Visual Representation
+
+```
+Agent Running Locally (in ~/my-project):
+┌─────────────────────────────────────────┐
+│ Agent: openagent (local)                │
+│ Working Dir: ~/my-project               │
+└─────────────────────────────────────────┘
+              ↓
+    Needs: 'core/standards/code-quality.md'
+              ↓
+┌─────────────────────────────────────────┐
+│ Context Resolver                        │
+│ Mode: preferLocal = true                │
+└─────────────────────────────────────────┘
+              ↓
+    Search Priority:
+    1. ~/my-project/.oac/context/... ❌
+    2. ~/my-project/.opencode/context/... ✅ FOUND
+    3. (skip remaining)
+              ↓
+    Returns: ~/my-project/.opencode/context/core/standards/code-quality.md
+
+
+Agent Running Globally:
+┌─────────────────────────────────────────┐
+│ Agent: openagent (global)               │
+│ Working Dir: ~/my-project               │
+└─────────────────────────────────────────┘
+              ↓
+    Needs: 'core/standards/code-quality.md'
+              ↓
+┌─────────────────────────────────────────┐
+│ Context Resolver                        │
+│ Mode: preferLocal = true (default)      │
+└─────────────────────────────────────────┘
+              ↓
+    Search Priority:
+    1. ~/my-project/.oac/context/... ❌
+    2. ~/my-project/.opencode/context/... ❌
+    3. ~/.config/oac/context/... ❌
+    4. ~/.config/oac/official/... ✅ FOUND
+              ↓
+    Returns: ~/.config/oac/official/core/standards/code-quality.md
+```
+
+#### Best Practices
+
+**For Users**:
+- ✅ Use global context for personal coding standards
+- ✅ Use project context for project-specific requirements
+- ✅ Use `.oac/context/` for temporary overrides
+- ✅ Keep project context in version control
+- ✅ Keep global context private (personal preferences)
+
+**For Projects**:
+- ✅ Include essential context in `.opencode/context/`
+- ✅ Document required context files in README
+- ✅ Use `oac context validate` in CI/CD
+- ✅ Provide `.oac/context/` examples for common overrides
+
+**For OAC**:
+- ✅ Ship official context in `~/.config/oac/official/`
+- ✅ Never modify user's global context without permission
+- ✅ Warn when context is missing
+- ✅ Suggest alternatives when context not found
 
 ---
 
@@ -290,47 +851,151 @@ oac rollback agent:openagent
 
 ## CLI Commands Reference
 
+**CRITICAL**: All commands run in project root directory. User chooses local (project) or global install.
+
 ### Installation & Setup
 
 ```bash
-oac init [profile]              # Initialize OAC in project
-oac install [ide]               # Install for specific IDE
-oac configure                   # Configure OAC settings
+# Initialize OAC in current directory (interactive)
+oac init [profile]
+  --local                       # Force local install (./opencode)
+  --global                      # Force global install (~/.config/oac)
+  --yolo                        # Skip all confirmations
+  --dry-run                     # Show what would happen
+
+# Install for specific IDE (asks local/global)
+oac install [ide]
+  --local                       # Install to current directory
+  --global                      # Install to global config
+  --profile <name>              # Use specific profile
+  --yolo                        # Auto-confirm all
+  --skip-existing               # Skip conflicts, keep existing
+  --force                       # Overwrite all, no backups
+  --dry-run                     # Preview changes
+
+# Configure OAC settings
+oac configure
+  set <key> <value>             # Set config value
+  get <key>                     # Get config value
+  show                          # Show all config
+  reset                         # Reset to defaults
 ```
 
 ### Component Management
 
 ```bash
-oac add <component>             # Add component from registry
-oac remove <component>          # Remove component
-oac list [--type]               # List installed components
-oac search <query>              # Search registry
-oac browse [type]               # Browse available components
+# Add component from registry (asks local/global)
+oac add <component>
+  --local                       # Add to current project
+  --global                      # Add to global config
+  --yolo                        # Auto-confirm
+  --dry-run                     # Preview
+
+# Remove component
+oac remove <component>
+  --local                       # Remove from current project
+  --global                      # Remove from global
+  --yolo                        # Auto-confirm
+
+# List installed components
+oac list [--type]
+  --local                       # List local components
+  --global                      # List global components
+  --agents                      # List agents only
+  --skills                      # List skills only
+  --contexts                    # List contexts only
+
+# Search registry
+oac search <query>
+  --type <type>                 # Filter by type
+  --verified                    # Verified only
+
+# Browse available components
+oac browse [type]
+  --verified                    # Verified only
+  --community                   # Community only
 ```
 
 ### Updates & Sync
 
 ```bash
-oac update [options]            # Update components
-oac apply [ide]                 # Apply config to IDE
-oac sync                        # Sync across all IDEs
+# Update components (asks which to update)
+oac update [options]
+  --check                       # Check for updates only
+  --all                         # Update all components
+  --local                       # Update local install
+  --global                      # Update global install
+  --claude                      # Apply to Claude Code
+  --opencode                    # Apply to OpenCode
+  --yolo                        # Auto-confirm all
+  --dry-run                     # Preview updates
+
+# Apply config to IDE (asks for confirmation)
+oac apply [ide]
+  --all                         # Apply to all configured IDEs
+  --yolo                        # Auto-confirm
+  --force                       # Overwrite all
+  --dry-run                     # Preview
+
+# Sync across all IDEs
+oac sync
+  --yolo                        # Auto-confirm
+  --dry-run                     # Preview
 ```
 
 ### Publishing (Community)
 
 ```bash
-oac publish <path>              # Publish component to registry
-oac unpublish <component>       # Remove from registry
-oac validate <path>             # Validate component package
+# Publish component to registry
+oac publish <path>
+  --type <type>                 # Component type
+  --dry-run                     # Validate only
+
+# Remove from registry
+oac unpublish <component>
+
+# Validate component package
+oac validate <path>
 ```
 
 ### Utilities
 
 ```bash
-oac doctor                      # Check installation health
-oac clean                       # Clean cache and temp files
-oac version                     # Show version info
-oac help [command]              # Show help
+# Check installation health
+oac doctor
+  --local                       # Check local install
+  --global                      # Check global install
+  --fix                         # Auto-fix issues (asks confirmation)
+
+# Clean cache and temp files
+oac clean
+  --cache                       # Clean cache only
+  --backups                     # Clean backups only
+  --all                         # Clean everything
+  --yolo                        # Auto-confirm
+
+# Rollback last operation
+oac rollback
+  --steps <n>                   # Rollback n operations
+  --to <timestamp>              # Rollback to timestamp
+
+# Show version info
+oac version
+  --check                       # Check for updates
+
+# Show help
+oac help [command]
+```
+
+### Global Flags (All Commands)
+
+```bash
+--yolo                          # Skip all confirmations, auto-resolve conflicts
+--dry-run                       # Show what would happen, don't execute
+--verbose                       # Show detailed output
+--quiet                         # Minimal output
+--no-color                      # Disable colors
+--json                          # Output as JSON
 ```
 
 ---
