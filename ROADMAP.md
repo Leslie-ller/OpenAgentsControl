@@ -11,7 +11,7 @@ This roadmap tracks the evolution of OpenAgents Control - an AI agent framework 
 **Priority items for the next 4-6 weeks:**
 
 - [ ] Stabilize OpenCode CLI integration
-- [ ] Improve evaluation framework reliability
+- [ ] Improve evaluation framework reliability asd
 - [ ] Enhance documentation for new users
 - [ ] Add more example workflows
 
