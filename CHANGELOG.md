@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.8.0] - 2026-02-15
+
+### Changes
+- feat(context): Standardize context system with navigation, frontmatter, and MVI compliance (#209)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
