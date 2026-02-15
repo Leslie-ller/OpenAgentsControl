@@ -136,7 +136,7 @@ Valid keys: `name`, `description`, `mode`, `temperature`, `model`, `maxSteps`, `
 - [Categories](../core-concepts/categories.md) - Agent categorization
 
 ### Guides
-- [Adding Agents](../guides/adding-agent.md) - How to create new agents
+- [Adding Agents](../guides/adding-agent-basics.md) - How to create new agents
 - [Testing Agents](../guides/testing-agent.md) - Agent testing workflow
 
 ### Lookup

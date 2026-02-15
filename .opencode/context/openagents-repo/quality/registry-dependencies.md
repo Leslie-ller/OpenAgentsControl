@@ -562,7 +562,7 @@ jobs:
 
 - **Registry Guide**: `.opencode/context/openagents-repo/guides/updating-registry.md`
 - **Registry Concepts**: `.opencode/context/openagents-repo/core-concepts/registry.md`
-- **Adding Agents**: `.opencode/context/openagents-repo/guides/adding-agent.md`
+- **Adding Agents**: `.opencode/context/openagents-repo/guides/adding-agent-basics.md`
 - **Command Reference**: `/check-context-deps` command
 
 ---

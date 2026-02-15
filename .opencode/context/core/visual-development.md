@@ -450,7 +450,7 @@ After receiving output:
 - **UI Design Workflow**: `.opencode/context/core/workflows/design-iteration-overview.md`
 - **Design Systems**: `.opencode/context/ui/web/design-systems.md`
 - **UI Styling Standards**: `.opencode/context/ui/web/ui-styling-standards.md`
-- **Animation Patterns**: `.opencode/context/ui/web/animation-patterns.md`
+- **Animation Patterns**: `.opencode/context/ui/web/animation-basics.md`, `.opencode/context/ui/web/animation-advanced.md`
 - **Subagent Invocation Guide**: `.opencode/context/openagents-repo/guides/subagent-invocation.md`
 - **Agent Capabilities**: `.opencode/context/openagents-repo/core-concepts/agents.md`
 

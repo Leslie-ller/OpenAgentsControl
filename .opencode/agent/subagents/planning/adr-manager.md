@@ -227,9 +227,9 @@ If `docs/adr/README.md` exists, update it with the new ADR:
 ```markdown
 ## Active ADRs
 
-- [001 - Use JWT Authentication](001-use-jwt-authentication.md)
-- [002 - PostgreSQL for Primary Database](002-postgresql-for-primary-database.md)
-- [003 - New Decision Title](003-new-decision-title.md)
+- 001 - Use JWT Authentication (example: 001-use-jwt-authentication.md)
+- 002 - PostgreSQL for Primary Database (example: 002-postgresql-for-primary-database.md)
+- 003 - New Decision Title (example: 003-new-decision-title.md)
 ```
 
 ---
@@ -258,7 +258,7 @@ If `docs/adr/README.md` exists, update it with the new ADR:
 
 **Status Change Format**:
 ```markdown
-**Status**: superseded by [ADR-007](007-new-approach.md)
+**Status**: superseded by ADR-007 (example: 007-new-approach.md)
 
 **Superseded Date**: 2026-03-15
 ```
@@ -285,7 +285,7 @@ When creating ADRs from task context, include task references:
 When creating tasks that implement ADRs, reference them:
 
 ```markdown
-**Related ADRs**: [ADR-003](../../docs/adr/003-jwt-authentication.md)
+**Related ADRs**: ADR-003 (example path: ../../docs/adr/003-jwt-authentication.md)
 
 **Implementation Constraints**:
 - Follow JWT signing approach from ADR-003

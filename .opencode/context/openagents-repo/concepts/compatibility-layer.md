@@ -80,7 +80,7 @@ Tool-specific config files
 
 ```typescript
 // Load OAC agent
-const agent = await AgentLoader.loadAgent('.opencode/agent/openagent.md')
+const agent = await AgentLoader.loadAgent('.opencode/agent/core/openagent.md')
 
 // Get Claude adapter
 const adapter = AdapterRegistry.get('claude')

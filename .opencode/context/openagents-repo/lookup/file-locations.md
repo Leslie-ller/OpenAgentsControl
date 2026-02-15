@@ -128,11 +128,8 @@ README.md                            # Main documentation
 ### Development Agents
 
 ```
-.opencode/agent/development/frontend-specialist.md
-.opencode/agent/development/devops-specialist.md
-```
-.opencode/agent/development/frontend-specialist.md
-.opencode/agent/development/devops-specialist.md
+.opencode/agent/subagents/development/frontend-specialist.md
+.opencode/agent/subagents/development/devops-specialist.md
 ```
 
 ### Content Agents
@@ -145,11 +142,11 @@ README.md                            # Main documentation
 ### Key Subagents
 
 ```
-.opencode/agent/TestEngineer.md
-.opencode/agent/CodeReviewer.md
-.opencode/agent/CoderAgent.md
-.opencode/agent/TaskManager.md
-.opencode/agent/DocWriter.md
+.opencode/agent/subagents/code/test-engineer.md
+.opencode/agent/subagents/code/reviewer.md
+.opencode/agent/subagents/code/coder-agent.md
+.opencode/agent/subagents/core/task-manager.md
+.opencode/agent/subagents/core/documentation.md
 ```
 
 ### Core Context
@@ -200,9 +197,8 @@ evals/framework/src/types/            # TypeScript types
 ```
 
 **Examples**:
-- `.opencode/agent/core/openagent.md`
-- `.opencode/agent/development/frontend-specialist.md`
-- `.opencode/agent/TestEngineer.md`
+- `.opencode/agent/subagents/development/frontend-specialist.md`
+- `.opencode/agent/subagents/code/test-engineer.md`
 
 ### Context
 
@@ -212,7 +208,7 @@ evals/framework/src/types/            # TypeScript types
 
 **Examples**:
 - `.opencode/context/core/standards/code-quality.md`
-- `.opencode/context/development/frontend/react/react-patterns.md`
+- `.opencode/context/ui/web/react-patterns.md`
 - `.opencode/context/content-creation/principles/copywriting-frameworks.md`
 
 ### Tests

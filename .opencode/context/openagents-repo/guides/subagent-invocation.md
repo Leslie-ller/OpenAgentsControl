@@ -78,7 +78,7 @@ task(
 
 // ❌ Using registry path
 task(
-  subagent_type=".opencode/agent/TaskManager.md",
+  subagent_type=".opencode/agent/subagents/core/task-manager.md",
   ...
 )
 ```

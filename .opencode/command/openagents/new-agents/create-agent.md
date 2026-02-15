@@ -468,6 +468,6 @@ Create a new agent with minimal, high-signal prompts following "right altitude" 
   <examples>
     - `.opencode/agent/core/opencoder.md` - Development specialist example
     - `.opencode/agent/core/openagent.md` - Universal orchestrator example
-    - `.opencode/agent/development/frontend-specialist.md` - Category agent example
+    - `.opencode/agent/subagents/development/frontend-specialist.md` - Category agent example
   </examples>
 </references>

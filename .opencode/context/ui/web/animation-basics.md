@@ -89,6 +89,6 @@ elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
 
 ## Related Files
 
-- [UI Animations](./animation-ui.md) - Common UI patterns
+- [Animation Components](./animation-components.md) - Common UI patterns
 - [Loading Animations](./animation-loading.md) - Loading states
 - [Advanced Animations](./animation-advanced.md) - Recipes & best practices

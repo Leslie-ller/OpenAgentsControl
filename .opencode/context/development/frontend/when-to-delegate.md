@@ -116,7 +116,7 @@ task(
   prompt="Context to load:
   - .opencode/context/ui/web/design-systems.md
   - .opencode/context/ui/web/ui-styling-standards.md
-  - .opencode/context/ui/web/animation-patterns.md
+  - .opencode/context/ui/web/animation-basics.md
   
   Task: Create a landing page with:
   - Hero section with headline, subheadline, CTA button
@@ -353,7 +353,7 @@ task(
   prompt="Context to load:
   - .opencode/context/ui/web/design-systems.md
   - .opencode/context/ui/web/ui-styling-standards.md
-  - .opencode/context/ui/web/animation-patterns.md
+  - .opencode/context/ui/web/animation-basics.md
   
   Task: Create a SaaS landing page with:
   - Hero section (headline, subheadline, CTA)

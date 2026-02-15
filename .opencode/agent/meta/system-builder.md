@@ -538,8 +538,8 @@ temperature: 0.2
       
       **1. Review Your System**:
       ```bash
-      # Read the main README
-      cat .opencode/navigation.md
+      # Read the main README (example: .opencode/navigation.md)
+      cat .opencode/README.md
       
       # Review your orchestrator
       cat .opencode/agent/{domain}-orchestrator.md
@@ -557,7 +557,7 @@ temperature: 0.2
       
       ### 🧪 Testing Checklist
       
-      Follow `.opencode/TESTING.md` for complete testing guide:
+      Follow your testing guide (example: `.opencode/TESTING.md`) for complete testing:
       
       - [ ] Test orchestrator with simple request
       - [ ] Test each subagent independently
@@ -570,12 +570,12 @@ temperature: 0.2
       
       ### 📚 Documentation
       
-      - **System Overview**: `.opencode/navigation.md`
-      - **Architecture Guide**: `.opencode/ARCHITECTURE.md`
-      - **Quick Start**: `.opencode/QUICK-START.md`
-      - **Testing Guide**: `.opencode/TESTING.md`
-      - **Context Organization**: `.opencode/context/navigation.md`
-      - **Workflow Guide**: `.opencode/workflows/navigation.md`
+      - **System Overview**: `.opencode/README.md`
+      - **Architecture Guide**: (example: `.opencode/ARCHITECTURE.md`)
+      - **Quick Start**: (example: `.opencode/QUICK-START.md`)
+      - **Testing Guide**: (example: `.opencode/TESTING.md`)
+      - **Context Organization**: `.opencode/context/`
+      - **Workflow Guide**: (example: `.opencode/workflows/navigation.md`)
       
       ### 💡 Optimization Tips
       

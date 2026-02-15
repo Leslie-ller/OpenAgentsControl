@@ -144,4 +144,4 @@ Before launching, verify:
 - [Colors & Typography](./premium-dark-ui-colors.md)
 - [Components](./premium-dark-ui-components.md)
 - [Layouts](./premium-dark-ui-layouts.md)
-- [Full System Guide](./premium-dark-ui-system.md)
+- [Visual Reference](./premium-dark-ui-visual-reference.md)

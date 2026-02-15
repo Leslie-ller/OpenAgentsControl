@@ -60,7 +60,7 @@ Status: in_progress
 - `.opencode/context/openagents-repo/core-concepts/categories.md` → How organization works
 
 **Guides** (Load for specific workflows):
-- `.opencode/context/openagents-repo/guides/adding-agent.md` → Step-by-step agent creation
+- `.opencode/context/openagents-repo/guides/adding-agent-basics.md` → Step-by-step agent creation
 - `.opencode/context/openagents-repo/guides/testing-agent.md` → Testing workflow
 - `.opencode/context/openagents-repo/guides/updating-registry.md` → Registry workflow
 - `.opencode/context/openagents-repo/guides/debugging.md` → Troubleshooting

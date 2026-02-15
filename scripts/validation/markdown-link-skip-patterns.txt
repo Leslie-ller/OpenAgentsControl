@@ -13,6 +13,16 @@ literal:/existing-
 literal:.opencode/command/build-context-system.md
 literal:.opencode/command/validate-repo.md
 
+# Ignore example placeholder paths (intentional non-existent files for documentation)
+literal:.opencode/context/file.md
+literal:.opencode/context/security/auth-patterns.md
+literal:.opencode/context/architecture/ddd-patterns.md
+literal:.opencode/context/architecture/patterns.md
+literal:.opencode/context/core/story-mapping/guide.md
+literal:.opencode/context/core/prioritization/scoring.md
+literal:.opencode/context/core/standards/naming-conventions.md
+literal:.opencode/context/development/backend/auth/jwt-patterns.md
+
 # Ignore external and anchor links (also filtered in code, kept for clarity).
 ^https?://
 ^mailto:
@@ -23,22 +33,3 @@ literal:.opencode/command/validate-repo.md
 ^\.opencode/command/prompt-engineering/.+?\.md$
 ^\.opencode/agent/meta/.+?\.md$
 ^\.opencode/command/openagents/.+?\.md$
-
-# Pre-existing broken links in example/template files (to be fixed separately)
-^\.opencode/agent/subagents/core/task-manager\.md$
-^\.opencode/agent/subagents/planning/adr-manager\.md$
-^\.opencode/command/add-context\.md$
-^\.opencode/context/core/context-system/guides/creation\.md$
-^\.opencode/context/core/context-system/standards/structure\.md$
-^\.opencode/context/core/task-management/guides/splitting-tasks\.md$
-^\.opencode/context/core/visual-development\.md$
-^\.opencode/context/core/workflows/design-iteration-best-practices\.md$
-^\.opencode/context/core/workflows/design-iteration-stage-animation\.md$
-^\.opencode/context/core/workflows/lightweight-context-handoff-example\.md$
-^\.opencode/context/core/workflows/lightweight-context-handoff\.md$
-^\.opencode/context/core/workflows/session-context-pattern\.md$
-^\.opencode/context/development/frontend/when-to-delegate\.md$
-^\.opencode/context/ui/web/animation-advanced\.md$
-^\.opencode/context/ui/web/animation-basics\.md$
-^\.opencode/context/ui/web/animation-forms\.md$
-^\.opencode/context/ui/web/design/guides/premium-dark-ui-advanced\.md$

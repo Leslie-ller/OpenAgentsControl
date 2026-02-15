@@ -274,10 +274,10 @@ description: "Advanced prompt optimizer: Research patterns + token efficiency + 
         5. Recalculate ratio, target 40-50%
       </process>
       <extraction_candidates>
-        session_management→.opencode/context/core/session-management.md
-        context_discovery→.opencode/context/core/context-discovery.md
-        detailed_examples→.opencode/context/core/examples.md
-        implementation_specs→.opencode/context/core/specifications.md
+        session_management→(example: .opencode/context/core/session-management.md)
+        context_discovery→(example: .opencode/context/core/context-discovery.md)
+        detailed_examples→(example: .opencode/context/core/examples.md)
+        implementation_specs→(example: .opencode/context/core/specifications.md)
       </extraction_candidates>
       <checkpoint>Instruction ratio 40-50%, external refs created, functionality preserved</checkpoint>
     </stage>
@@ -678,8 +678,8 @@ description: "Advanced prompt optimizer: Research patterns + token efficiency + 
 </principles>
 
 <references>
-  <optimization_report ref=".opencode/context/core/prompt-optimization-report.md">
-    Detailed before/after metrics from OpenAgent optimization
+  <optimization_report>
+    Detailed before/after metrics from OpenAgent optimization (example: .opencode/context/core/prompt-optimization-report.md)
   </optimization_report>
   <research_patterns ref="docs/agents/research-backed-prompt-design.md">
     Validated patterns w/ model/task-specific effectiveness improvements

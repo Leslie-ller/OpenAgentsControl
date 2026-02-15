@@ -18,9 +18,9 @@ import { createContextIndex } from './.opencode/skill/task-management/scripts/co
 const result = createContextIndex('auth-system', {
   contextFiles: [
     '.opencode/context/core/standards/code-quality.md',
-    '.opencode/context/security/auth-patterns.md',
-    '.opencode/context/architecture/ddd-patterns.md',
-    '.opencode/context/core/story-mapping/guide.md'
+    '(example: (example: .opencode/context/security/auth-patterns.md))',
+    '(example: (example: .opencode/context/architecture/ddd-patterns.md))',
+    '(example: (example: .opencode/context/core/story-mapping/guide.md))'
   ],
   referenceFiles: [
     'src/auth/old-auth.ts',
@@ -40,9 +40,9 @@ const result = createContextIndex('auth-system', {
   "agents": {},
   "contextFiles": [
     ".opencode/context/core/standards/code-quality.md",
-    ".opencode/context/security/auth-patterns.md",
-    ".opencode/context/architecture/ddd-patterns.md",
-    ".opencode/context/core/story-mapping/guide.md"
+    "(example: (example: .opencode/context/security/auth-patterns.md))",
+    "(example: (example: .opencode/context/architecture/ddd-patterns.md))",
+    "(example: (example: .opencode/context/core/story-mapping/guide.md))"
   ],
   "referenceFiles": [
     "src/auth/old-auth.ts",
@@ -67,7 +67,7 @@ const archContext = getContextForAgent('auth-system', 'ArchitectureAnalyzer');
   feature: "auth-system",
   agentType: "ArchitectureAnalyzer",
   contextFiles: [
-    ".opencode/context/architecture/ddd-patterns.md"
+    "(example: .opencode/context/architecture/ddd-patterns.md)"
   ],
   referenceFiles: [
     "src/auth/old-auth.ts",
@@ -166,7 +166,7 @@ const storyContext = getContextForAgent('auth-system', 'StoryMapper');
   feature: "auth-system",
   agentType: "StoryMapper",
   contextFiles: [
-    ".opencode/context/core/story-mapping/guide.md"
+    "(example: .opencode/context/core/story-mapping/guide.md)"
   ],
   referenceFiles: [],
   agentOutputs: [
@@ -406,7 +406,7 @@ const coderContext = getContextForAgent('auth-system', 'CoderAgent');
   agentType: "CoderAgent",
   contextFiles: [
     ".opencode/context/core/standards/code-quality.md",
-    ".opencode/context/security/auth-patterns.md"
+    "(example: .opencode/context/security/auth-patterns.md)"
   ],
   referenceFiles: [],
   agentOutputs: [

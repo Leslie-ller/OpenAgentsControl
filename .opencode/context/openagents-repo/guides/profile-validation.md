@@ -29,7 +29,7 @@ Profiles are pre-configured component bundles in `registry.json` that users inst
 // ✅ Agent exists in components
 {
   "id": "devops-specialist",
-  "path": ".opencode/agent/development/devops-specialist.md"
+  "path": ".opencode/agent/subagents/development/devops-specialist.md"
 }
 
 // ❌ But NOT in developer profile

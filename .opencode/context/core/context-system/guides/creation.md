@@ -116,7 +116,7 @@ When creating a file, update parent `navigation.md`:
 ```markdown
 | File | Description | Priority |
 |------|-------------|----------|
-| [new-file.md](./new-file.md) | Brief description | high |
+| new-file.md | Brief description | high |
 ```
 
 **Keep navigation**:

@@ -81,7 +81,7 @@ Concrete files/endpoints:
 Don't embed descriptions. Reference paths:
 ```json
 "context_files": [
-  ".opencode/context/development/backend/auth/jwt-patterns.md"
+  "(example: .opencode/context/development/backend/auth/jwt-patterns.md)"
 ]
 ```
 

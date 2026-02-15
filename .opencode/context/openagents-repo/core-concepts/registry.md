@@ -50,7 +50,7 @@ The registry is a centralized catalog (`registry.json`) that tracks all componen
   "id": "frontend-specialist",
   "name": "Frontend Specialist",
   "type": "agent",
-  "path": ".opencode/agent/development/frontend-specialist.md",
+  "path": ".opencode/agent/subagents/development/frontend-specialist.md",
   "description": "Expert in React, Vue, and modern CSS",
   "category": "development",
   "tags": ["react", "vue", "css", "frontend"],
@@ -148,7 +148,7 @@ tags: ["tag1", "tag2"]     # Optional
 
 ```bash
 # Example errors
-ERROR: Path does not exist: .opencode/agent/core/missing.md
+ERROR: Path does not exist: (example: .opencode/agent/core/missing.md)
 ERROR: Duplicate ID: frontend-specialist
 ERROR: Invalid category: invalid-category
 ERROR: Missing dependency: subagent:nonexistent

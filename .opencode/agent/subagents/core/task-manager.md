@@ -260,7 +260,7 @@ WHY THIS MATTERS:
               ```
               
               **Backward Compatibility**: Both formats are valid:
-              - String format: `".opencode/context/file.md"` (read entire file)
+              - String format: (example: `".opencode/context/file.md"`) - read entire file
               - Object format: `{"path": "...", "lines": "10-50", "reason": "..."}` (read specific lines)
               
               Agents MUST support both formats. Mix-and-match is allowed in the same array.
@@ -413,7 +413,7 @@ Before any status update or file modification:
     </when_to_use>
     <backward_compatibility>
       Both formats are valid and can be mixed:
-      - String: `".opencode/context/file.md"` (read entire file)
+      - String: (example: `".opencode/context/file.md"`) - read entire file
       - Object: `{"path": "...", "lines": "10-50", "reason": "..."}` (read specific lines)
     </backward_compatibility>
   </line_number_precision>

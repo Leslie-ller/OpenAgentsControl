@@ -173,10 +173,10 @@ description: "Research-backed prompt optimizer applying Stanford/Anthropic patte
         5. Recalculate ratio, target 40-50%
       </process>
       <extraction_candidates>
-        <session_management>Extract to .opencode/context/core/session-management.md</session_management>
-        <context_discovery>Extract to .opencode/context/core/context-discovery.md</context_discovery>
-        <detailed_examples>Extract to .opencode/context/core/examples.md</detailed_examples>
-        <implementation_specs>Extract to .opencode/context/core/specifications.md</implementation_specs>
+        <session_management>Extract to context file (example: .opencode/context/core/session-management.md)</session_management>
+        <context_discovery>Extract to context file (example: .opencode/context/core/context-discovery.md)</context_discovery>
+        <detailed_examples>Extract to context file (example: .opencode/context/core/examples.md)</detailed_examples>
+        <implementation_specs>Extract to context file (example: .opencode/context/core/specifications.md)</implementation_specs>
       </extraction_candidates>
       <checkpoint>Instruction ratio 40-50%, external references created, functionality preserved</checkpoint>
     </stage>
@@ -478,8 +478,8 @@ description: "Research-backed prompt optimizer applying Stanford/Anthropic patte
 
 
 <references>
-  <optimization_report ref=".opencode/context/core/prompt-optimization-report.md">
-    Detailed before/after metrics from OpenAgent optimization
+  <optimization_report>
+    Detailed before/after metrics from OpenAgent optimization (example: .opencode/context/core/prompt-optimization-report.md)
   </optimization_report>
   <research_patterns ref="docs/agents/research-backed-prompt-design.md">
     Validated patterns with model- and task-specific effectiveness improvements

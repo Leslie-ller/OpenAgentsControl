@@ -224,7 +224,7 @@ Only edit `registry.json` manually if auto-detect doesn't work.
 
 ```bash
 # Example errors
-ERROR: Path does not exist: .opencode/agent/core/missing.md
+ERROR: Path does not exist: (example: .opencode/agent/core/missing.md)
 ERROR: Duplicate ID: frontend-specialist
 ERROR: Invalid category: invalid-category
 ERROR: Missing dependency: subagent:nonexistent

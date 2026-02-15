@@ -166,7 +166,7 @@ Before presenting each stage:
 
 - [Design Systems Context](../../ui/web/design-systems.md)
 - [UI Styling Standards](../../ui/web/ui-styling-standards.md)
-- [Animation Patterns](../../ui/web/animation-patterns.md)
+- [Animation Basics](../../ui/web/animation-basics.md)
 - [ASCII Art Generator](https://www.asciiart.eu/)
 - [WCAG Contrast Checker](https://webaim.org/resources/contrastchecker/)
 

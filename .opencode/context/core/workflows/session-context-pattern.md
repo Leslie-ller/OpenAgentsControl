@@ -276,7 +276,7 @@ updateSession(sessionId, {
   contextFiles: [
     '.opencode/context/core/standards/code-quality.md',
     '.opencode/context/core/standards/security-patterns.md',
-    '.opencode/context/core/standards/naming-conventions.md'
+    '(example: .opencode/context/core/standards/naming-conventions.md)'
   ],
   referenceFiles: [
     'src/middleware/auth.middleware.ts',

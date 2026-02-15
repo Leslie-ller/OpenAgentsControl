@@ -550,7 +550,7 @@ jq 'del(.components.agents[] | select(.id == "agent-id"))' registry.json > tmp.j
 
 - **OpenCode Agent Docs**: https://opencode.ai/docs/agents/
 - **Registry System**: `.opencode/context/openagents-repo/core-concepts/registry.md`
-- **Adding Agents**: `.opencode/context/openagents-repo/guides/adding-agent.md`
+- **Adding Agents**: `.opencode/context/openagents-repo/guides/adding-agent-basics.md`
 - **Dependencies**: `.opencode/context/openagents-repo/quality/registry-dependencies.md`
 
 ---

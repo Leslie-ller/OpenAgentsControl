@@ -28,7 +28,7 @@ cd evals/framework && npm run eval:sdk -- --agent=core/openagent --pattern="smok
 
 **Symptoms**:
 ```
-ERROR: Path does not exist: .opencode/agent/core/missing.md
+ERROR: Path does not exist: (example: .opencode/agent/core/missing.md)
 ```
 
 **Diagnosis**:
@@ -245,7 +245,7 @@ ERROR: Agent not found: development/frontend-specialist
 **Diagnosis**:
 ```bash
 # Check file exists
-ls -la .opencode/agent/development/frontend-specialist.md
+ls -la .opencode/agent/subagents/development/frontend-specialist.md
 
 # Check registry
 cat registry.json | jq '.components.agents[] | select(.id == "frontend-specialist")'

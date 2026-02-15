@@ -183,7 +183,7 @@ The system resolves agent paths flexibly:
 "subagents/development/frontend-specialist" → ".opencode/agent/subagents/development/frontend-specialist.md"
 
 # Subagent path
-"TestEngineer" → ".opencode/agent/TestEngineer.md"
+"TestEngineer" → ".opencode/agent/subagents/code/test-engineer.md"
 ```
 
 ---
@@ -301,7 +301,7 @@ Agents load category context based on task:
 <!-- Context: development/react-patterns | Priority: high -->
 ```
 
-Loads: `.opencode/context/development/react-patterns.md`
+Loads: `.opencode/context/ui/web/react-patterns.md`
 
 ---
 

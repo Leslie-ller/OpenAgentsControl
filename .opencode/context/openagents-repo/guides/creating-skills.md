@@ -60,7 +60,7 @@ my-skill/
 
 Reference in SKILL.md:
 ```markdown
-For complete API details, see [reference.md](reference.md)
+For complete API details, see reference.md (example file)
 ```
 
 ---

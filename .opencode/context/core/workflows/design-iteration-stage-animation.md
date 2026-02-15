@@ -77,4 +77,4 @@ linkHover: 250ms ease-out [underline 0→100%]
 - [Overview](./design-iteration-overview.md)
 - [Stage 2: Theme](./design-iteration-stage-theme.md)
 - [Stage 4: Implementation](./design-iteration-stage-implementation.md)
-- [Animation Patterns](../../ui/web/animation-patterns.md)
+- [Animation Basics](../../ui/web/animation-basics.md)

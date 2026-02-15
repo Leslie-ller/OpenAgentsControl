@@ -378,7 +378,7 @@ npm test -- --agent=my-agent-name --test=planning-approval-001
 For questions or issues:
 1. Check existing agents: 
    - Core agents: `.opencode/agent/core/openagent.md`, `.opencode/agent/core/opencoder.md`
-   - Development agents: `.opencode/agent/development/frontend-specialist.md`
+   - Development agents: `.opencode/agent/subagents/development/frontend-specialist.md`
    - Content agents: `.opencode/agent/content/copywriter.md`
 2. Review test examples: `evals/agents/openagent/tests/`
 3. See research docs: `docs/agents/research-backed-prompt-design.md`

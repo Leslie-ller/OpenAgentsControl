@@ -40,8 +40,8 @@ with pdfplumber.open("doc.pdf") as pdf:
     text = pdf.pages[0].extract_text()
 ```
 
-For form filling, see [FORMS.md](FORMS.md).
-For detailed API reference, see [REFERENCE.md](REFERENCE.md).
+For form filling, see FORMS.md (example file).
+For detailed API reference, see REFERENCE.md (example file).
 
 ## Requirements
 

@@ -520,8 +520,8 @@ Preview: technical-domain.md
 **Config**: package.json, tsconfig.json
 
 ## Related Files
-- [Business Domain](business-domain.md)
-- [Decisions Log](decisions-log.md)
+- Business Domain (example: business-domain.md)
+- Decisions Log (example: decisions-log.md)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -566,7 +566,7 @@ Preview: navigation.md
 
 | File | Description | Priority |
 |------|-------------|----------|
-| [technical-domain.md](technical-domain.md) | Tech stack & patterns | critical |
+| technical-domain.md | Tech stack & patterns | critical |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```

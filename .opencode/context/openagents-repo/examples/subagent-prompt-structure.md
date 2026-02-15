@@ -270,8 +270,8 @@ Before deploying optimized prompt:
 - **Result**: Test passed (was failing with 0 tool calls)
 
 **Files**:
-- Optimized: `.opencode/agent/ContextScout.md`
-- Backup: `.opencode/agent/ContextScout-original-backup.md`
+- Optimized: `.opencode/agent/subagents/core/contextscout.md`
+- Backup: (example: `.opencode/agent/ContextScout-original-backup.md`)
 
 ---
 

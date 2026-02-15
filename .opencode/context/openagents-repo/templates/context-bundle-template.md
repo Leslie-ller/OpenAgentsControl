@@ -34,12 +34,12 @@ Status: in_progress
 - `.opencode/context/core/standards/code.md` → Modular, functional code patterns
 - `.opencode/context/core/standards/tests.md` → Testing requirements and TDD
 - `.opencode/context/core/standards/docs.md` → Documentation standards
-- `.opencode/context/core/standards/patterns.md` → Error handling, security patterns
+- (example: `.opencode/context/core/standards/patterns.md`) → Error handling, security patterns
 
 **Core Workflows**:
-- `.opencode/context/core/workflows/delegation.md` → Delegation process
-- `.opencode/context/core/workflows/task-breakdown.md` → Task breakdown methodology
-- `.opencode/context/core/workflows/review.md` → Code review guidelines
+- (example: `.opencode/context/core/workflows/delegation.md`) → Delegation process
+- (example: `.opencode/context/core/workflows/task-breakdown.md`) → Task breakdown methodology
+- (example: `.opencode/context/core/workflows/review.md`) → Code review guidelines
 
 ## Repository-Specific Context (Load These Before Starting)
 
@@ -53,7 +53,7 @@ Status: in_progress
 - `.opencode/context/openagents-repo/core-concepts/categories.md` → How organization works
 
 **Guides** (Load for specific workflows):
-- `.opencode/context/openagents-repo/guides/adding-agent.md` → Step-by-step agent creation
+- `.opencode/context/openagents-repo/guides/adding-agent-basics.md` → Step-by-step agent creation
 - `.opencode/context/openagents-repo/guides/testing-agent.md` → Testing workflow
 - `.opencode/context/openagents-repo/guides/updating-registry.md` → Registry workflow
 - `.opencode/context/openagents-repo/guides/debugging.md` → Troubleshooting

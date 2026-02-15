@@ -149,7 +149,7 @@ oac install opencode
   Will create/modify:
   ✓ .opencode/agent/core/openagent.md
   ✓ .opencode/agent/core/opencoder.md
-  ⚠ .opencode/agent/TestEngineer.md (exists - will overwrite)
+  ⚠ .opencode/agent/subagents/code/test-engineer.md (exists - will overwrite)
   ✓ .opencode/context/core/standards/code-quality.md
   ✓ .opencode/config.json
   
@@ -158,7 +158,7 @@ oac install opencode
 ? Proceed with installation? (Y/n)
 
 # If conflicts exist:
-⚠ File exists: .opencode/agent/TestEngineer.md
+⚠ File exists: .opencode/agent/subagents/code/test-engineer.md
   
   Current: 245 lines, modified 2 days ago
   New:     312 lines, version 0.8.0
@@ -189,7 +189,7 @@ oac configure set preferences.yoloMode true
   ⚡ Auto-confirming all operations...
   ✓ Created .opencode/agent/core/openagent.md
   ✓ Created .opencode/agent/core/opencoder.md
-  ⚠ Overwrote .opencode/agent/TestEngineer.md (backed up to .bak)
+  ⚠ Overwrote .opencode/agent/subagents/code/test-engineer.md (backed up to .bak)
   ✓ Created .opencode/context/core/standards/code-quality.md
   ✓ Created .opencode/config.json
   
@@ -298,7 +298,7 @@ oac install opencode
 # Step 4: Conflict Resolution (if any)
 ⚠ 3 files already exist:
   
-  1. .opencode/agent/TestEngineer.md
+  1. .opencode/agent/subagents/code/test-engineer.md
      Current: 245 lines, modified 2 days ago
      New:     312 lines, version 0.8.0
      
@@ -311,8 +311,8 @@ oac install opencode
 ⚡ Installing...
   ✓ Created .opencode/agent/core/openagent.md
   ✓ Created .opencode/agent/core/opencoder.md
-  ⚠ Backed up .opencode/agent/TestEngineer.md → .backups/TestEngineer.md.2026-02-14
-  ✓ Overwrote .opencode/agent/TestEngineer.md
+  ⚠ Backed up .opencode/agent/subagents/code/test-engineer.md → .backups/TestEngineer.md.2026-02-14
+  ✓ Overwrote .opencode/agent/subagents/code/test-engineer.md
   ...
   
 # Step 6: Summary
@@ -1133,7 +1133,7 @@ oac edit agent:openagent --in-place --force
 
 ⚠️  Editing: .opencode/agent/core/openagent.md
 ⚠️  Changes will be overwritten on update
-⚠️  Creating backup: .opencode/.backups/openagent.md.2026-02-14
+⚠️  Creating backup: (example: .opencode/.backups/openagent.md.2026-02-14)
 
 [Opens in editor]
 
@@ -1889,7 +1889,7 @@ oac create
   ? Description: Expert in Rust programming
   ? Category: development
   
-  ✓ Created .opencode/agent/development/rust-specialist.md
+  ✓ Created .opencode/agent/subagents/development/rust-specialist.md
   ✓ Created tests/smoke-test.yaml
   ✓ Added to registry
   
