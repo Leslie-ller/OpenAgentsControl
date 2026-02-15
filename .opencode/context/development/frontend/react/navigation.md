@@ -10,7 +10,7 @@
 
 | File | Description | Priority |
 |------|-------------|----------|
-| [react-patterns.md](react-patterns.md) | React hooks, components, state management | high |
+| _(No files yet)_ | | |
 
 ---
 

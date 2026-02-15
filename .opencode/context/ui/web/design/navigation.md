@@ -31,7 +31,6 @@ description: "Advanced web UI patterns - scroll animations, visual effects, and 
 |------|-------------|----------|
 | [navigation.md](guides/navigation.md) | Guides navigation | high |
 | [building-scrollytelling-pages.md](guides/building-scrollytelling-pages.md) | Complete implementation guide | high |
-| [premium-dark-ui-quick-start.md](guides/premium-dark-ui-quick-start.md) | Premium dark UI design system quick start | high |
 | [premium-dark-ui-visual-reference.md](guides/premium-dark-ui-visual-reference.md) | Visual reference for premium dark UI | medium |
 
 ### Lookup
@@ -56,8 +55,7 @@ description: "Advanced web UI patterns - scroll animations, visual effects, and 
 4. Reference `guides/building-scrollytelling-pages.md` (step-by-step)
 
 **For premium dark UI design**:
-1. Load `guides/premium-dark-ui-quick-start.md` (implementation guide)
-2. Reference `guides/premium-dark-ui-visual-reference.md` (visual patterns)
+1. Load `guides/premium-dark-ui-visual-reference.md` (visual patterns and implementation)
 
 ---
 
