@@ -1,3 +1,5 @@
+<!-- Context: content-creation/audience-targeting | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Audience Targeting
 
 Understanding and targeting specific audiences to create content that resonates and converts.

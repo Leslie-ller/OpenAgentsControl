@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Compatibility Layer Development Workflow
 
 **Purpose**: Step-by-step process for extending the compatibility layer to support new AI coding tools

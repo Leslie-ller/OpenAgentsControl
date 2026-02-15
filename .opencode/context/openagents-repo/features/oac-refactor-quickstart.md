@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/oac-refactor-quickstart | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OAC Package Refactor - Quick Start
 
 **Purpose**: Quick reference for working on the OAC package refactor  

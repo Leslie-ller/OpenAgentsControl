@@ -1,3 +1,5 @@
+<!-- Context: core/mvi | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # MVI Principle (Minimal Viable Information)
 
 **Purpose**: Extract only core concepts, not verbose explanations

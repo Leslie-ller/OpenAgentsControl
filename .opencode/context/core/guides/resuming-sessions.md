@@ -1,3 +1,5 @@
+<!-- Context: core/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Resuming Multi-Session Tasks
 
 **Purpose**: How to resume work from previous sessions using session context and task files

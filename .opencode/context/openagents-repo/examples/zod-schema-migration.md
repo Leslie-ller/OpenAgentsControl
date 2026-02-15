@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/examples | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Example: Zod Schema Migration Pattern
 
 **Purpose**: Migrate TypeScript definitions to runtime-validated Zod schemas

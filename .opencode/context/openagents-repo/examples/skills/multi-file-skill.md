@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/examples | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Multi-File Skill Structure
 
 **Purpose**: Example of a skill with supporting files and scripts

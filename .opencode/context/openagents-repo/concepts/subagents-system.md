@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/concepts | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Subagents System
 
 **Purpose**: Specialized AI assistants with own context window for task-specific workflows

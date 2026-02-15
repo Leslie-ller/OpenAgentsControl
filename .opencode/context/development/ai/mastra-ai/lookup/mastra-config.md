@@ -1,3 +1,5 @@
+<!-- Context: development/mastra-config | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Lookup: Mastra Configuration
 
 **Purpose**: Quick reference for Mastra file locations and registration.

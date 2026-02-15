@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/concepts | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Subagent Testing Modes
 
 **Purpose**: Understand the two ways to test subagents (standalone vs delegation)

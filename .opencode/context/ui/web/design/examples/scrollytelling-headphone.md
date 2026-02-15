@@ -1,3 +1,5 @@
+<!-- Context: ui/scrollytelling-headphone | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 ---
 description: "Full Next.js implementation of scroll-linked image sequence animation"
 ---

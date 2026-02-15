@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/tools | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Building Custom Tools
 
 Plugins can add custom tools that OpenCode agents can call autonomously.

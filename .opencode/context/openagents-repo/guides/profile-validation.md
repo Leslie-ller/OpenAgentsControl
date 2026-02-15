@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Profile Validation
 
 **Purpose**: Ensure installation profiles include all appropriate components  

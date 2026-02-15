@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/concepts | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Agent Skills
 
 **Purpose**: Markdown files that teach Claude how to do specific tasks

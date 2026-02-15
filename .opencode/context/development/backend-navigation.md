@@ -1,3 +1,5 @@
+<!-- Context: development/navigation | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Backend Development Navigation
 
 **Scope**: Server-side, APIs, databases, auth

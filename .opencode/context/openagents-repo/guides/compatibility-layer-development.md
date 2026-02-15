@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Compatibility Layer Development Workflow
 
 **Purpose**: Step-by-step workflow for developing compatibility layer features

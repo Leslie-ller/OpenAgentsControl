@@ -1,3 +1,5 @@
+<!-- Context: ui/scroll-animation-prompts | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 ---
 description: "AI prompts for generating start/end frames and video sequences for scrollytelling"
 ---

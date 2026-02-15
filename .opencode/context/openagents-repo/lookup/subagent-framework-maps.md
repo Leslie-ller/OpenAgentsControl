@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lookup | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Lookup: Subagent Framework Maps
 
 **Purpose**: Quick reference for adding subagents to eval framework  

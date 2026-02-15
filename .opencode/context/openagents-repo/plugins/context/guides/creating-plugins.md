@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/creating-plugins | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Creating Plugins
 
 **Purpose**: Step-by-step guide to create Claude Code plugins

@@ -1,3 +1,5 @@
+<!-- Context: core/migrate | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context Migrate Operation
 
 **Purpose**: Copy context files from global (`~/.config/opencode/context/`) to local (`.opencode/context/`) so they're project-specific and git-committed.

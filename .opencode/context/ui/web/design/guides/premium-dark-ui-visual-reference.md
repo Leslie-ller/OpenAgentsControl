@@ -1,3 +1,5 @@
+<!-- Context: ui/premium-dark-ui-visual-reference | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Premium Dark UI - Visual Reference
 
 Quick visual guide for the premium dark aesthetic.

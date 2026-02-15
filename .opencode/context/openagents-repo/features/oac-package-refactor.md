@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/oac-package-refactor | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Feature: OAC Package Refactor
 
 **Purpose**: Transform OpenAgents Control into a flexible npm package with CLI tooling for multi-IDE support and community contributions

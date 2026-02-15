@@ -1,3 +1,5 @@
+<!-- Context: content-creation/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Content Formats Navigation
 
 Format-specific guidance for creating content across different mediums.

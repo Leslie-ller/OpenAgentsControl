@@ -1,3 +1,5 @@
+<!-- Context: ui/premium-dark-ui-layouts | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Premium Dark UI - Layouts
 
 Common layout patterns for premium dark UI.

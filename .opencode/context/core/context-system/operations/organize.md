@@ -1,3 +1,5 @@
+<!-- Context: core/organize | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Organize Operation
 
 **Purpose**: Restructure flat context files into function-based folder structure

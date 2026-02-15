@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenAgents Guides
 
 **Purpose**: Step-by-step guides for working with OpenAgents Control

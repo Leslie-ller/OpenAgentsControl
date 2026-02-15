@@ -1,3 +1,5 @@
+<!-- Context: content-creation/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Content Examples Navigation
 
 Real-world content examples demonstrating effective techniques and formats.

@@ -1,3 +1,5 @@
+<!-- Context: system-builder-templates/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 ---
 description: "Overview of available templates for generating context-aware AI systems"
 ---

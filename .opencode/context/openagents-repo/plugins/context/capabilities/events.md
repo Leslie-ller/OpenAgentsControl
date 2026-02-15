@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/events | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenCode Plugin Events
 
 OpenCode fires over 25 events that you can hook into. These are categorized below:

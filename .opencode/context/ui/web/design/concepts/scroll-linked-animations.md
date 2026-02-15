@@ -1,3 +1,5 @@
+<!-- Context: ui/scroll-linked-animations | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Concept: Scroll-Linked Animations
 
 **Purpose**: Sync image sequences to scroll position for cinematic product reveals

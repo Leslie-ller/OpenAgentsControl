@@ -1,3 +1,5 @@
+<!-- Context: product/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Product Context
 
 This directory contains context files for product management, strategy, and user research.

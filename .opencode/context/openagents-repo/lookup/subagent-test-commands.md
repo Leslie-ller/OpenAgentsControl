@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lookup | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Subagent Testing Commands - Quick Reference
 
 **Purpose**: Quick command reference for testing subagents

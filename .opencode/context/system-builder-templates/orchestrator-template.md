@@ -1,3 +1,5 @@
+<!-- Context: system-builder-templates/orchestrator-template | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 ---
 description: "Template for generating main orchestrator agents for context-aware AI systems"
 ---

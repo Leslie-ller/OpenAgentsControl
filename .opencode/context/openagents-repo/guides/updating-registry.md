@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Updating Registry
 
 **Prerequisites**: Load `core-concepts/registry.md` first  

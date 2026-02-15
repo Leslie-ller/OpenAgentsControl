@@ -1,3 +1,5 @@
+<!-- Context: core/essential-patterns | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Essential Patterns - Core Development Guidelines
 
 ## Quick Reference

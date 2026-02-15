@@ -1,3 +1,5 @@
+<!-- Context: core/error | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Error Operation
 
 **Purpose**: Add recurring errors to knowledge base with deduplication

@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: OpenCode Skill Implementation
 
 **Prerequisites**: Load `adding-skill-basics.md` first  

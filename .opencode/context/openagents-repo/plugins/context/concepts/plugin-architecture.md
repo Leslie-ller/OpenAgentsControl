@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/plugin-architecture | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Plugin Architecture
 
 **Purpose**: Extend Claude Code with slash commands, agents, Skills, hooks, and MCP servers

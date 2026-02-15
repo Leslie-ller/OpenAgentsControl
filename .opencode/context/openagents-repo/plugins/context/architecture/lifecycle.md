@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lifecycle | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Plugin Lifecycle & Packaging
 
 ## File Structure for Complex Plugins

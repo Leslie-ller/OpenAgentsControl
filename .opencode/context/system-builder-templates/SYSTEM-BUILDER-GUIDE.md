@@ -1,3 +1,5 @@
+<!-- Context: system-builder-templates/SYSTEM-BUILDER-GUIDE | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 ---
 description: "Complete guide for using the /build-context-system command to create custom context-aware AI systems"
 ---

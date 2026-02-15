@@ -1,3 +1,5 @@
+<!-- Context: core/navigation-templates | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Navigation File Templates
 
 **Purpose**: Ready-to-use templates for navigation files

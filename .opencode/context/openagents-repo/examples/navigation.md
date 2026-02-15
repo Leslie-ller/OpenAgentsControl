@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenAgents Examples
 
 **Purpose**: Example implementations and use cases for OpenAgents Control
@@ -9,7 +11,12 @@
 ```
 openagents-repo/examples/
 ├── navigation.md (this file)
-└── [example files]
+├── hooks/
+│   └── navigation.md
+├── skills/
+│   └── navigation.md
+└── subagents/
+    └── navigation.md
 ```
 
 ---
@@ -18,7 +25,9 @@ openagents-repo/examples/
 
 | Task | Path |
 |------|------|
-| **View examples** | `./` |
+| **Hook examples** | `hooks/navigation.md` |
+| **Skill examples** | `skills/navigation.md` |
+| **Subagent examples** | `subagents/navigation.md` |
 | **Guides** | `../guides/navigation.md` |
 | **Blueprints** | `../blueprints/navigation.md` |
 
@@ -26,8 +35,9 @@ openagents-repo/examples/
 
 ## By Type
 
-**Examples** → Working examples of OpenAgents implementations  
-**Use Cases** → Real-world use cases and patterns
+**Hooks** → Hook implementation examples  
+**Skills** → Skill implementation examples  
+**Subagents** → Subagent implementation examples
 
 ---
 

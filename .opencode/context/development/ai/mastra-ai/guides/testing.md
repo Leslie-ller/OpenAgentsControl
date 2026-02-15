@@ -1,3 +1,5 @@
+<!-- Context: development/testing | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Testing Mastra
 
 **Purpose**: How to run and validate Mastra components in this project.

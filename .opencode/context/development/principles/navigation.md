@@ -1,3 +1,5 @@
+<!-- Context: development/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Development Principles Navigation
 
 **Purpose**: Universal development principles (language-agnostic)

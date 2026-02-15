@@ -1,3 +1,5 @@
+<!-- Context: content-creation/written-content | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Written Content Guidelines
 
 Best practices for creating effective written content across formats: articles, blog posts, social media, newsletters, and long-form content.

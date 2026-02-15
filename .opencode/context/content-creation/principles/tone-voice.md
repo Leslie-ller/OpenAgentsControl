@@ -1,3 +1,5 @@
+<!-- Context: content-creation/tone-voice | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Tone & Voice Guidelines
 
 **Category**: content  

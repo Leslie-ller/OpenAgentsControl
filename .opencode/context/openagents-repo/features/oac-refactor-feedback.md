@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/oac-refactor-feedback | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OAC Package Refactor - Critical Feedback & Recommendations
 
 **Date**: 2026-02-14  

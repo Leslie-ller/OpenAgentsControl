@@ -1,3 +1,5 @@
+<!-- Context: ui/premium-dark-ui-advanced | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Premium Dark UI - Advanced
 
 Animations, accessibility, and checklists for premium dark UI.

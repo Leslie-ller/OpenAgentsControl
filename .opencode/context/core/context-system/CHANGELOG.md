@@ -1,3 +1,5 @@
+<!-- Context: core/CHANGELOG | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context System Changelog
 
 **Purpose**: Track major changes to the context system

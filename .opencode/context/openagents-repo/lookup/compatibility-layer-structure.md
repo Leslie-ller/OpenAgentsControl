@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lookup | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Lookup: Compatibility Layer File Structure
 
 **Purpose**: Quick reference for where files go in the compatibility-layer package

@@ -1,3 +1,5 @@
+<!-- Context: core/navigation-examples | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Examples: Navigation Files
 
 **Purpose**: Real-world examples of good navigation files

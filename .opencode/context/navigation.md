@@ -1,3 +1,5 @@
+<!-- Context: core/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context Navigation
 
 **New here?** → `openagents-repo/quick-start.md`

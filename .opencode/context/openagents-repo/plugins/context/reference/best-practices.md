@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/best-practices | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Best Practices & Limitations
 
 ## Message Injection Workarounds

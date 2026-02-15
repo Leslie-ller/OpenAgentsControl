@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/context-overview | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenCode Plugin Context Library
 
 This library provides structured context for AI coding assistants to understand, build, and extend OpenCode plugins. Depending on your task, you can load specific parts of this library.

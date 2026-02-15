@@ -1,3 +1,5 @@
+<!-- Context: development/workflow-step-structure | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Workflow Step Structure
 
 **Purpose**: Standardized pattern for defining maintainable and testable workflow steps.

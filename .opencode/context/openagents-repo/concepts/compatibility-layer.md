@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/concepts | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Concept: Compatibility Layer Architecture
 
 **Purpose**: Enable bidirectional translation between OpenAgents Control and other AI coding tools

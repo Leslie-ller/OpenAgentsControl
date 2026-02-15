@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lookup | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Lookup: Compatibility Layer Progress
 
 **Purpose**: Quick reference for Issue #141 development progress

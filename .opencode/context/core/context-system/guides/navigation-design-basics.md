@@ -1,3 +1,5 @@
+<!-- Context: core/navigation-design-basics | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Designing Navigation Files
 
 **Purpose**: How to create token-efficient, scannable navigation files

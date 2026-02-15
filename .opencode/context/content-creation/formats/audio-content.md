@@ -1,3 +1,5 @@
+<!-- Context: content-creation/audio-content | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Audio Content Guidelines
 
 Best practices for creating engaging audio content: podcasts, voice content, audio ads, and audiobooks.

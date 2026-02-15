@@ -1,3 +1,5 @@
+<!-- Context: development/workflows | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Concept: Mastra Workflows
 
 **Purpose**: Linear and parallel execution chains for complex AI tasks.

@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Testing Subagents - Step-by-Step Guide
 
 **Purpose**: How to test subagents in standalone mode

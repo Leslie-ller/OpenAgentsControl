@@ -1,3 +1,5 @@
+<!-- Context: core/extract | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Extract Operation
 
 **Purpose**: Extract context from docs, code, or URLs into organized context files

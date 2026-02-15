@@ -1,3 +1,5 @@
+<!-- Context: learning/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Learning Context
 
 This directory contains context files for education, coaching, and teaching methodologies.

@@ -1,8 +1,10 @@
+<!-- Context: core/task-schema | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Standard: Task JSON Schema
 
 **Purpose**: JSON schema reference for task management files
 
-**Last Updated**: 2026-01-11
+**Last Updated**: 2026-02-14
 
 ---
 
@@ -13,6 +15,17 @@ Task management uses two JSON file types:
 - `subtask_NN.json` - Individual atomic tasks with dependencies
 
 Location: `.tmp/tasks/{feature-slug}/` (at project root)
+
+---
+
+## Schema Versions
+
+This document describes the **base schema** (v1.0) that all task files must follow.
+
+For **enhanced features** (line-number precision, domain modeling, contracts, ADRs, prioritization):
+- See `enhanced-task-schema.md` for extended fields and capabilities
+- All enhanced fields are **optional** and backward compatible
+- Use enhanced schema for multi-stage orchestration workflows
 
 ---
 
@@ -132,8 +145,57 @@ These two fields serve fundamentally different purposes. **Never mix them.**
 
 ---
 
+## Migration to Enhanced Schema
+
+The enhanced schema adds powerful features while maintaining full backward compatibility:
+
+### When to Use Enhanced Schema
+
+Use `enhanced-task-schema.md` when you need:
+- **Line-number precision** - Point to specific sections of large files (reduces cognitive load)
+- **Domain modeling** - Track bounded contexts, modules, vertical slices
+- **Contract tracking** - Manage API/interface dependencies
+- **Design artifacts** - Link Figma, wireframes, mockups
+- **ADR references** - Connect architectural decisions to tasks
+- **Prioritization** - RICE/WSJF scoring for release planning
+
+### Migration Path
+
+1. **No changes required** - Existing task files work as-is
+2. **Gradual adoption** - Add enhanced fields incrementally:
+   - Start with line-number precision for large context files
+   - Add domain fields (bounded_context, module) when modeling architecture
+   - Add contracts when defining APIs
+   - Add prioritization scores when planning releases
+3. **Mixed formats** - You can mix old and new formats in the same file
+
+### Example: Adding Line-Number Precision
+
+**Old format** (still valid):
+```json
+"context_files": [
+  ".opencode/context/core/standards/code-quality.md"
+]
+```
+
+**New format** (enhanced):
+```json
+"context_files": [
+  {
+    "path": ".opencode/context/core/standards/code-quality.md",
+    "lines": "53-95",
+    "reason": "Pure function patterns for service layer"
+  }
+]
+```
+
+Both formats work. Agents handle both automatically.
+
+---
+
 ## Related
 
+- `enhanced-task-schema.md` - Extended schema with advanced features
 - `../guides/splitting-tasks.md` - How to decompose features
 - `../guides/managing-tasks.md` - Lifecycle workflow
 - `../lookup/task-commands.md` - CLI reference

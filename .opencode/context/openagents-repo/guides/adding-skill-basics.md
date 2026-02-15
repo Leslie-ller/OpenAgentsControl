@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Adding an OpenCode Skill (Basics)
 
 **Prerequisites**: Load `plugins/context/capabilities/events_skills.md` first  

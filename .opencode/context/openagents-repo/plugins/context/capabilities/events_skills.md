@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/events_skills | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenCode Events: Skills Plugin Implementation
 
 ## Overview

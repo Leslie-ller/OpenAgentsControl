@@ -1,3 +1,5 @@
+<!-- Context: project/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Project Context
 
 **Purpose**: OpenCode Agent System project-specific context

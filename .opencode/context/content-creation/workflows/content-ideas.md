@@ -1,3 +1,5 @@
+<!-- Context: content-creation/workflows | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Content Ideas
 
 Frameworks and techniques for generating endless content ideas and overcoming creative blocks.

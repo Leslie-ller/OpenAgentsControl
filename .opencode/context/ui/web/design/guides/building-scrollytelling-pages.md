@@ -1,3 +1,5 @@
+<!-- Context: ui/building-scrollytelling-pages | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 ---
 description: "Step-by-step implementation of scroll-linked image sequence animations"
 ---

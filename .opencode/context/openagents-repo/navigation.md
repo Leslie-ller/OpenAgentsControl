@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenAgents Control Repository Context
 
 **Purpose**: Context files specific to the OpenAgents Control repository
@@ -16,6 +18,8 @@
 | **Guides** | 14 files | Step-by-step workflows |
 | **Lookup** | 11 files | Quick reference tables |
 | **Errors** | 2 files | Common issues + solutions |
+| **Features** | 3 files | Feature documentation and refactoring |
+| **Plugins** | Context plugin system | Plugin architecture and capabilities |
 
 ---
 
@@ -172,7 +176,8 @@ All files follow MVI principle (<200 lines):
 - `../core/context-system/` - Context management system
 - `quick-start.md` - 2-minute repo orientation
 - `../content-creation/navigation.md` - Content creation principles
-- `plugins/context/context-overview.md` - Plugin system context
+- `plugins/context/navigation.md` - Plugin system context
+- `features/navigation.md` - Feature documentation and refactoring guides
 
 ---
 

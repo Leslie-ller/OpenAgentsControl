@@ -1,3 +1,5 @@
+<!-- Context: content-creation/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Content Workflows Navigation
 
 Content planning, ideation, and production workflows.

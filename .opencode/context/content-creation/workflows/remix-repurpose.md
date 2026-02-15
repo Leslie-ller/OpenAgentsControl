@@ -1,3 +1,5 @@
+<!-- Context: content-creation/workflows | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Content Remix and Repurposing
 
 Strategies for maximizing content ROI by transforming existing content into multiple formats and reaching new audiences.

@@ -1,3 +1,5 @@
+<!-- Context: content-creation/workflows | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Content Matrix
 
 Framework for organizing and planning content across topics, formats, and stages of the customer journey.

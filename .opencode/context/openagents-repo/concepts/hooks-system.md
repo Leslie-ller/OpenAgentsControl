@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/concepts | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Hooks System
 
 **Purpose**: User-defined shell commands that execute at Claude Code lifecycle points

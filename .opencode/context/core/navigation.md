@@ -1,3 +1,5 @@
+<!-- Context: core/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Core Context Navigation
 
 **Purpose**: Universal standards and workflows for all development
@@ -29,26 +31,31 @@ core/
 │   └── design-iteration.md
 │
 ├── guides/
-│   └── resuming-sessions.md      # NEW: Multi-session task resumption
+│   ├── navigation.md
+│   └── resuming-sessions.md
 │
-├── task-management/           # JSON-driven task tracking
+├── task-management/
 │   ├── navigation.md
 │   ├── standards/
-│   │   └── task-schema.md
+│   │   └── navigation.md
 │   ├── guides/
-│   │   ├── splitting-tasks.md
-│   │   └── managing-tasks.md
+│   │   └── navigation.md
 │   └── lookup/
-│       └── task-commands.md
+│       └── navigation.md
 │
 ├── system/
 │   └── context-guide.md
 │
 └── context-system/
-    ├── guides/
+    ├── navigation.md
     ├── examples/
-    ├── standards/
-    └── operations/
+    │   └── navigation.md
+    ├── guides/
+    │   └── navigation.md
+    ├── operations/
+    │   └── navigation.md
+    └── standards/
+        └── navigation.md
 ```
 
 ---

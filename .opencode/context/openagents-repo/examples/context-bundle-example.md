@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/examples | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context Bundle Example: Create Data Analyst Agent
 
 Session: 20250121-143022-a4f2

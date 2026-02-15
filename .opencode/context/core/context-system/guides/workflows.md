@@ -1,3 +1,5 @@
+<!-- Context: core/workflows | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context Operation Workflows
 
 **Purpose**: Detailed interactive workflows for all context operations

@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/migrating-to-plugins | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Migrating Standalone to Plugin
 
 **Purpose**: Convert `.claude/` configurations into shareable plugins

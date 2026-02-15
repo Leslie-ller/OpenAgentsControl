@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/examples | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Code Reviewer Subagent
 
 **Purpose**: Read-only subagent example for code review

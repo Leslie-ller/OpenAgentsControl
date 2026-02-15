@@ -1,3 +1,5 @@
+<!-- Context: data/README | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Data Context
 
 This directory contains context files for data analysis, visualization, and statistical methods.

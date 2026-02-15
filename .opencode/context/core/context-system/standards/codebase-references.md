@@ -1,3 +1,5 @@
+<!-- Context: core/codebase-references | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Codebase References
 
 **Purpose**: Link context files to actual code implementation

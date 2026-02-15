@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/examples | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Code Formatting Hook
 
 **Purpose**: Auto-format files after Claude edits them

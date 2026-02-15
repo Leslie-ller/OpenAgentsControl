@@ -1,3 +1,5 @@
+<!-- Context: core/harvest | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context Harvest Operation
 
 **Purpose**: Extract knowledge from AI summaries → permanent context, then clean workspace

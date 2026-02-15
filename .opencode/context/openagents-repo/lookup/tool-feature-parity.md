@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lookup | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Lookup: Tool Feature Parity Matrix
 
 **Purpose**: Quick reference for feature support across AI coding tools

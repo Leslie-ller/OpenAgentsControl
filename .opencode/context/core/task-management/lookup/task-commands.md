@@ -1,8 +1,10 @@
+<!-- Context: core/task-commands | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Lookup: Task CLI Commands
 
 **Purpose**: Quick reference for task-cli.ts commands
 
-**Last Updated**: 2026-01-11
+**Last Updated**: 2026-02-14
 
 ---
 
@@ -162,7 +164,41 @@ task-cli.ts validate my-feature
 
 ---
 
+## Enhanced Schema Support
+
+The CLI fully supports the enhanced task schema (v2.0) with:
+- **Line-number precision** - Context files with specific line ranges
+- **Domain modeling** - bounded_context, module, vertical_slice fields
+- **Contract tracking** - API/interface dependencies
+- **Design artifacts** - Figma, wireframes, mockups
+- **ADR references** - Architecture decision records
+- **Prioritization** - RICE/WSJF scores
+
+All enhanced fields are optional and backward compatible. See `../standards/enhanced-task-schema.md` for details.
+
+---
+
+## Planning Workflow Integration
+
+For multi-stage orchestration workflows, use these planning agents before task creation:
+
+| Agent | Purpose | Output |
+|-------|---------|--------|
+| **ArchitectureAnalyzer** | DDD bounded context identification | `.tmp/architecture/contexts.json` |
+| **StoryMapper** | User journey and story mapping | `.tmp/story-maps/map.json` |
+| **PrioritizationEngine** | RICE/WSJF scoring | `.tmp/backlog/prioritized.json` |
+| **ContractManager** | API contract definition | `.tmp/contracts/{service}.json` |
+| **ADRManager** | Architecture decision records | `docs/adr/` |
+
+These agents populate enhanced schema fields (bounded_context, contracts, related_adrs, rice_score, etc.) automatically.
+
+See `.opencode/context/core/workflows/multi-stage-orchestration.md` for the complete workflow.
+
+---
+
 ## Related
 
-- `../standards/task-schema.md` - JSON schema reference
+- `../standards/task-schema.md` - Base JSON schema reference
+- `../standards/enhanced-task-schema.md` - Extended schema with advanced features
 - `../guides/managing-tasks.md` - Workflow guide
+- `../workflows/multi-stage-orchestration.md` - Planning workflow

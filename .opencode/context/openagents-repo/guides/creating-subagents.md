@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Creating Subagents
 
 **Purpose**: Step-by-step guide to create custom subagents

@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/plugin-structure | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Plugin Directory Structure
 
 **Purpose**: Quick reference for plugin file organization

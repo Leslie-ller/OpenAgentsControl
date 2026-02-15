@@ -1,3 +1,5 @@
+<!-- Context: core/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Core Configuration
 
 **Purpose**: Configuration standards and patterns for the context system

@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Adding a New Agent (Basics)
 
 **Prerequisites**: Load `core-concepts/agents.md` first  

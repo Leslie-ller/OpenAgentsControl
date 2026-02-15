@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lookup | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Built-in Subagents
 
 **Purpose**: Quick reference for Claude Code's default subagents

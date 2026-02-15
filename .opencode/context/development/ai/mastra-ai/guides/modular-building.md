@@ -1,3 +1,5 @@
+<!-- Context: development/modular-building | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Modular Mastra Building
 
 **Purpose**: Best practices for structuring a large-scale Mastra implementation.

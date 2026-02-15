@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/registry | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Core Concept: Registry System
 
 **Purpose**: Understanding how component tracking and distribution works  

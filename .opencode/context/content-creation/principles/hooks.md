@@ -1,3 +1,5 @@
+<!-- Context: content-creation/hooks | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Writing Compelling Hooks
 
 Techniques for creating attention-grabbing openings that make people want to keep reading, watching, or listening.

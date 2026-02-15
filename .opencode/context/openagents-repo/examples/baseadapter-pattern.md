@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/examples | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Example: BaseAdapter Implementation Pattern
 
 **Purpose**: Template Method pattern for AI coding tool adapters

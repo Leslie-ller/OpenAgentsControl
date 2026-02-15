@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: Resolving Installer Wildcard Failures
 
 **Purpose**: Capture the root cause, fix, and lessons from wildcard context install failures.

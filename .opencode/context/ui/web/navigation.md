@@ -1,3 +1,5 @@
+<!-- Context: ui/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Web UI Context
 
 **Purpose**: Web-based UI patterns, animations, styling standards, and React component design

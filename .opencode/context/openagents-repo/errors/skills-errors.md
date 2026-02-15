@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/errors | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Skills Troubleshooting
 
 **Purpose**: Common skill issues and solutions

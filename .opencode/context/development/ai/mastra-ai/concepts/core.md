@@ -1,3 +1,5 @@
+<!-- Context: development/core | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Concept: Mastra Core
 
 **Purpose**: Central orchestration layer for AI agents, workflows, and tools in this project.

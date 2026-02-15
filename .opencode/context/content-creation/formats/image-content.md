@@ -1,3 +1,5 @@
+<!-- Context: content-creation/image-content | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Image Content Guidelines
 
 Best practices for creating visual content: social media graphics, infographics, thumbnails, and visual quotes.

@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Guide: GitHub Issues and Project Board Workflow
 
 **Prerequisites**: Basic understanding of GitHub issues and projects  

@@ -1,3 +1,5 @@
+<!-- Context: content-creation/video-content | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Video Content Guidelines
 
 Best practices for creating engaging video content across platforms: YouTube, TikTok, Instagram Reels, and video ads.

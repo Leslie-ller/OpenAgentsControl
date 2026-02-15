@@ -1,3 +1,5 @@
+<!-- Context: development/api-design | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # API Design Patterns
 
 **Category**: development  

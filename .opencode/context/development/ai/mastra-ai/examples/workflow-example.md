@@ -1,3 +1,5 @@
+<!-- Context: development/workflow-example | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Example: Document Ingestion Workflow
 
 **Purpose**: Demonstrates a multi-step workflow with parallel processing.

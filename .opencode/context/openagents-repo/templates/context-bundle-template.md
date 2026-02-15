@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/context-bundle-template | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context Bundle Template
 
 **Purpose**: Template for creating context bundles when delegating tasks to subagents

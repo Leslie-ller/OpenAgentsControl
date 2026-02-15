@@ -1,3 +1,5 @@
+<!-- Context: core/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Core Workflows Navigation
 
 **Purpose**: Process workflows for common development tasks

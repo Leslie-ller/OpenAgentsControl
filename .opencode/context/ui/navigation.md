@@ -1,3 +1,5 @@
+<!-- Context: ui/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # UI Context
 
 **Purpose**: User interface design patterns, standards, and best practices across all platforms

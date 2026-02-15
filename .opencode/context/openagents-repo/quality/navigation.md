@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/navigation | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenAgents Quality
 
 **Purpose**: Quality assurance and standards for OpenAgents Control

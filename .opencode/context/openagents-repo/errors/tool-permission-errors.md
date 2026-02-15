@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/errors | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Tool Permission Errors
 
 **Purpose**: Diagnose and fix tool permission issues in agents

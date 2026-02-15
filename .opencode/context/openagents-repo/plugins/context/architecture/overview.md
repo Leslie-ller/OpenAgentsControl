@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/overview | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # OpenCode Plugins Overview
 
 OpenCode plugins are JavaScript or TypeScript modules that hook into **25+ events** across the entire OpenCode lifecycle—from when you type a prompt, to when tools execute, to when sessions complete.

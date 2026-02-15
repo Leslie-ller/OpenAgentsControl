@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/guides | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Example: Task-Management Skill
 
 **Purpose**: Complete example of creating an OpenCode skill

@@ -1,3 +1,5 @@
+<!-- Context: core/update | Priority: medium | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Update Operation
 
 **Purpose**: Update context when APIs, frameworks, or contracts change

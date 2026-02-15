@@ -1,3 +1,5 @@
+<!-- Context: core/context-system | Priority: critical | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Context System
 
 **Purpose**: Minimal, concern-based knowledge organization for AI agents

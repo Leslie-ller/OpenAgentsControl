@@ -1,3 +1,5 @@
+<!-- Context: system-builder-templates/subagent-template | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 ---
 description: "Template for generating specialized subagent files for context-aware AI systems"
 ---

@@ -1,3 +1,5 @@
+<!-- Context: ui/premium-dark-ui-components | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Premium Dark UI - Core Components
 
 The 4 building blocks for premium dark UI.

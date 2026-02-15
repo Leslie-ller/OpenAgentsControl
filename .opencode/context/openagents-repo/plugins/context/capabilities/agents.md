@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/agents | Priority: low | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Custom Agents in OpenCode
 
 Plugins can register custom AI agents that have specific roles, instructions, and toolsets.

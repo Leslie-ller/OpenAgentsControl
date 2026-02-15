@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/evals | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Core Concept: Eval Framework
 
 **Purpose**: Understanding how agent testing works  

@@ -187,7 +187,25 @@ temp/
 
 # Test output
 /tmp/install-output.log
-.tmp/
+
+# Temporary workspace - preserve structure, ignore content
+.tmp/*
+!.tmp/architecture/
+!.tmp/story-maps/
+!.tmp/backlog/
+!.tmp/contracts/
+.tmp/architecture/*
+!.tmp/architecture/.gitkeep
+!.tmp/architecture/README.md
+.tmp/story-maps/*
+!.tmp/story-maps/.gitkeep
+!.tmp/story-maps/README.md
+.tmp/backlog/*
+!.tmp/backlog/.gitkeep
+!.tmp/backlog/README.md
+.tmp/contracts/*
+!.tmp/contracts/.gitkeep
+!.tmp/contracts/README.md
 
 # Optional npm cache directory
 .npm

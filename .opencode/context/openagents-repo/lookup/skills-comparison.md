@@ -1,3 +1,5 @@
+<!-- Context: openagents-repo/lookup | Priority: high | Version: 1.0 | Updated: 2026-02-15 -->
+
 # Skills vs Other Options
 
 **Purpose**: When to use Skills versus other Claude Code customizations
