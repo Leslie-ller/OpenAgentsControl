@@ -57,7 +57,7 @@ FEATURES:
   ✓ Show contract dependencies
   ✓ Migrate to enhanced schema
 
-For more info, see: .opencode/skill/task-management/SKILL.md
+For more info, see: .opencode/skills/task-management/SKILL.md
 HELP
 }
 

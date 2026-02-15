@@ -1,7 +1,7 @@
 ---
 name: task-management
-description: CLI for managing tasks, tracking progress, validating dependencies, and migrating schemas
-version: 2.0.0
+description: Task management CLI for tracking and managing feature subtasks with status, dependencies, and validation
+version: 1.0.0
 author: opencode
 type: skill
 category: development
@@ -15,74 +15,128 @@ tags:
 
 # Task Management Skill
 
-> **Purpose**: Track, manage, and validate feature implementations with atomic task breakdowns
+> **Purpose**: Track, manage, and validate feature implementations with atomic task breakdowns, dependency resolution, and progress monitoring.
+
+---
 
 ## What I Do
+
+I provide a command-line interface for managing task breakdowns created by the TaskManager subagent. I help you:
 
 - **Track progress** - See status of all features and their subtasks
 - **Find next tasks** - Show eligible tasks (dependencies satisfied)
 - **Identify blocked tasks** - See what's blocked and why
 - **Manage completion** - Mark subtasks as complete with summaries
 - **Validate integrity** - Check JSON files and dependency trees
-- **Show context** - Display bounded context breakdown
-- **Show contracts** - Display contract dependencies
-- **Migrate schemas** - Upgrade tasks to enhanced schema
 
-## Quick Start
+---
+
+## How to Use Me
+
+### Quick Start
 
 ```bash
 # Show all task statuses
-bash .opencode/skill/task-management/router.sh status
+bash .opencode/skills/task-management/router.sh status
 
 # Show next eligible tasks
-bash .opencode/skill/task-management/router.sh next
+bash .opencode/skills/task-management/router.sh next
+
+# Show blocked tasks
+bash .opencode/skills/task-management/router.sh blocked
 
 # Mark a task complete
-bash .opencode/skill/task-management/router.sh complete <feature> <seq> "summary"
+bash .opencode/skills/task-management/router.sh complete <feature> <seq> "summary"
 
 # Validate all tasks
-bash .opencode/skill/task-management/router.sh validate
-
-# Show bounded context breakdown
-bash .opencode/skill/task-management/router.sh context <feature>
-
-# Show contract dependencies
-bash .opencode/skill/task-management/router.sh contracts <feature>
-
-# Migrate to enhanced schema
-bash .opencode/skill/task-management/router.sh migrate <feature>
+bash .opencode/skills/task-management/router.sh validate
 ```
 
-## Command Reference
+### Command Reference
 
 | Command | Description |
 |---------|-------------|
-| `status [feature]` | Show task status summary |
+| `status [feature]` | Show task status summary for all features or specific one |
 | `next [feature]` | Show next eligible tasks (dependencies satisfied) |
 | `parallel [feature]` | Show parallelizable tasks ready to run |
 | `deps <feature> <seq>` | Show dependency tree for a specific subtask |
 | `blocked [feature]` | Show blocked tasks and why |
 | `complete <feature> <seq> "summary"` | Mark subtask complete with summary |
 | `validate [feature]` | Validate JSON files and dependencies |
-| `context [feature]` | Show bounded context breakdown |
-| `contracts [feature]` | Show contract dependencies |
-| `migrate <feature>` | Migrate to enhanced schema |
-| `migrate <feature> --dry-run` | Preview migration changes |
-| `migrate <feature> --lines-only` | Add only line-number precision |
 | `help` | Show help message |
+
+---
+
+## Examples
+
+### Check Overall Progress
+
+```bash
+$ bash .opencode/skills/task-management/router.sh status
+
+[my-feature] My Feature Implementation
+  Status: active | Progress: 45% (5/11)
+  Pending: 3 | In Progress: 2 | Completed: 5 | Blocked: 1
+```
+
+### Find What's Next
+
+```bash
+$ bash .opencode/skills/task-management/router.sh next
+
+=== Ready Tasks (deps satisfied) ===
+
+[my-feature]
+  06 - Implement API endpoint [sequential]
+  08 - Write unit tests [parallel]
+```
+
+### Mark Complete
+
+```bash
+$ bash .opencode/skills/task-management/router.sh complete my-feature 05 "Implemented authentication module"
+
+✓ Marked my-feature/05 as completed
+  Summary: Implemented authentication module
+  Progress: 6/11
+```
+
+### Check Dependencies
+
+```bash
+$ bash .opencode/skills/task-management/router.sh deps my-feature 07
+
+=== Dependency Tree: my-feature/07 ===
+
+07 - Write integration tests [pending]
+  ├── ✓ 05 - Implement authentication module [completed]
+  └── ○ 06 - Implement API endpoint [in_progress]
+```
+
+### Validate Everything
+
+```bash
+$ bash .opencode/skills/task-management/router.sh validate
+
+=== Validation Results ===
+
+[my-feature]
+  ✓ All checks passed
+```
+
+---
 
 ## Architecture
 
 ```
-.opencode/skill/task-management/
+.opencode/skills/task-management/
 ├── SKILL.md                          # This file
-├── router.sh                         # CLI router
+├── router.sh                         # CLI router (entry point)
 └── scripts/
-    ├── task-cli.ts                   # Task management CLI
-    ├── migrate-schema.ts             # Schema migration tool
-    └── validators/
-        └── line-number-validator.ts  # Line-number validation
+    └── task-cli.ts                   # Task management CLI implementation
 ```
+
+---
 
 ## Task File Structure
 
@@ -99,20 +153,66 @@ Tasks are stored in `.tmp/tasks/` at the project root:
     └── {feature-slug}/               # Completed tasks
 ```
 
-## File Locations
+### task.json Schema
 
-### Scripts
-- **Task CLI**: `.opencode/skill/task-management/scripts/task-cli.ts`
-- **Schema Migration**: `.opencode/skill/task-management/scripts/migrate-schema.ts`
-- **Line Validator**: `.opencode/skill/task-management/scripts/validators/line-number-validator.ts`
+```json
+{
+  "id": "my-feature",
+  "name": "My Feature",
+  "status": "active",
+  "objective": "Implement X",
+  "context_files": ["docs/spec.md"],
+  "reference_files": ["src/existing.ts"],
+  "exit_criteria": ["Tests pass", "Code reviewed"],
+  "subtask_count": 5,
+  "completed_count": 2,
+  "created_at": "2026-01-11T10:00:00Z",
+  "completed_at": null
+}
+```
 
-### Runtime Files
-- **Tasks**: `.tmp/tasks/{feature}/`
-- **Completed**: `.tmp/tasks/completed/{feature}/`
+### subtask_##.json Schema
 
-### Documentation
-- **Enhanced Schema**: `.opencode/context/core/task-management/standards/enhanced-task-schema.md`
-- **Migration Guide**: `.opencode/docs/guides/task-schema-migration.md`
+```json
+{
+  "id": "my-feature-05",
+  "seq": "05",
+  "title": "Implement authentication",
+  "status": "pending",
+  "depends_on": ["03", "04"],
+  "parallel": false,
+  "suggested_agent": "coder-agent",
+  "context_files": ["docs/auth.md"],
+  "reference_files": ["src/auth-old.ts"],
+  "acceptance_criteria": ["Login works", "JWT tokens valid"],
+  "deliverables": ["auth.ts", "auth.test.ts"],
+  "started_at": null,
+  "completed_at": null,
+  "completion_summary": null
+}
+```
+
+---
+
+## Integration with TaskManager
+
+The TaskManager subagent creates task files using this format. When you delegate to TaskManager:
+
+```javascript
+task(
+  subagent_type="TaskManager",
+  description="Implement feature X",
+  prompt="Break down this feature into atomic subtasks..."
+)
+```
+
+TaskManager creates:
+1. `.tmp/tasks/{feature}/task.json` - Feature metadata
+2. `.tmp/tasks/{feature}/subtask_XX.json` - Individual subtasks
+
+You can then use this skill to track and manage progress.
+
+---
 
 ## Key Concepts
 
@@ -158,58 +258,14 @@ The `validate` command performs comprehensive checks on task files:
 
 Run `validate` regularly to catch issues early:
 ```bash
-bash .opencode/skill/task-management/router.sh validate my-feature
+bash .opencode/skills/task-management/router.sh validate my-feature
 ```
 
 ### 6. Context and Reference Files
+- **context_files** - Standards, conventions, and guidelines to follow
+- **reference_files** - Existing project files to look at or build upon
 
-**context_files** - Standards, conventions, and guidelines to follow
-**reference_files** - Existing project files to look at or build upon
-
-Both support two formats:
-
-**String format** (legacy, still supported):
-```json
-"context_files": ["docs/standards.md"]
-```
-
-**Object format** (with line-number precision):
-```json
-"context_files": [
-  {
-    "path": "docs/standards.md",
-    "lines": "10-50",
-    "reason": "Pure function patterns"
-  }
-]
-```
-
-The object format reduces cognitive load by pointing to exact sections instead of entire files.
-
-## Integration with TaskManager
-
-The TaskManager subagent creates task files using this format. When you delegate to TaskManager:
-
-```javascript
-task(
-  subagent_type="TaskManager",
-  description="Implement feature X",
-  prompt="Break down this feature into atomic subtasks..."
-)
-```
-
-TaskManager creates:
-1. `.tmp/tasks/{feature}/task.json` - Feature metadata
-2. `.tmp/tasks/{feature}/subtask_XX.json` - Individual subtasks
-
-TaskManager now supports enhanced schema generation with:
-- **Line-number precision** for large context files
-- **Domain modeling** fields (bounded_context, module, vertical_slice)
-- **Contract tracking** for API dependencies
-- **ADR references** for architectural decisions
-- **Prioritization scores** (RICE, WSJF)
-
-You can then use this skill to track and manage progress.
+---
 
 ## Workflow Integration
 
@@ -227,6 +283,8 @@ Working agents (CoderAgent, TestEngineer, etc.) execute subtasks and report comp
 - Check what's blocking progress with `blocked`
 - Validate task definitions with `validate`
 
+---
+
 ## Common Workflows
 
 ### Starting a New Feature
@@ -236,7 +294,7 @@ Working agents (CoderAgent, TestEngineer, etc.) execute subtasks and report comp
 task(subagent_type="TaskManager", description="Implement feature X", ...)
 
 # 2. Check what's ready
-bash .opencode/skill/task-management/router.sh next
+bash .opencode/skills/task-management/router.sh next
 
 # 3. Delegate first task to working agent
 task(subagent_type="CoderAgent", description="Implement subtask 01", ...)
@@ -246,37 +304,39 @@ task(subagent_type="CoderAgent", description="Implement subtask 01", ...)
 
 ```bash
 # Check overall status
-bash .opencode/skill/task-management/router.sh status my-feature
+bash .opencode/skills/task-management/router.sh status my-feature
 
 # See what's next
-bash .opencode/skill/task-management/router.sh next my-feature
+bash .opencode/skills/task-management/router.sh next my-feature
 
 # Check what's blocked
-bash .opencode/skill/task-management/router.sh blocked my-feature
+bash .opencode/skills/task-management/router.sh blocked my-feature
 ```
 
 ### Completing Tasks
 
 ```bash
 # After working agent finishes
-bash .opencode/skill/task-management/router.sh complete my-feature 05 "Implemented auth module with JWT support"
+bash .opencode/skills/task-management/router.sh complete my-feature 05 "Implemented auth module with JWT support"
 
 # Check progress
-bash .opencode/skill/task-management/router.sh status my-feature
+bash .opencode/skills/task-management/router.sh status my-feature
 
 # Find next task
-bash .opencode/skill/task-management/router.sh next my-feature
+bash .opencode/skills/task-management/router.sh next my-feature
 ```
 
 ### Validating Everything
 
 ```bash
 # Validate all tasks
-bash .opencode/skill/task-management/router.sh validate
+bash .opencode/skills/task-management/router.sh validate
 
 # Validate specific feature
-bash .opencode/skill/task-management/router.sh validate my-feature
+bash .opencode/skills/task-management/router.sh validate my-feature
 ```
+
+---
 
 ## Tips & Best Practices
 
@@ -293,44 +353,22 @@ complete my-feature 05 "Done"
 ### 2. Check Dependencies Before Starting
 ```bash
 # See what a task depends on
-bash .opencode/skill/task-management/router.sh deps my-feature 07
+bash .opencode/skills/task-management/router.sh deps my-feature 07
 ```
 
 ### 3. Identify Parallelizable Work
 ```bash
 # Find tasks that can run in parallel
-bash .opencode/skill/task-management/router.sh parallel my-feature
+bash .opencode/skills/task-management/router.sh parallel my-feature
 ```
 
 ### 4. Regular Validation
 ```bash
 # Validate regularly to catch issues early
-bash .opencode/skill/task-management/router.sh validate
+bash .opencode/skills/task-management/router.sh validate
 ```
 
-### 5. Use Line-Number Precision for Large Files
-When creating tasks with large context files, use line-number precision:
-```json
-{
-  "path": ".opencode/context/core/standards/code-quality.md",
-  "lines": "53-95",
-  "reason": "Pure function and immutability patterns"
-}
-```
-
-This helps agents focus on relevant sections instead of reading entire documents.
-
-### 6. Track Contracts for API Dependencies
-Use the `contracts` command to see API/interface dependencies:
-```bash
-bash .opencode/skill/task-management/router.sh contracts my-feature
-```
-
-### 7. View Domain Organization
-Use the `context` command to see bounded context breakdown:
-```bash
-bash .opencode/skill/task-management/router.sh context my-feature
-```
+---
 
 ## Troubleshooting
 
@@ -346,7 +384,16 @@ Check the dependency tree with `deps` to see what's blocking the task.
 ### "Validation failed"
 Run `validate` to see specific issues, then check the JSON files in `.tmp/tasks/`.
 
-## See Also
-- Project Orchestration: `.opencode/skill/project-orchestration/SKILL.md`
-- Planning Agents: `.opencode/docs/agents/planning-agents-guide.md`
-- Task Schema: `.opencode/context/core/task-management/standards/enhanced-task-schema.md`
+---
+
+## File Locations
+
+- **Skill**: `.opencode/skills/task-management/`
+- **Router**: `.opencode/skills/task-management/router.sh`
+- **CLI**: `.opencode/skills/task-management/scripts/task-cli.ts`
+- **Tasks**: `.tmp/tasks/` (created by TaskManager)
+- **Documentation**: `.opencode/skills/task-management/SKILL.md` (this file)
+
+---
+
+**Task Management Skill** - Track, manage, and validate your feature implementations!

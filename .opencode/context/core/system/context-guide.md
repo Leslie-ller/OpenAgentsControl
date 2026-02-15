@@ -8,7 +8,7 @@
 
 **Key Principle**: Use context index for discovery, load specific files as needed
 
-**Index Location**: `.opencode/context/index.md` - Quick map of all contexts
+**Index Location**: `.opencode/context/navigation.md` - Quick map of all contexts
 
 **Structure**: standards/ (quality + analysis), workflows/ (process + review), system/ (internals)
 
@@ -22,7 +22,7 @@ Context files provide guidelines and templates for specific tasks. Use the index
 
 ## Context Index System
 
-**Central Index**: `.opencode/context/index.md` - Ultra-compact map of all contexts
+**Central Index**: `.opencode/context/navigation.md` - Ultra-compact map of all contexts
 
 The index provides:
 - Quick map for common tasks (code, docs, tests, review, delegation)
@@ -42,7 +42,7 @@ All files are in `.opencode/context/core/` with organized subfolders:
 - `standards/code-analysis.md` - Analysis framework [high]
 
 ### Workflows (Process Templates + Review)
-- `workflows/task-delegation.md` - Delegation template [high]
+- `workflows/task-delegation-basics.md` - Delegation template [high]
 - `workflows/feature-breakdown.md` - Complex task breakdown [high]
 - `workflows/session-management.md` - Session lifecycle [medium]
 - `workflows/code-review.md` - Code review guidelines [high]
@@ -55,7 +55,7 @@ All files are in `.opencode/context/core/` with organized subfolders:
 - Review task? → Load `workflows/code-review.md`
 
 **Step 2: Load Index** (for keyword matching)
-- Load `.opencode/context/index.md`
+- Load `.opencode/context/navigation.md`
 - Scan triggers to find relevant contexts
 - Load specific context files as needed
 
@@ -97,7 +97,7 @@ All files are in `.opencode/context/core/` with organized subfolders:
 - Investigating bugs
 - Evaluating architecture
 
-### .opencode/context/core/workflows/task-delegation.md
+### .opencode/context/core/workflows/task-delegation-basics.md
 - Delegating to general agent
 - Creating task context
 - Multi-file coordination
