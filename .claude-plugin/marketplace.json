@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "oac",
-      "source": "./claude-plugin",
+      "source": "./plugins/claude-code",
       "description": "OpenAgents Control - Intelligent code review with security analysis, TDD test generation, automated documentation, and smart task breakdown. Context-aware agents understand your codebase and enforce your team's standards.",
       "version": "1.0.0",
       "author": {

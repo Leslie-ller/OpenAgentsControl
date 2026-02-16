@@ -32,7 +32,7 @@ git clone https://github.com/darrenhinde/OpenAgentsControl.git
 cd OpenAgentsControl
 
 # Load plugin locally
-claude --plugin-dir ./claude-plugin
+claude --plugin-dir ./plugins/claude-code
 ```
 
 ## 🚀 Quick Start
@@ -96,7 +96,7 @@ claude-plugin/
 
 3. Test locally:
    ```bash
-   claude --plugin-dir ./claude-plugin
+   claude --plugin-dir ./plugins/claude-code
    /oac:my-skill
    ```
 

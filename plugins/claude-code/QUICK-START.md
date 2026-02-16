@@ -37,7 +37,7 @@ OpenAgentsControl/
 cd /path/to/OpenAgentsControl
 
 # 2. Start Claude with the plugin
-claude --plugin-dir ./claude-plugin
+claude --plugin-dir ./plugins/claude-code
 
 # 3. In Claude Code, test the plugin
 /oac:hello
@@ -117,7 +117,7 @@ git push origin main
 
 3. **Test it**:
    ```bash
-   claude --plugin-dir ./claude-plugin
+   claude --plugin-dir ./plugins/claude-code
    /oac:my-skill
    ```
 
@@ -177,4 +177,4 @@ git push origin main
 
 **Ready to test!** 🎉
 
-Run: `claude --plugin-dir ./claude-plugin` and then `/oac:hello`
+Run: `claude --plugin-dir ./plugins/claude-code` and then `/oac:hello`

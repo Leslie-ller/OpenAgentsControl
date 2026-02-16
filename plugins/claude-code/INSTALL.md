@@ -24,7 +24,7 @@ Quick guide to install and test the OAC (OpenAgents Control) plugin for Claude C
 cd /path/to/OpenAgentsControl
 
 # Start Claude with the plugin
-claude --plugin-dir ./claude-plugin
+claude --plugin-dir ./plugins/claude-code
 
 # In Claude Code, test the plugin
 /oac:hello
@@ -62,7 +62,7 @@ After installation, verify everything works:
 ### Skill not working
 - Check the skill file exists: `claude-plugin/skills/hello/SKILL.md`
 - Restart Claude Code
-- Try: `claude --plugin-dir ./claude-plugin --verbose`
+- Try: `claude --plugin-dir ./plugins/claude-code --verbose`
 
 ### Context not loading
 - Verify symlink: `cd claude-plugin && ls -la context`
