@@ -11,7 +11,7 @@ Download context files from the OpenAgents Control repository to enable context-
 
 ## Download Progress
 
-!`bash ${CLAUDE_PLUGIN_ROOT}/scripts/download-context.sh $ARGUMENTS`
+!`${CLAUDE_PLUGIN_ROOT}/scripts/download-context.sh $ARGUMENTS`
 
 ## What Was Downloaded
 
