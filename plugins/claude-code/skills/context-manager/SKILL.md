@@ -1,11 +1,29 @@
 ---
 name: context-manager
-description: Manage context files, configuration, and project-specific settings. Use when setting up projects, configuring context sources, or managing personal task systems.
+description: Manage context files, discover context roots, validate structure, and organize project context. Use when adding context from GitHub/worktrees or managing context organization.
+context: fork
+agent: context-manager
 ---
 
 # Context Manager Skill
 
-> **Purpose**: Manage context files, configuration, and integration with external task systems. This skill helps you set up projects, configure context sources, and connect to personal task management systems.
+> **Subagent**: context-manager  
+> **Purpose**: Manage context files, discover context roots, validate structure, and organize project-specific context for optimal discoverability.
+
+---
+
+## Task
+
+Manage context for: **$ARGUMENTS**
+
+**Operations Available**:
+- **discover-root** - Find where context files are stored
+- **add-context** - Add context from GitHub, worktrees, local files, or URLs
+- **validate** - Validate existing context files
+- **update-navigation** - Rebuild navigation files
+- **organize** - Reorganize context by category
+
+**Instructions**: Execute the requested context management operation following the guidelines below.
 
 ---
 

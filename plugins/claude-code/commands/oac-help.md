@@ -62,6 +62,7 @@ Deliverables returned to user
 |-------|---------|---------------|---------|
 | `/using-oac` | N/A (orchestrator) | All | Main workflow orchestration through 6 stages |
 | `/context-discovery` | `context-scout` | Read, Glob, Grep | Discover relevant context files and standards |
+| `/context-manager` | `context-manager` | Read, Write, Glob, Bash | Manage context files, validate structure, organize |
 | `/task-breakdown` | `task-manager` | Read, Write, Bash | Break complex features into atomic subtasks |
 | `/code-execution` | `coder-agent` | Read, Write, Edit, Bash | Implement code following discovered standards |
 | `/test-generation` | `test-engineer` | Read, Write, Bash | Generate comprehensive tests using TDD |
@@ -191,6 +192,20 @@ Use the code-reviewer subagent to review:
 - Check security patterns and code quality
 ```
 
+### context-manager
+Manage context files, discover context roots, validate structure, and organize project context.
+
+**When to use**: Adding context from GitHub/worktrees, validating context files, or organizing context structure.
+
+**Example**:
+```
+Use the context-manager subagent to:
+- Add context from GitHub: github:acme-corp/standards
+- Add context from worktree: worktree:../team-context
+- Validate existing context files
+- Update navigation for discoverability
+```
+
 ## 🎨 Available Skills
 
 Skills guide the main agent through specific workflows:
@@ -237,6 +252,45 @@ Download context files from GitHub repository.
 - Validates context structure
 - Creates `.context-manifest.json`
 
+### /oac:plan
+Plan and break down a complex feature into atomic subtasks.
+
+**Usage**: `/oac:plan [feature description]`
+
+**Examples**:
+- `/oac:plan user authentication system`
+- `/oac:plan API rate limiting with Redis`
+- `/oac:plan payment integration (PCI compliance required)`
+
+**What it does**:
+- Analyzes feature requirements
+- Discovers relevant context
+- Creates task breakdown with dependencies
+- Generates JSON task files in `.tmp/tasks/{feature}/`
+
+### /oac:add-context
+Add context files from GitHub, worktrees, local files, or URLs.
+
+**Usage**: `/oac:add-context [source] [options]`
+
+**Examples**:
+- `/oac:add-context github:acme-corp/standards --category=team`
+- `/oac:add-context worktree:../team-context --category=team`
+- `/oac:add-context file:./docs/patterns/auth.md --category=custom`
+- `/oac:add-context url:https://example.com/doc.md --category=external`
+
+**Options**:
+- `--category=<name>` - Target category (default: custom)
+- `--priority=<level>` - Priority level (critical, high, medium)
+- `--overwrite` - Overwrite existing files
+- `--dry-run` - Preview without making changes
+
+**What it does**:
+- Discovers context root location
+- Fetches/copies files from source
+- Validates markdown format
+- Updates navigation for discoverability
+
 ### /oac:help
 Show this usage guide (you're reading it now!).
 
@@ -254,6 +308,17 @@ Show plugin status and installed context.
 - Installed context version
 - Available subagents and skills
 - Context file count
+
+### /oac:cleanup
+Clean up old temporary files with approval.
+
+**Usage**: `/oac:cleanup`
+
+**What it does**:
+- Finds old session files (>7 days)
+- Finds old task files (>30 days)
+- Finds old external cache (>7 days)
+- Requests approval before deletion
 
 ## ⚙️ Configuration Setup
 
