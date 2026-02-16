@@ -159,34 +159,9 @@ opencode --agent OpenAgent
 
 **Installation:**
 
-1. Register the marketplace:
-```bash
-/plugin marketplace add darrenhinde/OpenAgentsControl
-```
-
-2. Install the plugin:
 ```bash
 /plugin install oac
 ```
-
-3. Download context files:
-```bash
-/oac:setup --core
-```
-
-4. Start building:
-```
-Add a login endpoint
-```
-
-**Features:**
-- ✅ 6-stage workflow with approval gates
-- ✅ Context-aware code generation
-- ✅ 7 specialized subagents (task-manager, context-scout, context-manager, coder-agent, test-engineer, code-reviewer, external-scout)
-- ✅ 9 workflow skills + 6 user commands
-- ✅ Flexible context discovery (.oac config, .claude/context, context, .opencode/context)
-- ✅ Add context from GitHub, worktrees, local files, or URLs
-- ✅ Easy feature planning with `/oac:plan`
 
 **Documentation:**
 - [Plugin README](./plugins/claude-code/README.md) - Complete plugin documentation
