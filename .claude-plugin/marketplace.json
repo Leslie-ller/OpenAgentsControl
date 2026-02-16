@@ -1,25 +1,16 @@
 {
   "name": "oac-marketplace",
-  "description": "OpenAgents Control - Multi-agent orchestration and automation plugins",
+  "description": "AI-powered development workflow automation - code review, testing, documentation, and task management for Claude Code",
   "owner": {
-    "name": "NextSystems",
+    "name": "darrenhinde",
     "url": "https://github.com/darrenhinde/OpenAgentsControl"
   },
   "plugins": [
     {
       "name": "oac",
       "source": "./claude-plugin",
-      "description": "Multi-agent orchestration and automation for Claude Code. Provides intelligent code review, testing, documentation, and task management capabilities.",
+      "description": "Ship faster with AI-powered development workflows. Automates code review, test generation, documentation, and task breakdown. Context-aware agents understand your codebase and enforce your team's standards. Works seamlessly with OpenCode, Cursor, and Windsurf.",
       "version": "1.0.0",
-      "tags": [
-        "agents",
-        "automation",
-        "orchestration",
-        "development",
-        "testing",
-        "code-review",
-        "documentation"
-      ],
       "author": {
         "name": "darrenhinde",
         "url": "https://github.com/darrenhinde"

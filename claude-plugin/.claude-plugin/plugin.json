@@ -1,19 +1,11 @@
 {
   "name": "oac",
-  "description": "OpenAgents Control - Multi-agent orchestration and automation for Claude Code",
+  "description": "AI development workflow automation for Claude Code - intelligent code review, TDD test generation, automated documentation, and smart task breakdown",
   "version": "1.0.0",
-  "author": "darrenhinde",
+  "author": {
+    "name": "darrenhinde",
+    "url": "https://github.com/darrenhinde"
+  },
   "license": "MIT",
-  "repository": "https://github.com/darrenhinde/OpenAgentsControl",
-  "tags": [
-    "agents",
-    "automation",
-    "orchestration",
-    "development",
-    "testing",
-    "code-review"
-  ],
-  "compatibility": {
-    "claude": ">=1.0.0"
-  }
+  "repository": "https://github.com/darrenhinde/OpenAgentsControl"
 }
