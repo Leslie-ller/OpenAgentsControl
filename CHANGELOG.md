@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-02-19
+
+### Changes
+- fix: overhaul Claude Code plugin for correctness and spec compliance (#225)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
