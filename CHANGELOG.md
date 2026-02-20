@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-02-20
+
+### Changes
+- fix(shellcheck): declare and assign separately in router.sh (SC2155) (#231)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
