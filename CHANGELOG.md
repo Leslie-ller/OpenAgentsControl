@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-02-23
+
+### Changes
+- fix(plugin): invoke hook via bash to avoid +x permission requirement (#245)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
