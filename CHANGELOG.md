@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.8.0] - 2026-02-23
+
+### Changes
+- feat(plugin): enhance context management and skill invocation (#239)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
