@@ -1,6 +1,6 @@
 ---
-description: "You MUST use this before any creative work — creating features, building components, adding functionality, or modifying behavior."
+description: "Use before implementing anything — discovers context and proposes a plan for approval before writing code."
 disable-model-invocation: true
 ---
 
-Invoke the oac:brainstorming skill and follow it exactly as presented to you
+Invoke the oac:approach skill and follow it exactly as presented to you

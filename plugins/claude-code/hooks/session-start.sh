@@ -11,6 +11,7 @@ SKILL_FILE="${PLUGIN_ROOT}/skills/using-oac/SKILL.md"
 # Read using-oac content
 using_oac_content=$(cat "${SKILL_FILE}" 2>&1 || echo "Error reading using-oac skill")
 
+
 # Escape string for JSON embedding
 # SECURITY: Prevents command injection attacks from malicious SKILL.md files
 escape_for_json() {
@@ -49,14 +50,20 @@ fi
 # Build warning message for first-time users
 warning_message=""
 if [[ ! -f "${PLUGIN_ROOT}/.context-manifest.json" ]] && [[ ! -f "$(pwd)/.context-manifest.json" ]]; then
-    warning_message="\n\n<important-reminder>IN YOUR FIRST REPLY AFTER SEEING THIS MESSAGE YOU MUST TELL THE USER:👋 **Welcome to OpenAgents Control!** To get started, run /install-context to download context files. Then use /brainstorm before building anything.</important-reminder>"
+    warning_message="\n\n<important-reminder>IN YOUR FIRST REPLY AFTER SEEING THIS MESSAGE YOU MUST TELL THE USER: **No context files found.** Invoke the install-context skill now to set up context for this project — it will check your project type and recommend the right profile. Say: \"I notice you don't have context files set up. Let me get that sorted for you.\" Then immediately run the install-context skill.</important-reminder>"
 fi
 
 warning_escaped=$(escape_for_json "$warning_message")
 skill_catalogue_escaped=$(escape_for_json "$skill_catalogue")
 
+# Build OAC system paths block
+PROTOCOL_PATH="${PLUGIN_ROOT}/skills/context-discovery/context-discovery-protocol.md"
+plugin_root_escaped=$(escape_for_json "$PLUGIN_ROOT")
+protocol_path_escaped=$(escape_for_json "$PROTOCOL_PATH")
+OAC_SYSTEM_PATHS="## OAC System Paths\n- Plugin Root: ${plugin_root_escaped}\n- Context Discovery Protocol: ${protocol_path_escaped}"
+
 # Build context string
-OAC_CONTEXT="<EXTREMELY_IMPORTANT>\nYou have OAC (OpenAgents Control) superpowers.\n\n**Below is the full content of your 'oac:using-oac' skill — your introduction to using OAC skills. For all other skills, use the 'Skill' tool:**\n\n${using_oac_escaped}\n\n## Available OAC Skills (invoke with the Skill tool):\n${skill_catalogue_escaped}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
+OAC_CONTEXT="<EXTREMELY_IMPORTANT>\nYou have OAC (OpenAgents Control).\n\n**Below is the full content of your 'oac:using-oac' skill — your introduction to using OAC skills. For all other skills, use the 'Skill' tool:**\n\n${using_oac_escaped}\n\n## Available OAC Skills (invoke with the Skill tool):\n${skill_catalogue_escaped}\n\n${OAC_SYSTEM_PATHS}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output dual-format JSON for cross-tool compatibility
 # - additionalContext: Claude Code (hookSpecificOutput)

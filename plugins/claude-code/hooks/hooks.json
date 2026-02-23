@@ -1,5 +1,4 @@
 {
-  "description": "OAC session initialization — injects workflow context on session start",
   "hooks": {
     "SessionStart": [
       {

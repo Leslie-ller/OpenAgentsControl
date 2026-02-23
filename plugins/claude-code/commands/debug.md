@@ -3,4 +3,4 @@ description: "Use when encountering any bug, test failure, or unexpected behavio
 disable-model-invocation: true
 ---
 
-Invoke the oac:systematic-debugging skill and follow it exactly as presented to you
+Invoke the oac:debugger skill and follow it exactly as presented to you

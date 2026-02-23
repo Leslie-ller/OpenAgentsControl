@@ -1,11 +1,12 @@
 {
   "version": "1.0.0",
+  "profile": "standard",
   "source": {
-    "repository": "github:darrenhinde/OpenAgentsControl#main",
-    "branch": null,
-    "commit": null,
-    "downloaded_at": null
+    "repository": "darrenhinde/OpenAgentsControl",
+    "branch": "main",
+    "commit": "1442740b4a776a790754c9dbde64ab7f1aa9d4e8",
+    "downloaded_at": "2026-02-23T11:37:10Z"
   },
-  "categories": [],
-  "files": {}
+  "categories": ["core","openagents-repo"],
+  "files": {"core": 86,"openagents-repo": 107}
 }

@@ -61,7 +61,7 @@ model: haiku
 **3 steps. That's it.**
 
 1. **Understand intent** — What is the user trying to do? What context do they need?
-2. **Follow navigation** — Read `navigation.md` files from `.opencode/context/` downward. They are the map.
+2. **Follow navigation** — Read `navigation.md` files from the resolved `{context_root}` downward. They are the map.
 3. **Return ranked files** — Priority order: Critical → High → Medium. Brief summary per file.
 
 ---
@@ -70,44 +70,17 @@ model: haiku
 
 ### Step 0: Discover Context Root
 
-**Before discovering context files, find where context is stored:**
+**Follow the OAC Context Discovery Protocol exactly.**
 
-**Discovery Order**:
-1. **Check .oac config** - Try reading `.oac` file for `context.root` setting
-2. **Check .claude/context** - Claude Code default location
-3. **Check context** - Simple root-level directory
-4. **Check .opencode/context** - OpenCode/OAC default location
-5. **Check plugin context** - `plugins/claude-code/context/` (installed via /install-context)
-6. **Fallback** - If none found, report error (don't assume location)
+Read the protocol file — its path is in your session context under **OAC System Paths**:
 
-**Process**:
 ```
-# Try reading .oac config
-Read: .oac
-  → If exists, parse JSON and extract context.root
-  → If context.root is set and directory exists, use it
-
-# Try .claude/context
-Glob: .claude/context/navigation.md
-  → If exists, use .claude/context
-
-# Try context
-Glob: context/navigation.md
-  → If exists, use context
-
-# Try .opencode/context
-Glob: .opencode/context/navigation.md
-  → If exists, use .opencode/context
-
-# Try plugin context (installed via /install-context)
-Glob: plugins/claude-code/context/navigation.md
-  → If exists, use plugins/claude-code/context
-
-# If none found
-  → Return error: "No context root found. Run /install-context to download context files."
+Read: {PLUGIN_ROOT}/skills/context-discovery/context-discovery-protocol.md
 ```
 
-**Output**: Context root path (e.g., `.claude/context`, `context`, or `.opencode/context`)
+Execute the protocol (Steps 1–4) and return the resolved `context_root`, `source`, and `write_oac_json` flag to the main agent.
+
+**You cannot write `.oac.json` yourself (read-only agent).** If the protocol says `write_oac_json: true`, include that signal in your response so the main agent can create the file.
 
 ---
 

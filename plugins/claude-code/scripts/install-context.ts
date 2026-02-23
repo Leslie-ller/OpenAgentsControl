@@ -8,7 +8,7 @@
  */
 
 import { existsSync, writeFileSync, readFileSync } from 'fs'
-import { join } from 'path'
+import { join, relative, dirname } from 'path'
 import type { InstallOptions, InstallResult, Profile } from './types/registry'
 import type { Manifest, ManifestComponent } from './types/manifest'
 import { fetchRegistry, filterContextByProfile, filterContextByIds, getUniquePaths } from './utils/registry-fetcher'
@@ -194,6 +194,19 @@ export async function installContext(options: InstallOptions = {}): Promise<Inst
 
     writeFileSync(MANIFEST_FILE, JSON.stringify(manifest, null, 2))
     log.success(`Manifest created: ${MANIFEST_FILE}`)
+    console.log('')
+
+    // Write .oac.json at project root so context-scout uses fast path on next session
+    const projectRoot = dirname(PLUGIN_ROOT)
+    const oacJsonPath = join(projectRoot, '.oac.json')
+    const contextRelPath = relative(projectRoot, CONTEXT_DIR).replace(/\\/g, '/')
+    if (!existsSync(oacJsonPath)) {
+      const oacConfig = { version: '1', context: { root: contextRelPath } }
+      writeFileSync(oacJsonPath, JSON.stringify(oacConfig, null, 2))
+      log.success(`.oac.json created at project root → context.root = "${contextRelPath}"`)
+    } else {
+      log.info(`.oac.json already exists at project root — skipping (use --force to overwrite)`)
+    }
     console.log('')
 
     // Clean up temp directory

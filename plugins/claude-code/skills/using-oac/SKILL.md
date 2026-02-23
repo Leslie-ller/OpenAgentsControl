@@ -1,6 +1,6 @@
 ---
 name: using-oac
-description: "Use when starting any conversation — establishes how to find and use OAC skills, requiring Skill tool invocation BEFORE ANY response including clarifying questions"
+description: "Use when starting any conversation — establishes how to find and use OAC skills, requiring Skill tool invocation BEFORE ANY response including clarifying questions, this is your secret weapon to best perform your tasks"
 ---
 
 <EXTREMELY-IMPORTANT>
@@ -26,25 +26,25 @@ digraph skill_flow {
     "User message received" [shape=doublecircle];
     "About to build/create something?" [shape=doublecircle];
     "Already brainstormed?" [shape=diamond];
-    "Invoke oac:brainstorming skill" [shape=box];
+    "Invoke oac:approach skill" [shape=box];
     "Might any OAC skill apply?" [shape=diamond];
     "Invoke Skill tool" [shape=box];
-    "Announce: 'Using [skill] to [purpose]'" [shape=box];
+    "Announce: 'OAC skill loaded: [friendly-skill-name] — [purpose]'" [shape=box];
     "Has checklist?" [shape=diamond];
     "Create TodoWrite todo per item" [shape=box];
     "Follow skill exactly" [shape=box];
     "Respond (including clarifications)" [shape=doublecircle];
 
     "About to build/create something?" -> "Already brainstormed?";
-    "Already brainstormed?" -> "Invoke oac:brainstorming skill" [label="no"];
+    "Already brainstormed?" -> "Invoke oac:approach skill" [label="no"];
     "Already brainstormed?" -> "Might any OAC skill apply?" [label="yes"];
-    "Invoke oac:brainstorming skill" -> "Might any OAC skill apply?";
+    "Invoke oac:approach skill" -> "Might any OAC skill apply?";
 
     "User message received" -> "Might any OAC skill apply?";
     "Might any OAC skill apply?" -> "Invoke Skill tool" [label="yes, even 1%"];
     "Might any OAC skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
-    "Invoke Skill tool" -> "Announce: 'Using [skill] to [purpose]'";
-    "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
+    "Invoke Skill tool" -> "Announce: 'OAC skill loaded: [friendly-skill-name] — [purpose]'";
+    "Announce: 'OAC skill loaded: [friendly-skill-name] — [purpose]'" -> "Has checklist?";
     "Has checklist?" -> "Create TodoWrite todo per item" [label="yes"];
     "Has checklist?" -> "Follow skill exactly" [label="no"];
     "Create TodoWrite todo per item" -> "Follow skill exactly";
@@ -56,26 +56,26 @@ digraph skill_flow {
 | Skill | When to invoke |
 |-------|---------------|
 | `oac:using-oac` | This skill — loaded at session start |
-| `oac:brainstorming` | BEFORE any creative work, building features, adding functionality |
+| `oac:approach` | BEFORE any creative work, building features, adding functionality |
 | `oac:context-discovery` | BEFORE implementing anything — find standards and patterns |
 | `oac:task-breakdown` | When breaking complex features into subtasks |
 | `oac:code-execution` | When implementing code subtasks |
 | `oac:test-generation` | When creating tests |
 | `oac:code-review` | When reviewing code changes |
-| `oac:external-scout` | When working with external libraries/packages |
+| `oac:external-research` | When working with external libraries/packages |
 | `oac:parallel-execution` | When running multiple agents in parallel |
-| `oac:systematic-debugging` | BEFORE proposing any fix for a bug or test failure |
+| `oac:debugger` | BEFORE proposing any fix for a bug or test failure |
 | `oac:verification-before-completion` | BEFORE claiming any work is complete or tests pass |
 
 ## Skill Priority
 
 When multiple skills could apply, use this order:
 
-1. **Process skills first** (brainstorming, debugging) — these determine HOW to approach the task
+1. **Process skills first** (approach, debugger) — these determine HOW to approach the task
 2. **Implementation skills second** (context-discovery, task-breakdown, code-execution) — these guide execution
 
-"Let's build X" → brainstorming first, then context-discovery, then implementation skills.
-"Fix this bug" → systematic-debugging first, then verification-before-completion.
+"Let's build X" → approach first, then context-discovery, then implementation skills.
+"Fix this bug" → debugger first, then verification-before-completion.
 
 ## Red Flags
 
@@ -98,11 +98,31 @@ These thoughts mean STOP — you're rationalizing:
 
 ## Skill Types
 
-**Rigid** (systematic-debugging, verification-before-completion): Follow exactly. Don't adapt away discipline.
+**Rigid** (debugger, verification-before-completion): Follow exactly. Don't adapt away discipline.
 
-**Flexible** (brainstorming, context-discovery): Adapt principles to context.
+**Flexible** (approach, context-discovery): Adapt principles to context.
 
 The skill itself tells you which.
+
+## Skill Friendly Names
+
+When announcing a skill, use the friendly name below (not the internal skill ID):
+
+| Skill ID | Friendly Name |
+|----------|--------------|
+| `oac-approach` | OAC Approach |
+| `context-discovery` | OAC Context Discovery |
+| `task-breakdown` | OAC Task Breakdown |
+| `code-execution` | OAC Code Execution |
+| `test-generation` | OAC Test Generation |
+| `code-review` | OAC Code Review |
+| `external-research` | OAC External Research |
+| `parallel-execution` | OAC Parallel Execution |
+| `debugger` | OAC Debugger |
+| `verification-before-completion` | OAC Verification |
+| `context-setup` | OAC Context Setup |
+
+Example announcement: `OAC skill loaded: OAC Approach — planning before implementation`
 
 ## User Instructions
 
