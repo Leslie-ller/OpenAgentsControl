@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { mkdir } from 'node:fs/promises';
 import { z } from 'zod';
 
 // ── Errors ────────────────────────────────────────────────────────────────────
@@ -150,7 +149,7 @@ export const readManifest = async (
     return null;
   }
 
-  const raw: unknown = await Bun.file(manifestPath).json() as unknown;
+  const raw: unknown = await Bun.file(manifestPath).json();
 
   const result = ManifestFileSchema.safeParse(raw);
   if (!result.success) {
@@ -175,6 +174,5 @@ export const writeManifest = async (
   manifest: ManifestFile,
 ): Promise<void> => {
   const manifestPath = getManifestPath(projectRoot);
-  await mkdir(path.dirname(manifestPath), { recursive: true });
   await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
 };

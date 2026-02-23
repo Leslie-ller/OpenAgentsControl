@@ -9,8 +9,8 @@
  */
 
 import type { Command } from 'commander'
-import { join, dirname } from 'node:path'
-import { mkdir, stat } from 'node:fs/promises'
+import { join } from 'node:path'
+import { stat } from 'node:fs/promises'
 import {
   loadAgents,
   CursorAdapter,
@@ -63,9 +63,9 @@ function reportFileSize(ide: IdeType, outputPath: string, sizeBytes: number): vo
   dim(`  ${displayName}: ${outputPath} is ${formatKb(sizeBytes)}`)
 
   if (limits && sizeBytes >= limits.limit) {
-    warn(`${displayName}: ${outputRelPath} is ${formatKb(sizeBytes)} (limit: ${formatKb(limits.limit)}) — consider removing agents`)
+    warn(`${displayName}: ${outputRelPath} is ${formatKb(sizeBytes)} — over the ${formatKb(limits.limit)} limit, consider removing agents`)
   } else if (limits && sizeBytes >= limits.warn) {
-    warn(`${displayName}: ${outputRelPath} is ${formatKb(sizeBytes)} (limit: ${formatKb(limits.limit)}) — consider removing agents`)
+    warn(`${displayName}: ${outputRelPath} is ${formatKb(sizeBytes)} — approaching the ${formatKb(limits.limit)} limit`)
   }
 }
 
@@ -103,9 +103,9 @@ function reportWarnings(result: ConversionResult, isVerbose: boolean): void {
 
   if (isVerbose) {
     result.warnings.forEach((w: string) => warn(w))
-  } else {
-    warn(`${result.warnings.length} conversion warning(s) — use --verbose to see details`)
+    return
   }
+  warn(`${result.warnings.length} conversion warning(s) — use --verbose to see details`)
 }
 
 // ─── Single IDE apply ─────────────────────────────────────────────────────────
@@ -161,7 +161,6 @@ async function applyToIde(
       printDryRunPreview(outputPath, content)
     } else {
       await backupIfExists(outputPath)
-      await mkdir(dirname(outputPath), { recursive: true })
       await Bun.write(outputPath, content)
     }
 

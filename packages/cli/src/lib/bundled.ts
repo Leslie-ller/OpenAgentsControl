@@ -32,8 +32,14 @@ export function getPackageRoot(): string {
 
 /**
  * Synchronously walks up from `dir` until finding a directory that has
- * both `.opencode/` and `package.json`. Throws if the filesystem root is
- * reached without finding a match.
+ * all three anchors:
+ *   1. `.opencode/`   — OAC configuration directory
+ *   2. `package.json` — npm package manifest
+ *   3. No `registry.json` at the same level — `registry.json` is present at
+ *      the monorepo root but NOT at the CLI package root, so its absence
+ *      distinguishes the CLI package from the repo root in a monorepo layout.
+ *
+ * Throws if the filesystem root is reached without finding a match.
  *
  * Pure in intent — no side effects beyond filesystem reads.
  */
@@ -43,8 +49,12 @@ export function findPackageRoot(dir: string): string {
   while (true) {
     const hasOpencode = existsSync(join(current, ".opencode"));
     const hasPackageJson = existsSync(join(current, "package.json"));
+    // registry.json exists at the monorepo root but NOT at the CLI package root.
+    // Excluding directories that have it prevents the walk from stopping at the
+    // repo root instead of the actual CLI package root.
+    const hasRegistryJson = existsSync(join(current, "registry.json"));
 
-    if (hasOpencode && hasPackageJson) {
+    if (hasOpencode && hasPackageJson && !hasRegistryJson) {
       return current;
     }
 
@@ -53,7 +63,8 @@ export function findPackageRoot(dir: string): string {
     if (parent === current) {
       throw new Error(
         `getPackageRoot: could not find a directory with ".opencode/" and "package.json" ` +
-          `walking up from "${dir}". Is @nextsystems/oac installed correctly?`,
+          `(without a "registry.json" at the same level) walking up from "${dir}". ` +
+          `Is @nextsystems/oac installed correctly?`,
       );
     }
     current = parent;

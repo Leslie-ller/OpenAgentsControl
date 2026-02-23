@@ -83,4 +83,85 @@ describe('computeFileHash', () => {
     const h2 = await computeFileHash(filePath);
     expect(h1).toBe(h2);
   });
+
+  // ✅ Positive: binary file — hash is a valid 64-char hex string
+  test('returns a valid 64-char hex hash for a binary file', async () => {
+    // Arrange — write raw bytes (not valid UTF-8 text)
+    const binaryPath = join(tmpDir, 'binary.bin');
+    const bytes = new Uint8Array([0x00, 0xff, 0xfe, 0x80, 0x01, 0x7f, 0xab, 0xcd]);
+    await Bun.write(binaryPath, bytes);
+
+    // Act
+    const hash = await computeFileHash(binaryPath);
+
+    // Assert
+    expect(hash).toHaveLength(64);
+    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  // ✅ Positive: binary file hash matches computeStringHash of same bytes
+  test('binary file hash is consistent with hashing the same byte sequence', async () => {
+    // Arrange
+    const binaryPath = join(tmpDir, 'binary-consistent.bin');
+    const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+    await Bun.write(binaryPath, bytes);
+
+    // Act
+    const fileHash = await computeFileHash(binaryPath);
+    // computeStringHash uses utf8 encoding, so we compare against the raw
+    // crypto hash of the same bytes to verify correctness
+    const { createHash } = await import('node:crypto');
+    const expectedHash = createHash('sha256').update(bytes).digest('hex');
+
+    // Assert
+    expect(fileHash).toBe(expectedHash);
+  });
+
+  // ✅ Positive: large file (1 MB) — hash is computed correctly
+  test('returns a valid hash for a large file (1 MB)', async () => {
+    // Arrange — 1 MB of repeated bytes
+    const largePath = join(tmpDir, 'large.bin');
+    const oneMB = 1024 * 1024;
+    const largeBytes = new Uint8Array(oneMB).fill(0x42); // 1 MB of 'B'
+    await Bun.write(largePath, largeBytes);
+
+    // Act
+    const hash = await computeFileHash(largePath);
+
+    // Assert
+    expect(hash).toHaveLength(64);
+    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+    // Verify determinism for large file
+    const hash2 = await computeFileHash(largePath);
+    expect(hash).toBe(hash2);
+  });
+
+  // ❌ Negative: empty file has the known SHA256 of empty content
+  test('empty file returns the SHA256 of empty content', async () => {
+    // Arrange
+    const emptyPath = join(tmpDir, 'empty.txt');
+    await writeFile(emptyPath, '', 'utf8');
+
+    // Act
+    const hash = await computeFileHash(emptyPath);
+
+    // Assert — SHA256('') is the well-known constant
+    expect(hash).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+  });
+
+  // ❌ Negative: two files with different content have different hashes
+  test('different file contents produce different hashes', async () => {
+    // Arrange
+    const pathA = join(tmpDir, 'diff-a.txt');
+    const pathB = join(tmpDir, 'diff-b.txt');
+    await writeFile(pathA, 'content A', 'utf8');
+    await writeFile(pathB, 'content B', 'utf8');
+
+    // Act
+    const hashA = await computeFileHash(pathA);
+    const hashB = await computeFileHash(pathB);
+
+    // Assert
+    expect(hashA).not.toBe(hashB);
+  });
 });

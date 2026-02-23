@@ -197,11 +197,11 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
   // Step 2: count components
   const counts = countComponents(manifest);
 
-  // Step 3: check for modified files
-  const modified = await findModifiedFiles(projectRoot, manifest);
-
-  // Step 4: detect IDEs
-  const ides = await detectIdes(projectRoot);
+  // Steps 3 & 4: check modified files and detect IDEs in parallel
+  const [modified, ides] = await Promise.all([
+    findModifiedFiles(projectRoot, manifest),
+    detectIdes(projectRoot),
+  ]);
 
   // Step 5: print summary
   printStatus(cliVersion, projectRoot, manifest, counts, modified, ides);

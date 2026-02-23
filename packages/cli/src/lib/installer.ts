@@ -1,5 +1,4 @@
 import path from "node:path";
-import { mkdir } from "node:fs/promises";
 import { computeFileHash, hashesMatch } from "./sha256.js";
 import {
   type ManifestFile,
@@ -103,7 +102,6 @@ export async function installFile(
     log(options, `[dry-run] would copy: ${sourcePath} → ${destPath}`);
     return;
   }
-  await mkdir(path.dirname(destPath), { recursive: true });
   await Bun.write(destPath, Bun.file(sourcePath));
 }
 
@@ -118,7 +116,6 @@ export async function backupFile(
   const timestamp = buildTimestamp();
   const relativePath = path.relative(projectRoot, filePath);
   const backupPath = buildBackupPath(projectRoot, timestamp, relativePath);
-  await mkdir(path.dirname(backupPath), { recursive: true });
   await Bun.write(backupPath, Bun.file(filePath));
   return backupPath;
 }
@@ -241,7 +238,6 @@ async function processOneFile(
       log(options, `yolo: backing up and overwriting ${relativePath}`);
       const backupPath = buildBackupPath(options.projectRoot, timestamp, relativePath);
       if (!options.dryRun) {
-        await mkdir(path.dirname(backupPath), { recursive: true });
         await Bun.write(backupPath, Bun.file(destPath));
       } else {
         log(options, `[dry-run] would backup: ${destPath} → ${backupPath}`);

@@ -1,4 +1,5 @@
 import path from 'node:path';
+// node:fs/promises rm is used intentionally — Bun has no built-in recursive directory removal
 import { rm } from 'node:fs/promises';
 import { type Command } from 'commander';
 import { loadRegistry, resolveComponent, listComponents } from '../lib/registry.js';
