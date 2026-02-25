@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-02-25
+
+### Changes
+- Rename AOC to OAC throughout README (#248)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
