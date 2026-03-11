@@ -9,9 +9,6 @@ program
   .name('oac')
   .description('OpenAgents Control — install, manage, and update AI agents and context files')
   .version(readCliVersion(), '-v, --version', 'Print version and exit')
-  .option('--yolo', 'Skip all confirmations (auto-enabled when CI=true)', false)
-  .option('--dry-run', 'Show what would happen without doing it', false)
-  .option('--verbose', 'Show detailed output', false)
 
 // Lazy-load command modules in parallel — keeps startup < 100ms
 async function main(): Promise<void> {

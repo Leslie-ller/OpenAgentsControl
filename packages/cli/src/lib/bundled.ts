@@ -26,6 +26,13 @@ const BUNDLED_SUBDIRS = [
  * import.meta.dir is Bun's native equivalent of __dirname.
  */
 export function getPackageRoot(): string {
+  // Allow dev/monorepo override via environment variable.
+  // In production (npm install), OAC_PACKAGE_ROOT is not set so the walk runs as before.
+  // In dev, set OAC_PACKAGE_ROOT=/path/to/repo to bypass the walk entirely.
+  const envOverride = process.env['OAC_PACKAGE_ROOT'];
+  if (envOverride) {
+    return envOverride;
+  }
   // import.meta.dir is Bun's native equivalent of __dirname — points to packages/cli/dist/ at runtime
   return findPackageRoot(import.meta.dir);
 }
@@ -64,7 +71,8 @@ export function findPackageRoot(dir: string): string {
       throw new Error(
         `getPackageRoot: could not find a directory with ".opencode/" and "package.json" ` +
           `(without a "registry.json" at the same level) walking up from "${dir}". ` +
-          `Is @nextsystems/oac installed correctly?`,
+          `Is @nextsystems/oac installed correctly? ` +
+          `In dev/monorepo mode, set OAC_PACKAGE_ROOT env var to the repo root.`,
       );
     }
     current = parent;

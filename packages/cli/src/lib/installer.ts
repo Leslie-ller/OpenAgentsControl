@@ -1,4 +1,5 @@
 import path from "node:path";
+import { stat } from "node:fs/promises";
 import { computeFileHash, hashesMatch } from "./sha256.js";
 import {
   type ManifestFile,
@@ -191,22 +192,20 @@ async function processOneFile(
   const { relativePath, sourcePath, destPath, manifest, options, timestamp } =
     args;
 
-  // TODO: §4.1 — complex restructure needed (catch returns different shape than FileDecision)
-  let decision: FileDecision;
-  try {
-    decision = await decideFileAction(
-      relativePath,
-      manifest,
-      destPath,
-      options,
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  const decisionResult = await (async () => {
+    try {
+      return { ok: true as const, value: await decideFileAction(relativePath, manifest, destPath, options) };
+    } catch (err) {
+      return { ok: false as const, msg: err instanceof Error ? err.message : String(err) };
+    }
+  })();
+  if (!decisionResult.ok) {
     return {
-      patch: { errors: [`${relativePath}: decision failed — ${msg}`] },
+      patch: { errors: [`${relativePath}: decision failed — ${decisionResult.msg}`] },
       entry: null,
     };
   }
+  const decision = decisionResult.value;
 
   const now = new Date().toISOString();
   const fileType = classifyBundledFile(relativePath);
@@ -280,34 +279,50 @@ export async function installFiles(
   options: InstallOptions,
 ): Promise<{ result: InstallResult; updatedManifest: ManifestFile }> {
   const now = new Date().toISOString();
-  let manifest = createEmptyManifest("0.0.0"); // TODO: §4.1 — complex restructure needed (loop accumulator)
-  let result = { ...EMPTY_RESULT }; // TODO: §4.1 — complex restructure needed (loop accumulator)
 
-  for (const relativePath of files) {
-    const sourcePath = getBundledFilePath(options.packageRoot, relativePath);
-    const destPath = path.join(options.projectRoot, relativePath);
+  type FileOutcome =
+    | { ok: true; relativePath: string; entry: FileEntry }
+    | { ok: false; relativePath: string; msg: string };
 
-    log(options, `install: ${relativePath}`);
-    try {
-      await installFile(sourcePath, destPath, options);
-      const sha256 = options.dryRun ? "" : await computeFileHash(destPath);
-      const entry: FileEntry = {
-        sha256,
-        type: classifyBundledFile(relativePath),
-        source: "bundled",
-        installedAt: now,
+  const outcomes = await Promise.all(
+    files.map(async (relativePath): Promise<FileOutcome> => {
+      const sourcePath = getBundledFilePath(options.packageRoot, relativePath);
+      const destPath = path.join(options.projectRoot, relativePath);
+      log(options, `install: ${relativePath}`);
+      try {
+        await installFile(sourcePath, destPath, options);
+        const sha256 = options.dryRun ? "" : await computeFileHash(destPath);
+        const entry: FileEntry = {
+          sha256,
+          type: classifyBundledFile(relativePath),
+          source: "bundled",
+          installedAt: now,
+        };
+        return { ok: true, relativePath, entry };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { ok: false, relativePath, msg };
+      }
+    }),
+  );
+
+  const { result, updatedManifest } = outcomes.reduce(
+    (acc, outcome) => {
+      if (outcome.ok) {
+        return {
+          result: mergeResult(acc.result, { installed: [outcome.relativePath] }),
+          updatedManifest: addFileToManifest(acc.updatedManifest, outcome.relativePath, outcome.entry),
+        };
+      }
+      return {
+        result: mergeResult(acc.result, { errors: [`${outcome.relativePath}: ${outcome.msg}`] }),
+        updatedManifest: acc.updatedManifest,
       };
-      manifest = addFileToManifest(manifest, relativePath, entry);
-      result = mergeResult(result, { installed: [relativePath] });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      result = mergeResult(result, {
-        errors: [`${relativePath}: ${msg}`],
-      });
-    }
-  }
+    },
+    { result: { ...EMPTY_RESULT }, updatedManifest: createEmptyManifest("0.0.0") },
+  );
 
-  return { result, updatedManifest: manifest };
+  return { result, updatedManifest };
 }
 
 /**
@@ -330,47 +345,58 @@ export async function updateFiles(
   const bundledFiles = await listBundledFiles(options.packageRoot);
   const timestamp = buildTimestamp();
 
-  let workingManifest: ManifestFile =
-    manifest ?? createEmptyManifest("0.0.0"); // TODO: §4.1 — complex restructure needed (loop accumulator)
-  let result = { ...EMPTY_RESULT }; // TODO: §4.1 — complex restructure needed (loop accumulator)
+  // Phase 1: process each file in the new bundle (parallel)
+  const phase1Results = await Promise.all(
+    bundledFiles.map(async (relativePath) => {
+      const sourcePath = getBundledFilePath(options.packageRoot, relativePath);
+      const destPath = path.join(options.projectRoot, relativePath);
+      const { patch, entry } = await processOneFile({
+        relativePath,
+        sourcePath,
+        destPath,
+        manifest,
+        options,
+        timestamp,
+      });
+      return { relativePath, patch, entry };
+    }),
+  );
 
-  // Phase 1: process each file in the new bundle
-  for (const relativePath of bundledFiles) {
-    const sourcePath = getBundledFilePath(options.packageRoot, relativePath);
-    const destPath = path.join(options.projectRoot, relativePath);
-
-    const { patch, entry } = await processOneFile({
-      relativePath,
-      sourcePath,
-      destPath,
-      manifest,
-      options,
-      timestamp,
-    });
-
-    result = mergeResult(result, patch);
-
-    // Update the working manifest if we have a new/updated entry
-    if (entry !== null) {
-      workingManifest = addFileToManifest(workingManifest, relativePath, entry);
-    }
-  }
+  const phase1 = phase1Results.reduce(
+    (acc, { relativePath, patch, entry }) => ({
+      result: mergeResult(acc.result, patch),
+      workingManifest:
+        entry !== null
+          ? addFileToManifest(acc.workingManifest, relativePath, entry)
+          : acc.workingManifest,
+    }),
+    {
+      result: { ...EMPTY_RESULT } as InstallResult,
+      workingManifest: manifest ?? createEmptyManifest("0.0.0"),
+    },
+  );
 
   // Phase 2: handle files in manifest that are no longer in the bundle
   const bundledSet = new Set(bundledFiles);
-  const manifestPaths = Object.keys(workingManifest.files);
+  const manifestPaths = Object.keys(phase1.workingManifest.files);
 
-  for (const trackedPath of manifestPaths) {
-    if (!bundledSet.has(trackedPath)) {
-      process.stdout.write(
-        `[oac] warn: "${trackedPath}" is no longer maintained by OAC — your copy is untouched\n`,
-      );
-      workingManifest = removeFileFromManifest(workingManifest, trackedPath);
-      result = mergeResult(result, { removed_from_manifest: [trackedPath] });
-    }
-  }
+  const { result, updatedManifest } = manifestPaths.reduce(
+    (acc, trackedPath) => {
+      if (!bundledSet.has(trackedPath)) {
+        process.stdout.write(
+          `[oac] warn: "${trackedPath}" is no longer maintained by OAC — your copy is untouched\n`,
+        );
+        return {
+          result: mergeResult(acc.result, { removed_from_manifest: [trackedPath] }),
+          updatedManifest: removeFileFromManifest(acc.updatedManifest, trackedPath),
+        };
+      }
+      return acc;
+    },
+    { result: phase1.result, updatedManifest: phase1.workingManifest },
+  );
 
-  return { result, updatedManifest: workingManifest };
+  return { result, updatedManifest };
 }
 
 /**
@@ -380,7 +406,9 @@ export async function updateFiles(
 export async function isProjectRoot(dir: string): Promise<boolean> {
   const [hasPackageJson, hasGit] = await Promise.all([
     Bun.file(path.join(dir, "package.json")).exists(),
-    Bun.file(path.join(dir, ".git")).exists(),
+    // stat() works for both files (.git in worktrees) and directories (.git in normal repos)
+    // Bun.file().exists() returns false for directories, so we must use stat() here
+    stat(path.join(dir, ".git")).then(() => true).catch(() => false),
   ]);
   return hasPackageJson || hasGit;
 }
