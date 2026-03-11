@@ -1,5 +1,5 @@
 ---
-name: external-scout
+name: external-research
 description: Use when the task involves an external library or package and current API docs are needed before writing code.
 context: fork
 agent: external-scout

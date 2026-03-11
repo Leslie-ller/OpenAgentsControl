@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
 **The result:** Production-ready code that ships without heavy rework.
 
-### What Makes AOC Different
+### What Makes OAC Different
 
 **🎯 Context-Aware (Your Secret Weapon)**  
 Agents load YOUR patterns before generating code. Code matches your project from the start. No refactoring needed.
@@ -80,7 +80,7 @@ Store YOUR coding patterns once. Entire team uses same standards. Commit context
 **🔄 Model Agnostic**  
 Use any AI model (Claude, GPT, Gemini, local). No vendor lock-in.
 
-**Full-stack development:** AOC handles both frontend and backend work. The agents coordinate to build complete features from UI to database.
+**Full-stack development:** OAC handles both frontend and backend work. The agents coordinate to build complete features from UI to database.
 
 ---
 
@@ -98,7 +98,7 @@ Use any AI model (Claude, GPT, Gemini, local). No vendor lock-in.
 | **Error Recovery** | ✅ Human-guided validation | ⚠️ Auto-retry (can loop) | ⚠️ Auto-retry | ✅ Self-correcting |
 | **Best For** | Production code, teams | Quick prototypes | Solo developers | Power users, complex projects |
 
-**Use AOC when:**
+**Use OAC when:**
 - ✅ You have established coding patterns
 - ✅ You want code that ships without refactoring
 - ✅ You need approval gates for quality control
@@ -132,6 +132,14 @@ curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/
 curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh -o install.sh
 bash install.sh
 ```
+
+### Keep Updated
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/update.sh | bash
+```
+
+> Use `--install-dir PATH` if you installed to a custom location (e.g. `~/.config/opencode`).
 
 ### Step 2: Start Building
 
@@ -201,7 +209,7 @@ Add a login endpoint
 
 **The problem with AI code:** It doesn't match your patterns. You spend hours refactoring.
 
-**The AOC solution:** Teach your patterns once. Agents load them automatically. Code matches from the start.
+**The OAC solution:** Teach your patterns once. Agents load them automatically. Code matches from the start.
 
 ### How It Works
 
@@ -242,7 +250,7 @@ Ships without refactoring ✅
 - Large token overhead per request
 - Slow responses, high costs
 
-**AOC approach:**
+**OAC approach:**
 - Loads only relevant patterns
 - Context files <200 lines (quick to load)
 - Lazy loading (agents load what they need)
@@ -257,7 +265,7 @@ Ships without refactoring ✅
 
 **The team problem:** Every developer writes code differently. Inconsistent patterns. Hard to maintain.
 
-**The AOC solution:** Store team patterns in `.opencode/context/project/`. Commit to repo. Everyone uses same standards.
+**The OAC solution:** Store team patterns in `.opencode/context/project/`. Commit to repo. Everyone uses same standards.
 
 **Example workflow:**
 ```bash
@@ -326,7 +334,7 @@ Agents are markdown files you can edit. Change workflows, add constraints, custo
 Before generating code, ContextScout discovers relevant patterns from your context files. Ranks by priority (Critical → High → Medium). Prevents wasted work.
 
 **2. Editable Agents - Full Control**  
-Unlike Cursor/Copilot where behavior is baked into plugins, AOC agents are markdown files. Edit them directly:
+Unlike Cursor/Copilot where behavior is baked into plugins, OAC agents are markdown files. Edit them directly:
 ```bash
 nano .opencode/agent/core/opencoder.md  # local project install
 # Or: nano ~/.config/opencode/agent/core/opencoder.md  # global install
@@ -619,7 +627,7 @@ Agents automatically use updated patterns.
 
 ## 🎯 Is This For You?
 
-### ✅ Use AOC if you:
+### ✅ Use OAC if you:
 - Build production code that ships without heavy rework
 - Work in a team with established coding standards
 - Want control over agent behavior (not black-box plugins)
@@ -628,7 +636,7 @@ Agents automatically use updated patterns.
 - Want repeatable, consistent results
 - Use multiple AI models (no vendor lock-in)
 
-### ⚠️ Skip AOC if you:
+### ⚠️ Skip OAC if you:
 - Want fully autonomous execution without approval gates
 - Prefer "just do it" mode over human-guided workflows
 - Don't have established coding patterns yet
@@ -640,14 +648,14 @@ Agents automatically use updated patterns.
 **Try this test:**
 1. Ask your current AI tool to generate an API endpoint
 2. Count how many minutes you spend refactoring it to match your patterns
-3. If you're spending time on refactoring, AOC will save you that time
+3. If you're spending time on refactoring, OAC will save you that time
 
 **Or ask yourself:**
 - Do you have coding standards your team follows?
 - Do you spend time refactoring AI-generated code?
 - Do you want AI to follow YOUR patterns, not generic ones?
 
-If you answered "yes" to any of these, AOC is for you.
+If you answered "yes" to any of these, OAC is for you.
 
 ---
 
@@ -718,15 +726,15 @@ A: Run `/add-context --update` anytime your patterns change. Agents automaticall
 ### Comparison
 
 **Q: How is this different from Cursor/Copilot?**  
-A: AOC has editable agents (not baked-in), approval gates (not auto-execute), context system (YOUR patterns), and MVI token efficiency.
+A: OAC has editable agents (not baked-in), approval gates (not auto-execute), context system (YOUR patterns), and MVI token efficiency.
 
 **Q: How is this different from Aider?**  
-A: AOC has team patterns, context system, approval workflow, and smart pattern discovery. Aider is file-based only.
+A: OAC has team patterns, context system, approval workflow, and smart pattern discovery. Aider is file-based only.
 
 **Q: How does this compare to Oh My OpenCode?**  
-A: Both are built on OpenCode. AOC focuses on **control & repeatability** (approval gates, pattern control, team standards). Oh My OpenCode focuses on **autonomy & speed** (parallel agents, auto-execution). [Read detailed comparison →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
+A: Both are built on OpenCode. OAC focuses on **control & repeatability** (approval gates, pattern control, team standards). Oh My OpenCode focuses on **autonomy & speed** (parallel agents, auto-execution). [Read detailed comparison →](https://github.com/darrenhinde/OpenAgentsControl/discussions/116)
 
-**Q: When should I NOT use AOC?**  
+**Q: When should I NOT use OAC?**  
 A: If you want fully autonomous execution without approval gates, or if you don't have established coding patterns yet.
 
 ### Setup

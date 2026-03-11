@@ -8,7 +8,7 @@ agent: context-scout
 # Context Discovery
 
 ## Overview
-Discover project standards and patterns before implementing features. Context-scout finds and ranks relevant files from `.opencode/context/` based on your request.
+Discover project standards and patterns before implementing features. Context-scout resolves the context root using the [OAC Context Discovery Protocol](./context-discovery-protocol.md), then finds and ranks relevant files based on your request.
 
 **Announce at start:** "I'm using the context-discovery skill to find relevant standards for [feature/task]."
 
@@ -29,11 +29,11 @@ Run the skill with your implementation topic:
 
 ### Step 2: Load Critical Priority Files
 
-Read EVERY file marked **Critical Priority**:
+Read EVERY file marked **Critical Priority** (paths returned by context-scout, relative to the resolved context root):
 
 ```bash
-Read: .opencode/context/core/standards/code-quality.md
-Read: .opencode/context/core/standards/security-patterns.md
+Read: {context_root}/core/standards/code-quality.md
+Read: {context_root}/core/standards/security-patterns.md
 ```
 
 These are **mandatory**—proceed only after loading.
@@ -43,7 +43,7 @@ These are **mandatory**—proceed only after loading.
 Read files marked **High Priority**:
 
 ```bash
-Read: .opencode/context/core/workflows/approval-gates.md
+Read: {context_root}/core/workflows/approval-gates.md
 ```
 
 These are **strongly recommended** for your implementation.
@@ -53,7 +53,7 @@ These are **strongly recommended** for your implementation.
 Read **Medium Priority** files for additional context:
 
 ```bash
-Read: .opencode/context/project-intelligence/architecture.md
+Read: {context_root}/project-intelligence/architecture.md
 ```
 
 These are **optional but helpful**.
@@ -104,7 +104,7 @@ Instructions: Follow functional patterns and security best practices.
 
 - task-breakdown
 - code-execution
-- external-scout
+- external-research
 
 ---
 
