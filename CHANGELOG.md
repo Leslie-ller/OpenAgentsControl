@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+## [0.7.2] - 2026-03-11
+
+### Changes
+- fix(install): resolve non-.md context paths like paths.json (#252)
+
 ## [0.7.1] - 2026-01-30
 
 ### Changes
