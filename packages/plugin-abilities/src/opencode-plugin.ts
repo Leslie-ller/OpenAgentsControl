@@ -273,10 +273,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
           }
 
           try {
-            // TODO: Derive taskType from ability definition or execution context
-            // when multiple TaskTypes are supported. Currently hardcoded to
-            // 'code_change' as it is the only supported type.
-            const taskType = 'code_change' as const
+            const taskType = ability.task_type ?? 'code_change'
 
             // Create a per-run event bus and wire it into the executor context
             // so events are emitted in real-time (replacing post-hoc replay).

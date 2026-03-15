@@ -244,4 +244,28 @@ steps:
     expect(result.control?.modelAudit?.drifts[0]?.expectedModel).toBe('gpt-5.4')
     expect(result.control?.modelAudit?.drifts[0]?.actualModel).toBe('gpt-5.4')
   })
+
+  test('uses declared ability task_type instead of hardcoded code_change', async () => {
+    writeAbility(
+      tempDir,
+      'research-capture',
+      `
+name: research-capture
+description: Capture a paper into the research system
+task_type: research_capture
+steps:
+  - id: collect
+    type: script
+    run: echo "paper collected"
+`
+    )
+
+    const plugin = await createPluginFor(tempDir)
+    const raw = await plugin.tool['ability.run'].execute({ name: 'research-capture' })
+    const result = parseToolResponse(raw)
+
+    expect(result.control?.obligations.taskType).toBe('research_capture')
+    expect(result.control?.gate.verdict).toBe('block')
+    expect(result.status).toBe('failed')
+  })
 })

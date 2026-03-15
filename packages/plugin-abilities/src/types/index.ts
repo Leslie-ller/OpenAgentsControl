@@ -119,6 +119,7 @@ export interface AbilityHooks {
 export interface Ability {
   name: string
   description: string
+  task_type?: import('../control/types.js').TaskType
   version?: string
   triggers?: Triggers
   inputs?: Record<string, InputDefinition>

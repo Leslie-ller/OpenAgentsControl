@@ -29,7 +29,7 @@ export interface ControlEvent {
   payload: Record<string, unknown>
 }
 
-export type TaskType = 'code_change'
+export type TaskType = 'code_change' | 'research_capture'
 
 export type ObligationKey = 'run_tests' | 'record_validation' | 'commit_if_required'
 export type ObligationSeverity = 'hard' | 'soft'

@@ -104,6 +104,20 @@ describe('validateAbility', () => {
     const result = validateAbility(ability)
     expect(result.valid).toBe(true)
   })
+
+  it('should accept ability-level task_type declarations', () => {
+    const ability = {
+      name: 'research-capture',
+      description: 'Capture research into an external system',
+      task_type: 'research_capture',
+      steps: [
+        { id: 'collect', type: 'script', run: 'echo collected' },
+      ],
+    }
+
+    const result = validateAbility(ability)
+    expect(result.valid).toBe(true)
+  })
 })
 
 describe('validateInputs', () => {
