@@ -18,6 +18,21 @@ const SOURCE_COMMAND_PATTERN =
 const SUMMARY_COMMAND_PATTERN =
   /\b(summary|summarize|notes?|markdown|md)\b/i
 
+const ROLE_COMMAND_PATTERN =
+  /\b(role|classify|classification|core|survey|overview|support|mainline)\b/i
+
+const SCREENING_DECISION_COMMAND_PATTERN =
+  /\b(decision|screen|keep|drop|reject|dedupe|de-duplicate|promote|demote)\b/i
+
+const VALUE_COMMAND_PATTERN =
+  /\b(value|contribution|useful|importance|worth|benefit)\b/i
+
+const PITFALL_COMMAND_PATTERN =
+  /\b(risk|pitfall|limitation|caveat|weakness|constraint)\b/i
+
+const USAGE_COMMAND_PATTERN =
+  /\b(usage|use|recommend|position|cite|mainline|related work|roadmap)\b/i
+
 function getStepTags(event: ControlEvent): string[] {
   const tags = event.context.stepTags ?? event.payload.stepTags
   if (!Array.isArray(tags)) {
@@ -105,8 +120,98 @@ function isSummaryLikeEvent(event: ControlEvent): boolean {
   return SUMMARY_COMMAND_PATTERN.test(command) || /(summary|notes?)/i.test(stepId)
 }
 
+function isRoleLikeEvent(event: ControlEvent): boolean {
+  if (hasAnySignalTag(event, ['role', 'classify', 'classify_role', 'paper-role'])) {
+    return true
+  }
+
+  const command = typeof event.payload.command === 'string' ? event.payload.command : ''
+  const stepId = event.context.stepId ?? ''
+  return ROLE_COMMAND_PATTERN.test(command) || /(role|classify)/i.test(stepId)
+}
+
+function isScreeningDecisionLikeEvent(event: ControlEvent): boolean {
+  if (hasAnySignalTag(event, ['decision', 'screening_decision', 'screening-decision'])) {
+    return true
+  }
+
+  const command = typeof event.payload.command === 'string' ? event.payload.command : ''
+  const stepId = event.context.stepId ?? ''
+  return SCREENING_DECISION_COMMAND_PATTERN.test(command) || /(decision|screen)/i.test(stepId)
+}
+
+function isValueLikeEvent(event: ControlEvent): boolean {
+  if (hasAnySignalTag(event, ['value', 'record_value', 'paper-value'])) {
+    return true
+  }
+
+  const command = typeof event.payload.command === 'string' ? event.payload.command : ''
+  const stepId = event.context.stepId ?? ''
+  return VALUE_COMMAND_PATTERN.test(command) || /(value|contribution)/i.test(stepId)
+}
+
+function isPitfallLikeEvent(event: ControlEvent): boolean {
+  if (hasAnySignalTag(event, ['pitfall', 'record_pitfalls', 'limitations', 'risk'])) {
+    return true
+  }
+
+  const command = typeof event.payload.command === 'string' ? event.payload.command : ''
+  const stepId = event.context.stepId ?? ''
+  return PITFALL_COMMAND_PATTERN.test(command) || /(pitfall|risk|limit)/i.test(stepId)
+}
+
+function isUsageLikeEvent(event: ControlEvent): boolean {
+  if (hasAnySignalTag(event, ['usage', 'recommend_usage', 'recommend'])) {
+    return true
+  }
+
+  const command = typeof event.payload.command === 'string' ? event.payload.command : ''
+  const stepId = event.context.stepId ?? ''
+  return USAGE_COMMAND_PATTERN.test(command) || /(usage|recommend)/i.test(stepId)
+}
+
+function isStepLifecycleEvent(event: ControlEvent): boolean {
+  return (
+    event.eventType === 'step.started' ||
+    event.eventType === 'step.completed' ||
+    event.eventType === 'step.failed'
+  )
+}
+
+function applyStepObligation(
+  obligations: Map<ObligationKey, ObligationState>,
+  key: ObligationKey,
+  event: ControlEvent,
+  notePrefix: string
+): void {
+  const obligation = obligations.get(key)
+  if (!obligation) return
+
+  if (event.eventType === 'step.started') {
+    updateToAttempted(obligation, event, `Observed ${notePrefix} step start`)
+  } else if (event.eventType === 'step.completed') {
+    updateToSatisfied(obligation, event, `Observed completed ${notePrefix} step`)
+  } else {
+    updateToFailed(obligation, event, `Observed failed ${notePrefix} step`)
+  }
+}
+
 function createTaskObligations(taskType: TaskType): Map<ObligationKey, ObligationState> {
   switch (taskType) {
+    case 'paper_screening':
+      return new Map<ObligationKey, ObligationState>([
+        ['record_source', createObligationState('record_source')],
+        ['classify_paper_role', createObligationState('classify_paper_role')],
+        ['record_screening_decision', createObligationState('record_screening_decision')],
+      ])
+    case 'paper_fulltext_review':
+      return new Map<ObligationKey, ObligationState>([
+        ['record_source', createObligationState('record_source')],
+        ['save_summary', createObligationState('save_summary')],
+        ['record_value', createObligationState('record_value')],
+        ['record_pitfalls', createObligationState('record_pitfalls')],
+        ['recommend_usage', createObligationState('recommend_usage')],
+      ])
     case 'research_capture':
       return new Map<ObligationKey, ObligationState>([
         ['record_source', createObligationState('record_source')],
@@ -188,40 +293,52 @@ export function evaluateObligations(
     }
 
     if (taskType === 'research_capture') {
-      if (
-        (event.eventType === 'step.started' ||
-          event.eventType === 'step.completed' ||
-          event.eventType === 'step.failed') &&
-        isSourceLikeEvent(event)
-      ) {
-        const recordSource = obligations.get('record_source')
-        if (!recordSource) continue
-
-        if (event.eventType === 'step.started') {
-          updateToAttempted(recordSource, event, 'Observed source-recording step start')
-        } else if (event.eventType === 'step.completed') {
-          updateToSatisfied(recordSource, event, 'Observed completed source-recording step')
-        } else {
-          updateToFailed(recordSource, event, 'Observed failed source-recording step')
-        }
+      if (isStepLifecycleEvent(event) && isSourceLikeEvent(event)) {
+        applyStepObligation(obligations, 'record_source', event, 'source-recording')
       }
 
-      if (
-        (event.eventType === 'step.started' ||
-          event.eventType === 'step.completed' ||
-          event.eventType === 'step.failed') &&
-        isSummaryLikeEvent(event)
-      ) {
-        const saveSummary = obligations.get('save_summary')
-        if (!saveSummary) continue
+      if (isStepLifecycleEvent(event) && isSummaryLikeEvent(event)) {
+        applyStepObligation(obligations, 'save_summary', event, 'summary-saving')
+      }
 
-        if (event.eventType === 'step.started') {
-          updateToAttempted(saveSummary, event, 'Observed summary-saving step start')
-        } else if (event.eventType === 'step.completed') {
-          updateToSatisfied(saveSummary, event, 'Observed completed summary-saving step')
-        } else {
-          updateToFailed(saveSummary, event, 'Observed failed summary-saving step')
-        }
+      continue
+    }
+
+    if (taskType === 'paper_screening') {
+      if (isStepLifecycleEvent(event) && isSourceLikeEvent(event)) {
+        applyStepObligation(obligations, 'record_source', event, 'source-recording')
+      }
+
+      if (isStepLifecycleEvent(event) && isRoleLikeEvent(event)) {
+        applyStepObligation(obligations, 'classify_paper_role', event, 'paper-role classification')
+      }
+
+      if (isStepLifecycleEvent(event) && isScreeningDecisionLikeEvent(event)) {
+        applyStepObligation(obligations, 'record_screening_decision', event, 'screening-decision')
+      }
+
+      continue
+    }
+
+    if (taskType === 'paper_fulltext_review') {
+      if (isStepLifecycleEvent(event) && isSourceLikeEvent(event)) {
+        applyStepObligation(obligations, 'record_source', event, 'source-recording')
+      }
+
+      if (isStepLifecycleEvent(event) && isSummaryLikeEvent(event)) {
+        applyStepObligation(obligations, 'save_summary', event, 'summary-saving')
+      }
+
+      if (isStepLifecycleEvent(event) && isValueLikeEvent(event)) {
+        applyStepObligation(obligations, 'record_value', event, 'value-recording')
+      }
+
+      if (isStepLifecycleEvent(event) && isPitfallLikeEvent(event)) {
+        applyStepObligation(obligations, 'record_pitfalls', event, 'pitfall-recording')
+      }
+
+      if (isStepLifecycleEvent(event) && isUsageLikeEvent(event)) {
+        applyStepObligation(obligations, 'recommend_usage', event, 'usage-recommendation')
       }
     }
   }

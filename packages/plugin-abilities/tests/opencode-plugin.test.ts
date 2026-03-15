@@ -300,4 +300,71 @@ steps:
     expect(result.status).toBe('completed')
     expect(result.execution?.status).toBe('completed')
   })
+
+  test('allows paper_screening abilities that satisfy screening obligations', async () => {
+    writeAbility(
+      tempDir,
+      'paper-screening-pass',
+      `
+name: paper-screening-pass
+description: Screen a candidate paper
+task_type: paper_screening
+steps:
+  - id: record-paper-source
+    type: script
+    run: echo "doi:10.1000/test"
+    tags:
+      - source
+  - id: classify-paper-role
+    type: script
+    run: echo "core support"
+    tags:
+      - role
+  - id: record-screening-decision
+    type: script
+    run: echo "keep for fulltext review"
+    tags:
+      - decision
+`
+    )
+
+    const plugin = await createPluginFor(tempDir)
+    const raw = await plugin.tool['ability.run'].execute({ name: 'paper-screening-pass' })
+    const result = parseToolResponse(raw)
+
+    expect(result.control?.obligations.taskType).toBe('paper_screening')
+    expect(result.control?.gate.verdict).toBe('allow')
+    expect(result.status).toBe('completed')
+  })
+
+  test('blocks paper_fulltext_review abilities when review obligations are incomplete', async () => {
+    writeAbility(
+      tempDir,
+      'paper-fulltext-review-block',
+      `
+name: paper-fulltext-review-block
+description: Review a paper but miss structured judgment
+task_type: paper_fulltext_review
+steps:
+  - id: record-paper-source
+    type: script
+    run: echo "doi:10.1000/test"
+    tags:
+      - source
+  - id: save-paper-summary
+    type: script
+    run: echo "summary saved"
+    tags:
+      - summary
+`
+    )
+
+    const plugin = await createPluginFor(tempDir)
+    const raw = await plugin.tool['ability.run'].execute({ name: 'paper-fulltext-review-block' })
+    const result = parseToolResponse(raw)
+
+    expect(result.control?.obligations.taskType).toBe('paper_fulltext_review')
+    expect(result.control?.gate.verdict).toBe('block')
+    expect(result.status).toBe('failed')
+  })
 })

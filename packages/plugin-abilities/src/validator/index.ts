@@ -110,7 +110,12 @@ const AbilitySchema = z.object({
     'Name must be lowercase alphanumeric with hyphens and slashes'
   ),
   description: z.string().min(1, 'Description is required'),
-  task_type: z.enum(['code_change', 'research_capture']).optional(),
+  task_type: z.enum([
+    'code_change',
+    'research_capture',
+    'paper_screening',
+    'paper_fulltext_review',
+  ]).optional(),
   version: z.string().optional(),
   triggers: TriggersSchema.optional(),
   inputs: z.record(InputDefinitionSchema).optional(),

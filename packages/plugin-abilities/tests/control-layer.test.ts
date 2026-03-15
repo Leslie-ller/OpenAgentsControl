@@ -396,6 +396,72 @@ describe('control layer v1', () => {
     expect(gate.failed).toEqual([])
     expect(gate.warnings).toEqual([])
   })
+
+  test('paper_screening allows completion when source, role, and decision are recorded', async () => {
+    const ability: Ability = {
+      name: 'paper-screening-pass',
+      description: 'Classifies a candidate paper and records a decision',
+      task_type: 'paper_screening',
+      steps: [
+        {
+          id: 'record-paper-source',
+          type: 'script',
+          run: 'echo "doi:10.1000/test"',
+          tags: ['source'],
+        },
+        {
+          id: 'classify-paper-role',
+          type: 'script',
+          run: 'echo "core support"',
+          tags: ['role'],
+        },
+        {
+          id: 'record-screening-decision',
+          type: 'script',
+          run: 'echo "keep for fulltext review"',
+          tags: ['decision'],
+        },
+      ],
+    }
+
+    const execution = await executeAbility(ability, {}, ctx)
+    const events = collectExecutionEvents(execution, 'paper_screening')
+    const obligations = evaluateObligations(events, 'paper_screening')
+    const gate = evaluateCompletionGate(obligations)
+
+    expect(gate.verdict).toBe('allow')
+    expect(gate.missing).toEqual([])
+  })
+
+  test('paper_fulltext_review blocks when value, pitfalls, and usage are missing', async () => {
+    const ability: Ability = {
+      name: 'paper-fulltext-review-missing',
+      description: 'Reads paper but leaves review structure incomplete',
+      task_type: 'paper_fulltext_review',
+      steps: [
+        {
+          id: 'record-paper-source',
+          type: 'script',
+          run: 'echo "doi:10.1000/test"',
+          tags: ['source'],
+        },
+        {
+          id: 'save-paper-summary',
+          type: 'script',
+          run: 'echo "summary saved"',
+          tags: ['summary'],
+        },
+      ],
+    }
+
+    const execution = await executeAbility(ability, {}, ctx)
+    const events = collectExecutionEvents(execution, 'paper_fulltext_review')
+    const obligations = evaluateObligations(events, 'paper_fulltext_review')
+    const gate = evaluateCompletionGate(obligations)
+
+    expect(gate.verdict).toBe('block')
+    expect(gate.missing).toEqual(['record_value', 'record_pitfalls', 'recommend_usage'])
+  })
 })
 
 // ─────────────────────────────────────────────────────────────
