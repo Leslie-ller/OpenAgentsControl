@@ -268,4 +268,36 @@ steps:
     expect(result.control?.gate.verdict).toBe('block')
     expect(result.status).toBe('failed')
   })
+
+  test('allows research_capture abilities that satisfy source and summary obligations', async () => {
+    writeAbility(
+      tempDir,
+      'research-capture-pass',
+      `
+name: research-capture-pass
+description: Capture a paper with source and summary evidence
+task_type: research_capture
+steps:
+  - id: record-paper-source
+    type: script
+    run: echo "doi:10.1000/test"
+    tags:
+      - source
+  - id: save-paper-summary
+    type: script
+    run: echo "summary saved"
+    tags:
+      - summary
+`
+    )
+
+    const plugin = await createPluginFor(tempDir)
+    const raw = await plugin.tool['ability.run'].execute({ name: 'research-capture-pass' })
+    const result = parseToolResponse(raw)
+
+    expect(result.control?.obligations.taskType).toBe('research_capture')
+    expect(result.control?.gate.verdict).toBe('allow')
+    expect(result.status).toBe('completed')
+    expect(result.execution?.status).toBe('completed')
+  })
 })

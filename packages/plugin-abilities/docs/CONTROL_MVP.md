@@ -5,7 +5,7 @@ This package now includes a minimal fail-closed control layer for `ability.run`.
 ## What the MVP does
 
 - Emits structured control events during execution
-- Evaluates obligations for `code_change`
+- Evaluates obligations for `code_change` and `research_capture`
 - Produces a final gate verdict:
   - `allow`
   - `warn`
@@ -15,11 +15,18 @@ This package now includes a minimal fail-closed control layer for `ability.run`.
 
 ## Current obligation set
 
-The MVP currently evaluates only `TaskType = code_change`.
+The MVP currently evaluates these task types:
+
+### `code_change`
 
 - `run_tests` (hard)
 - `record_validation` (hard)
 - `commit_if_required` (soft)
+
+### `research_capture`
+
+- `record_source` (hard)
+- `save_summary` (hard)
 
 ## Prefer explicit tags
 
@@ -46,6 +53,8 @@ Supported MVP tags:
 
 - `test`
 - `commit`
+- `source`
+- `summary`
 
 If no matching tag is present, the control layer falls back to command and step-id heuristics for backward compatibility.
 
@@ -107,7 +116,7 @@ The block example shows a workflow that executes successfully but is rejected by
 
 ## Current MVP boundaries
 
-- Only supports `TaskType = code_change`
+- Supports `TaskType = code_change | research_capture`
 - Mid-run enforcement is limited to explicit hard failures
 - Still uses heuristics as a fallback
 - Does not yet include external-action obligations such as Zotero writes

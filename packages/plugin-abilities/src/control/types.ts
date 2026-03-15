@@ -31,7 +31,12 @@ export interface ControlEvent {
 
 export type TaskType = 'code_change' | 'research_capture'
 
-export type ObligationKey = 'run_tests' | 'record_validation' | 'commit_if_required'
+export type ObligationKey =
+  | 'run_tests'
+  | 'record_validation'
+  | 'commit_if_required'
+  | 'record_source'
+  | 'save_summary'
 export type ObligationSeverity = 'hard' | 'soft'
 export type ObligationStatus =
   | 'expected'

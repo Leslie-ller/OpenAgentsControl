@@ -335,6 +335,67 @@ describe('control layer v1', () => {
 
     expect(commitObligation?.status).toBe('satisfied')
   })
+
+  test('research_capture blocks when source and summary evidence are both missing', async () => {
+    const ability: Ability = {
+      name: 'research-missing-evidence',
+      description: 'Collects a paper without recording source or summary',
+      task_type: 'research_capture',
+      steps: [
+        {
+          id: 'collect-paper',
+          type: 'script',
+          run: 'echo "paper collected"',
+        },
+      ],
+    }
+
+    const execution = await executeAbility(ability, {}, ctx)
+    const events = collectExecutionEvents(execution, 'research_capture')
+    const obligations = evaluateObligations(events, 'research_capture')
+    const gate = evaluateCompletionGate(obligations)
+
+    expect(gate.verdict).toBe('block')
+    expect(gate.missing).toEqual(['record_source', 'save_summary'])
+    expect(gate.warnings).toEqual([])
+  })
+
+  test('research_capture allows completion when source and summary obligations are satisfied', async () => {
+    const ability: Ability = {
+      name: 'research-pass',
+      description: 'Records source and saves summary',
+      task_type: 'research_capture',
+      steps: [
+        {
+          id: 'record-paper-source',
+          type: 'script',
+          run: 'echo "doi:10.1000/test"',
+          tags: ['source'],
+        },
+        {
+          id: 'save-paper-summary',
+          type: 'script',
+          run: 'echo "summary saved"',
+          tags: ['summary'],
+        },
+      ],
+    }
+
+    const execution = await executeAbility(ability, {}, ctx)
+    const events = collectExecutionEvents(execution, 'research_capture')
+    const obligations = evaluateObligations(events, 'research_capture')
+    const gate = evaluateCompletionGate(obligations)
+
+    const recordSource = obligations.obligations.find((o) => o.key === 'record_source')
+    const saveSummary = obligations.obligations.find((o) => o.key === 'save_summary')
+
+    expect(recordSource?.status).toBe('satisfied')
+    expect(saveSummary?.status).toBe('satisfied')
+    expect(gate.verdict).toBe('allow')
+    expect(gate.missing).toEqual([])
+    expect(gate.failed).toEqual([])
+    expect(gate.warnings).toEqual([])
+  })
 })
 
 // ─────────────────────────────────────────────────────────────
