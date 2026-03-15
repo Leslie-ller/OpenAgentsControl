@@ -9,6 +9,20 @@ import { evaluateCompletionGate, evaluateModelDrift, evaluateObligations, MidRun
 import { ControlEventBus } from './control/event-bus.js'
 import { createEventCallbacks } from './control/event-adapter.js'
 
+type SessionCommandResponse = {
+  data?: {
+    info?: {
+      model?: string
+      providerID?: string
+      provider?: { id?: string }
+    }
+    parts?: Array<{
+      type?: string
+      text?: string
+    }>
+  }
+}
+
 /**
  * Minimal Abilities Plugin
  * 
@@ -48,13 +62,80 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     console.log(`[abilities] Could not load abilities:`, err instanceof Error ? err.message : err)
   }
 
+  const resolveSessionId = async (): Promise<string> => {
+    const client = (ctx as any).client
+    const sessions = await client?.session?.list?.()
+    const sessionId = sessions?.[0]?.id
+
+    if (!sessionId) {
+      throw new Error('No active OpenCode session available for agent execution')
+    }
+
+    return sessionId
+  }
+
+  const formatTaskArguments = (options: { agent: string; prompt: string }): string => {
+    const escapedPrompt = JSON.stringify(options.prompt)
+    const escapedAgent = JSON.stringify(options.agent)
+    return `subagent_type=${escapedAgent} prompt=${escapedPrompt}`
+  }
+
+  const extractAgentOutput = (response: SessionCommandResponse | unknown) => {
+    const data = (response as SessionCommandResponse | undefined)?.data
+    const text = data?.parts
+      ?.filter((part) => part?.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text ?? '')
+      .join('\n')
+      .trim()
+
+    return {
+      output: text || '[Agent invocation completed with no text output]',
+      model: data?.info?.model,
+      provider: data?.info?.providerID ?? data?.info?.provider?.id,
+    }
+  }
+
   const createExecutorContext = (
     bus?: ControlEventBus,
     options?: { midRunGate?: MidRunGateMonitor; enforceMidRunGate?: boolean }
   ): ExecutorContext => {
+    const client = (ctx as any).client
+
     return {
       cwd: ctx.directory,
       env: {},
+      agents: client?.session?.command
+        ? {
+            async call(agentOptions) {
+              const sessionId = await resolveSessionId()
+              const response = await client.session.command({
+                path: { id: sessionId },
+                body: {
+                  command: 'task',
+                  arguments: formatTaskArguments(agentOptions),
+                  agent: agentOptions.agent,
+                  model: agentOptions.model,
+                },
+              })
+
+              return extractAgentOutput(response)
+            },
+            async background(agentOptions) {
+              const sessionId = await resolveSessionId()
+              const response = await client.session.command({
+                path: { id: sessionId },
+                body: {
+                  command: 'background_task',
+                  arguments: formatTaskArguments(agentOptions),
+                  agent: agentOptions.agent,
+                  model: agentOptions.model,
+                },
+              })
+
+              return extractAgentOutput(response)
+            },
+          }
+        : undefined,
       ...(bus ? createEventCallbacks(bus) : {}),
       shouldAbort: options?.enforceMidRunGate
         ? () => {

@@ -49,6 +49,29 @@ function summarizeOutput(output: string): string {
   ].join('\n')
 }
 
+function parseTimeoutToMs(timeout: string | undefined): number | null {
+  if (!timeout) return null
+
+  const match = timeout.trim().match(/^(\d+)(ms|s|m|h)$/)
+  if (!match) return null
+
+  const value = Number(match[1])
+  const unit = match[2]
+
+  switch (unit) {
+    case 'ms':
+      return value
+    case 's':
+      return value * 1000
+    case 'm':
+      return value * 60 * 1000
+    case 'h':
+      return value * 60 * 60 * 1000
+    default:
+      return null
+  }
+}
+
 function normalizeAgentResponse(
   response: string | { output: string; model?: string; provider?: string }
 ): { output: string; model?: string; provider?: string } {
@@ -98,8 +121,8 @@ function evaluateCondition(
 
 async function runScript(
   command: string,
-  options: { cwd?: string; env?: Record<string, string> }
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  options: { cwd?: string; env?: Record<string, string>; timeoutMs?: number }
+): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean }> {
   return new Promise((resolve) => {
     const proc = spawn('sh', ['-c', command], {
       cwd: options.cwd || process.cwd(),
@@ -108,6 +131,21 @@ async function runScript(
 
     let stdout = ''
     let stderr = ''
+    let settled = false
+    let timedOut = false
+    const timeoutHandle = options.timeoutMs
+      ? setTimeout(() => {
+          timedOut = true
+          proc.kill('SIGTERM')
+        }, options.timeoutMs)
+      : null
+
+    const finish = (result: { stdout: string; stderr: string; exitCode: number; timedOut: boolean }) => {
+      if (settled) return
+      settled = true
+      if (timeoutHandle) clearTimeout(timeoutHandle)
+      resolve(result)
+    }
 
     proc.stdout.on('data', (data) => {
       stdout += data.toString()
@@ -118,11 +156,11 @@ async function runScript(
     })
 
     proc.on('close', (code) => {
-      resolve({ stdout, stderr, exitCode: code ?? 1 })
+      finish({ stdout, stderr, exitCode: code ?? 1, timedOut })
     })
 
     proc.on('error', (error) => {
-      resolve({ stdout, stderr: error.message, exitCode: 1 })
+      finish({ stdout, stderr: error.message, exitCode: 1, timedOut })
     })
   })
 }
@@ -160,7 +198,8 @@ function buildPriorStepContext(step: Step, execution: AbilityExecution): string 
 async function executeScriptStep(
   step: ScriptStep,
   execution: AbilityExecution,
-  ctx: ExecutorContext
+  ctx: ExecutorContext,
+  timeoutMs?: number | null
 ): Promise<StepResult> {
   const startedAt = Date.now()
   const command = interpolateVariables(step.run, execution.inputs, buildStepOutputMap(execution))
@@ -171,12 +210,18 @@ async function executeScriptStep(
     const result = await runScript(command, {
       cwd: step.cwd || ctx.cwd,
       env: { ...ctx.env, ...step.env },
+      timeoutMs: timeoutMs ?? undefined,
     })
 
     let failed = false
     let error: string | undefined
 
-    if (step.validation?.exit_code !== undefined && result.exitCode !== step.validation.exit_code) {
+    if (result.timedOut) {
+      failed = true
+      error = `Step timed out after ${step.timeout ?? `${timeoutMs}ms`}`
+    }
+
+    if (!result.timedOut && step.validation?.exit_code !== undefined && result.exitCode !== step.validation.exit_code) {
       failed = true
       error = `Exit code ${result.exitCode}, expected ${step.validation.exit_code}`
     }
@@ -429,22 +474,61 @@ async function executeWorkflowStep(
   }
 }
 
+async function withTimeout(
+  step: Step,
+  run: () => Promise<StepResult>,
+  timeoutMs: number | null
+): Promise<StepResult> {
+  if (!timeoutMs) {
+    return run()
+  }
+
+  const startedAt = Date.now()
+
+  return new Promise<StepResult>((resolve) => {
+    let settled = false
+    const timeoutHandle = setTimeout(() => {
+      if (settled) return
+      settled = true
+      const completedAt = Date.now()
+      resolve({
+        stepId: step.id,
+        stepType: step.type,
+        status: 'failed',
+        error: `Step timed out after ${step.timeout ?? `${timeoutMs}ms`}`,
+        startedAt,
+        completedAt,
+        duration: completedAt - startedAt,
+      })
+    }, timeoutMs)
+
+    run().then((result) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeoutHandle)
+      resolve(result)
+    })
+  })
+}
+
 async function executeStep(
   step: Step,
   execution: AbilityExecution,
   ctx: ExecutorContext
 ): Promise<StepResult> {
+  const timeoutMs = parseTimeoutToMs(step.timeout)
+
   switch (step.type) {
     case 'script':
-      return executeScriptStep(step, execution, ctx)
+      return executeScriptStep(step, execution, ctx, timeoutMs)
     case 'agent':
-      return executeAgentStep(step, execution, ctx)
+      return withTimeout(step, () => executeAgentStep(step, execution, ctx), timeoutMs)
     case 'skill':
-      return executeSkillStep(step, execution, ctx)
+      return withTimeout(step, () => executeSkillStep(step, execution, ctx), timeoutMs)
     case 'approval':
-      return executeApprovalStep(step, execution, ctx)
+      return withTimeout(step, () => executeApprovalStep(step, execution, ctx), timeoutMs)
     case 'workflow':
-      return executeWorkflowStep(step, execution, ctx)
+      return withTimeout(step, () => executeWorkflowStep(step, execution, ctx), timeoutMs)
     default: {
       const startedAt = Date.now()
       const unknownStep = step as { id?: string; type?: string }
@@ -458,6 +542,41 @@ async function executeStep(
         duration: Date.now() - startedAt,
       }
     }
+  }
+}
+
+async function executeStepWithPolicy(
+  step: Step,
+  execution: AbilityExecution,
+  ctx: ExecutorContext
+): Promise<StepResult> {
+  const maxAttempts = step.on_failure === 'retry' ? (step.max_retries ?? 1) + 1 : 1
+  const overallStartedAt = Date.now()
+  let lastResult: StepResult | null = null
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await executeStep(step, execution, ctx)
+    lastResult = result
+
+    if (result.status !== 'failed') {
+      return {
+        ...result,
+        startedAt: overallStartedAt,
+        completedAt: Date.now(),
+        duration: Date.now() - overallStartedAt,
+      }
+    }
+
+    if (attempt < maxAttempts) {
+      console.log(`[abilities] Retrying step ${step.id} (${attempt}/${maxAttempts - 1} retries used)`)
+    }
+  }
+
+  return {
+    ...(lastResult as StepResult),
+    startedAt: overallStartedAt,
+    completedAt: Date.now(),
+    duration: Date.now() - overallStartedAt,
   }
 }
 
@@ -568,7 +687,7 @@ export async function executeAbility(
 
     ctx.onStepStart?.(step, execution)
 
-    const result = await executeStep(step, execution, ctx)
+    const result = await executeStepWithPolicy(step, execution, ctx)
     execution.completedSteps.push(result)
     execution.pendingSteps = execution.pendingSteps.filter((s) => s.id !== step.id)
 

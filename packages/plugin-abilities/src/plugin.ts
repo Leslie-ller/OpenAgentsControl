@@ -59,6 +59,20 @@ interface SessionIdleOutput {
   inject?: string
 }
 
+type AgentCommandResponse = {
+  data?: {
+    info?: {
+      model?: string
+      providerID?: string
+      provider?: { id?: string }
+    }
+    parts?: Array<{
+      type?: string
+      text?: string
+    }>
+  }
+}
+
 // Tools allowed during different step types
 const ALLOWED_TOOLS_BY_STEP_TYPE: Record<string, string[]> = {
   // Script steps block ALL tools (script runs deterministically)
@@ -99,6 +113,49 @@ class AbilitiesPlugin {
 
   constructor() {
     this.executionManager = new ExecutionManager()
+  }
+
+  private async resolveSessionId(): Promise<string> {
+    if (this.mainSessionID) {
+      return this.mainSessionID
+    }
+
+    const sessions = await this.ctx?.client.session.list()
+    const sessionId = sessions?.[0]?.id
+    if (!sessionId) {
+      throw new Error('No active OpenCode session available for agent execution')
+    }
+
+    this.mainSessionID = sessionId
+    return sessionId
+  }
+
+  private formatTaskArguments(options: {
+    agent: string
+    prompt: string
+  }): string {
+    const escapedPrompt = JSON.stringify(options.prompt)
+    const escapedAgent = JSON.stringify(options.agent)
+    return `subagent_type=${escapedAgent} prompt=${escapedPrompt}`
+  }
+
+  private extractAgentOutput(response: AgentCommandResponse | unknown): {
+    output: string
+    model?: string
+    provider?: string
+  } {
+    const data = (response as AgentCommandResponse | undefined)?.data
+    const text = data?.parts
+      ?.filter((part) => part?.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text ?? '')
+      .join('\n')
+      .trim()
+
+    return {
+      output: text || '[Agent invocation completed with no text output]',
+      model: data?.info?.model,
+      provider: data?.info?.providerID ?? data?.info?.provider?.id,
+    }
   }
 
   async initialize(ctx: PluginContext, config: PluginConfig = {}): Promise<void> {
@@ -241,8 +298,18 @@ class AbilitiesPlugin {
         }) {
           console.log(`[abilities] Agent step: ${options.agent}`)
           console.log(`[abilities] Prompt: ${options.prompt.slice(0, 200)}...`)
+          const sessionId = await self.resolveSessionId()
+          const response = await ctx.client.session.command({
+            path: { id: sessionId },
+            body: {
+              command: 'task',
+              arguments: self.formatTaskArguments(options),
+              agent: options.agent,
+              model: options.model,
+            },
+          })
 
-          return `[Agent "${options.agent}" invocation pending - use Task tool with subagent_type="${options.agent}" and the provided prompt]`
+          return self.extractAgentOutput(response)
         },
         async background(options: {
           agent: string
@@ -250,7 +317,18 @@ class AbilitiesPlugin {
           model?: string
           provider?: string
         }) {
-          return this.call(options)
+          const sessionId = await self.resolveSessionId()
+          const response = await ctx.client.session.command({
+            path: { id: sessionId },
+            body: {
+              command: 'background_task',
+              arguments: self.formatTaskArguments(options),
+              agent: options.agent,
+              model: options.model,
+            },
+          })
+
+          return self.extractAgentOutput(response)
         }
       } : undefined,
 

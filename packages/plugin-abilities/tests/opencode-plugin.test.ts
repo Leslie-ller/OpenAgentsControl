@@ -191,4 +191,57 @@ steps:
     expect(commitObligation?.status).not.toBe('satisfied')
     expect(result.result).not.toContain('persist-changes')
   })
+
+  test('executes agent steps through session command and records model audit', async () => {
+    writeAbility(
+      tempDir,
+      'agent-review',
+      `
+name: agent-review
+description: Uses a real agent step
+steps:
+  - id: review
+    type: agent
+    agent: reviewer
+    model: gpt-5.4
+    provider: openai
+    prompt: Review the implementation
+`
+    )
+
+    const calls: Array<{
+      path: { id: string }
+      body: { command: string; arguments: string; agent?: string; model?: string }
+    }> = []
+
+    const plugin = await AbilitiesPlugin({
+      directory: tempDir,
+      client: {
+        session: {
+          list: async () => [{ id: 'session-1' }],
+          command: async (options: any) => {
+            calls.push(options)
+            return {
+              data: {
+                info: { model: 'gpt-5.4', providerID: 'openai' },
+                parts: [{ type: 'text', text: 'agent review complete' }],
+              },
+            }
+          },
+        },
+      },
+    } as any)
+
+    const raw = await plugin.tool['ability.run'].execute({ name: 'agent-review' })
+    const result = parseToolResponse(raw)
+
+    expect(result.status).toBe('failed')
+    expect(result.execution?.status).toBe('completed')
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.body.command).toBe('task')
+    expect(result.control?.modelAudit?.observed).toBe(1)
+    expect(result.control?.modelAudit?.driftCount).toBe(0)
+    expect(result.control?.modelAudit?.drifts[0]?.expectedModel).toBe('gpt-5.4')
+    expect(result.control?.modelAudit?.drifts[0]?.actualModel).toBe('gpt-5.4')
+  })
 })

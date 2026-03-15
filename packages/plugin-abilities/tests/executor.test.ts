@@ -207,6 +207,104 @@ describe('executeAbility', () => {
     expect(result.completedSteps[0].status).toBe('failed')
     expect(result.completedSteps[1].status).toBe('completed')
   })
+
+  it('should fail a script step when timeout is exceeded', async () => {
+    const ability: Ability = {
+      name: 'timeout',
+      description: 'Timeout test',
+      steps: [
+        {
+          id: 'slow',
+          type: 'script',
+          run: 'sleep 0.05',
+          timeout: '10ms',
+        },
+      ],
+    }
+
+    const result = await executeAbility(ability, {}, createMockContext())
+
+    expect(result.status).toBe('failed')
+    expect(result.completedSteps[0].status).toBe('failed')
+    expect(result.completedSteps[0].error).toContain('timed out')
+  })
+
+  it('should retry a failed step and succeed when a later attempt passes', async () => {
+    let attempts = 0
+
+    const ability: Ability = {
+      name: 'retry-success',
+      description: 'Retry until success',
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          agent: 'reviewer',
+          prompt: 'Review this change',
+          on_failure: 'retry',
+          max_retries: 2,
+        },
+      ],
+    }
+
+    const ctx = createMockContext()
+    ctx.agents = {
+      async call() {
+        attempts += 1
+        if (attempts === 1) {
+          throw new Error('temporary failure')
+        }
+        return 'Reviewed successfully'
+      },
+      async background() {
+        return 'Reviewed successfully'
+      },
+    }
+
+    const result = await executeAbility(ability, {}, ctx)
+
+    expect(attempts).toBe(2)
+    expect(result.status).toBe('completed')
+    expect(result.completedSteps[0].status).toBe('completed')
+    expect(result.completedSteps[0].output).toContain('Reviewed successfully')
+  })
+
+  it('should fail after retry attempts are exhausted', async () => {
+    let attempts = 0
+
+    const ability: Ability = {
+      name: 'retry-failure',
+      description: 'Retry still fails',
+      steps: [
+        {
+          id: 'review',
+          type: 'agent',
+          agent: 'reviewer',
+          prompt: 'Review this change',
+          on_failure: 'retry',
+          max_retries: 1,
+        },
+      ],
+    }
+
+    const ctx = createMockContext()
+    ctx.agents = {
+      async call() {
+        attempts += 1
+        throw new Error('still failing')
+      },
+      async background() {
+        throw new Error('still failing')
+      },
+    }
+
+    const result = await executeAbility(ability, {}, ctx)
+
+    expect(attempts).toBe(2)
+    expect(result.status).toBe('failed')
+    expect(result.completedSteps[0].status).toBe('failed')
+    expect(result.completedSteps[0].error).toContain('still failing')
+  })
 })
 
 describe('executeAgentStep', () => {
