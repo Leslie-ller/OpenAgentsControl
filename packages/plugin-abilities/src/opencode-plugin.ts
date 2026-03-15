@@ -1,10 +1,13 @@
 import type { Plugin } from '@opencode-ai/plugin'
 import { tool } from '@opencode-ai/plugin'
-import type { Ability, LoadedAbility, ExecutorContext } from './types/index.js'
+import type { Ability, AbilityExecution, LoadedAbility, ExecutorContext } from './types/index.js'
 import { loadAbilities } from './loader/index.js'
 import { validateAbility, validateInputs } from './validator/index.js'
 import { formatExecutionResult } from './executor/index.js'
 import { ExecutionManager } from './executor/execution-manager.js'
+import { evaluateCompletionGate, evaluateModelDrift, evaluateObligations, MidRunGateMonitor } from './control/index.js'
+import { ControlEventBus } from './control/event-bus.js'
+import { createEventCallbacks } from './control/event-adapter.js'
 
 /**
  * Minimal Abilities Plugin
@@ -45,14 +48,31 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     console.log(`[abilities] Could not load abilities:`, err instanceof Error ? err.message : err)
   }
 
-  const createExecutorContext = (): ExecutorContext => {
+  const createExecutorContext = (
+    bus?: ControlEventBus,
+    options?: { midRunGate?: MidRunGateMonitor; enforceMidRunGate?: boolean }
+  ): ExecutorContext => {
     return {
       cwd: ctx.directory,
       env: {},
+      ...(bus ? createEventCallbacks(bus) : {}),
+      shouldAbort: options?.enforceMidRunGate
+        ? () => {
+            const latest = options.midRunGate?.getLatest()
+            if (latest && latest.failed.length > 0) {
+              return {
+                abort: true,
+                reason: `Control gate blocked execution: ${latest.reasons.map((reason) => reason.message).join('; ')}`,
+              }
+            }
+
+            return { abort: false }
+          }
+        : undefined,
     }
   }
 
-  const buildAbilityContextInjection = (execution: any): string => {
+  const buildAbilityContextInjection = (execution: AbilityExecution): string => {
     const ability = execution.ability
     const currentStep = execution.currentStep
     const completed = execution.completedSteps.length
@@ -172,16 +192,46 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
           }
 
           try {
+            // TODO: Derive taskType from ability definition or execution context
+            // when multiple TaskTypes are supported. Currently hardcoded to
+            // 'code_change' as it is the only supported type.
+            const taskType = 'code_change' as const
+
+            // Create a per-run event bus and wire it into the executor context
+            // so events are emitted in real-time (replacing post-hoc replay).
+            const bus = new ControlEventBus(`run_${Date.now()}`, taskType)
+            const midRunGate = new MidRunGateMonitor(bus, taskType)
             const execution = await executionManager.execute(
               ability, 
               inputs as Record<string, unknown>, 
-              createExecutorContext()
+              createExecutorContext(bus, {
+                midRunGate,
+                enforceMidRunGate: true,
+              })
             )
+
+            // Read the accumulated event log from the bus
+            const events = bus.getLog()
+            const obligations = evaluateObligations(events, taskType)
+            const gate = midRunGate.getLatest() ?? evaluateCompletionGate(obligations)
+            const modelAudit = evaluateModelDrift(events)
+            const finalStatus = gate.verdict === 'block' ? 'failed' : execution.status
             
             return JSON.stringify({
-              status: execution.status,
+              status: finalStatus,
+              execution: {
+                status: execution.status,
+                id: execution.id,
+              },
               ability: ability.name,
               result: formatExecutionResult(execution),
+              control: {
+                gate,
+                midRunGate: midRunGate.getState(),
+                obligations,
+                modelAudit,
+                eventCount: events.length,
+              },
             })
           } catch (error) {
             return JSON.stringify({ 
@@ -214,7 +264,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         description: 'Cancel the active ability execution',
         args: {},
         async execute() {
-          const cancelled = executionManager.cancel()
+          const cancelled = executionManager.cancelActive()
           return JSON.stringify(cancelled
             ? { status: 'cancelled', message: 'Ability cancelled' }
             : { status: 'none', message: 'No active ability' })

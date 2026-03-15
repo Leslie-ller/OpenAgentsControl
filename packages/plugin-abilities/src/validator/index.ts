@@ -29,6 +29,7 @@ const ValidationConfigSchema = z.object({
 const BaseStepSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/, 'Step ID must be lowercase alphanumeric with hyphens'),
   description: z.string().optional(),
+  tags: z.array(z.string().min(1)).optional(),
   needs: z.array(z.string()).optional(),
   when: z.string().optional(),
   timeout: z.string().optional(),
@@ -48,6 +49,8 @@ const AgentStepSchema = BaseStepSchema.extend({
   type: z.literal('agent'),
   agent: z.string().min(1, 'Agent name is required'),
   prompt: z.string().min(1, 'Prompt is required'),
+  model: z.string().optional(),
+  provider: z.string().optional(),
   context: z.array(z.string()).optional(),
   summarize: z.union([z.boolean(), z.string()]).optional(),
 })

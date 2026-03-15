@@ -37,3 +37,22 @@ export { ExecutionManager } from './executor/execution-manager.js'
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'
 export { default } from './opencode-plugin.js'
+
+// Control layer
+export {
+  collectExecutionEvents,
+  ControlEventBus,
+  createEventCallbacks,
+  evaluateObligations,
+  evaluateCompletionGate,
+  MidRunGateMonitor,
+} from './control/index.js'
+export type {
+  CompletionGateResult,
+  ControlEvent,
+  GateVerdict,
+  MidRunGateState,
+  ObligationSnapshot,
+  ObligationState,
+  TaskType,
+} from './control/index.js'

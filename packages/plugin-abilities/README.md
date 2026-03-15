@@ -87,6 +87,40 @@ User: "Deploy v1.2.3 to production"
 → Ability detected: deploy
 ```
 
+## Control Layer MVP
+
+`ability.run` now applies a minimal fail-closed completion gate for `code_change` workflows.
+
+- Hard obligations:
+  - `run_tests`
+  - `record_validation`
+- Soft obligation:
+  - `commit_if_required`
+
+Prefer explicit tags on steps:
+
+```yaml
+steps:
+  - id: execute-suite
+    type: script
+    run: echo "suite executed"
+    tags: [test]
+    validation:
+      exit_code: 0
+
+  - id: persist-changes
+    type: script
+    run: echo "saved metadata"
+    tags: [commit]
+```
+
+The result now distinguishes:
+
+- `execution.status`: raw executor status
+- `status`: final public status after completion gate evaluation
+
+See [docs/CONTROL_MVP.md](./docs/CONTROL_MVP.md) for the exact semantics and [examples/control-mvp-pass/ability.yaml](./examples/control-mvp-pass/ability.yaml) / [examples/control-mvp-block/ability.yaml](./examples/control-mvp-block/ability.yaml) for demo abilities.
+
 ## Step Types
 
 ### Script

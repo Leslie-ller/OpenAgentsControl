@@ -1,0 +1,7 @@
+name: control-mvp-block
+description: Minimal blocking demo for the control-layer MVP
+
+steps:
+  - id: implement
+    type: script
+    run: echo "changed code"

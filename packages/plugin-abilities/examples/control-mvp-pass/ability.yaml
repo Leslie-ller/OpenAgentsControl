@@ -1,0 +1,18 @@
+name: control-mvp-pass
+description: Minimal passing demo for the control-layer MVP
+
+steps:
+  - id: execute-suite
+    type: script
+    run: echo "suite executed"
+    tags:
+      - test
+    validation:
+      exit_code: 0
+
+  - id: persist-changes
+    type: script
+    run: echo "saved metadata"
+    tags:
+      - commit
+    needs: [execute-suite]

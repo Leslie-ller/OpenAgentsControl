@@ -233,13 +233,23 @@ class AbilitiesPlugin {
       env: {},
 
       agents: ctx?.client ? {
-        async call(options: { agent: string; prompt: string }): Promise<string> {
+        async call(options: {
+          agent: string
+          prompt: string
+          model?: string
+          provider?: string
+        }) {
           console.log(`[abilities] Agent step: ${options.agent}`)
           console.log(`[abilities] Prompt: ${options.prompt.slice(0, 200)}...`)
 
           return `[Agent "${options.agent}" invocation pending - use Task tool with subagent_type="${options.agent}" and the provided prompt]`
         },
-        async background(options: { agent: string; prompt: string }): Promise<string> {
+        async background(options: {
+          agent: string
+          prompt: string
+          model?: string
+          provider?: string
+        }) {
           return this.call(options)
         }
       } : undefined,

@@ -173,5 +173,6 @@ When a user says "deploy to production", the ability is suggested automatically.
 
 ## Next Steps
 
+- [Control Layer MVP](./CONTROL_MVP.md) - Gate semantics, tags, and result interpretation
 - [YAML Reference](./YAML_REFERENCE.md) - Complete ability format documentation
 - [SDK Reference](./SDK_REFERENCE.md) - Programmatic API
