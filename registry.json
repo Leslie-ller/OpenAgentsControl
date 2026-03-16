@@ -667,6 +667,7 @@
         "dependencies": [
           "subagent:contextscout",
           "subagent:task-manager",
+          "tool:bibliography-stack",
           "context:bibliography-workflow",
           "context:bibliography-paper-screening",
           "context:bibliography-paper-screening-task-template"
@@ -688,6 +689,7 @@
         "dependencies": [
           "subagent:contextscout",
           "subagent:task-manager",
+          "tool:bibliography-stack",
           "context:bibliography-workflow",
           "context:bibliography-fulltext-review",
           "context:bibliography-reading-card-template",
@@ -710,6 +712,7 @@
         "dependencies": [
           "subagent:contextscout",
           "subagent:task-manager",
+          "tool:bibliography-stack",
           "context:bibliography-workflow",
           "context:bibliography-literature-decision",
           "context:bibliography-decision-card-template",
@@ -732,6 +735,7 @@
         "dependencies": [
           "subagent:contextscout",
           "subagent:task-manager",
+          "tool:bibliography-stack",
           "context:bibliography-workflow",
           "context:bibliography-reading-card-template",
           "context:bibliography-decision-card-template",
@@ -755,6 +759,7 @@
         "dependencies": [
           "subagent:contextscout",
           "subagent:task-manager",
+          "tool:bibliography-stack",
           "context:bibliography-workflow",
           "context:section-evidence-pack-template",
           "context:citation-audit-template",
@@ -777,6 +782,7 @@
         "dependencies": [
           "subagent:contextscout",
           "subagent:task-manager",
+          "tool:bibliography-stack",
           "context:bibliography-workflow",
           "context:bibliography-paper-screening",
           "context:bibliography-fulltext-review",
@@ -786,6 +792,22 @@
       }
     ],
     "tools": [
+      {
+        "id": "bibliography-stack",
+        "name": "Bibliography Tooling",
+        "type": "tool",
+        "path": ".opencode/tool/bibliography/index.ts",
+        "description": "Validate bibliography workflow tooling contracts for discovery, PDF extraction, and reference manager integration",
+        "tags": [
+          "bibliography",
+          "research",
+          "validation"
+        ],
+        "dependencies": [
+          "tool:env"
+        ],
+        "category": "specialized"
+      },
       {
         "id": "gemini",
         "name": "Gemini AI Tool",

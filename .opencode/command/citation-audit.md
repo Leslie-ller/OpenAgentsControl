@@ -8,6 +8,7 @@ tags:
 dependencies:
   - subagent:contextscout
   - subagent:task-manager
+  - tool:bibliography-stack
   - context:bibliography-workflow
   - context:section-evidence-pack-template
   - context:citation-audit-template
@@ -35,6 +36,14 @@ Load these before planning or execution:
 - `.opencode/context/openagents-repo/templates/citation-audit-template.md`
 - `.opencode/context/openagents-repo/templates/citation-audit-task-template.md`
 
+Required tooling:
+
+- `reference_manager`
+
+Configured through:
+
+- `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
+
 ## Required Outputs
 
 For the audited section:
@@ -59,7 +68,8 @@ next_action: {adopt | revise | gather evidence | downgrade claims}
 1. Audit claims, not citation counts.
 2. A cited paper is insufficient if the section overstates what it supports.
 3. Unsupported claims must be downgraded, removed, or sent back for evidence gathering.
-4. A section should not be considered safe just because it cites many papers.
+4. Do not proceed if reference-manager tooling is missing.
+5. A section should not be considered safe just because it cites many papers.
 
 ## TaskManager Hand-off
 

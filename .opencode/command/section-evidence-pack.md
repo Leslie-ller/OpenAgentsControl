@@ -8,6 +8,7 @@ tags:
 dependencies:
   - subagent:contextscout
   - subagent:task-manager
+  - tool:bibliography-stack
   - context:bibliography-workflow
   - context:bibliography-reading-card-template
   - context:bibliography-decision-card-template

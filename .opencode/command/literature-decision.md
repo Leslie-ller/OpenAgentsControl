@@ -8,6 +8,7 @@ tags:
 dependencies:
   - subagent:contextscout
   - subagent:task-manager
+  - tool:bibliography-stack
   - context:bibliography-workflow
   - context:bibliography-literature-decision
   - context:bibliography-decision-card-template
@@ -34,6 +35,14 @@ Load these before planning or execution:
 - `.opencode/context/core/workflows/bibliography-literature-decision.md`
 - `.opencode/context/openagents-repo/templates/bibliography-decision-card-template.md`
 - `.opencode/context/openagents-repo/templates/bibliography-literature-decision-task-template.md`
+
+Required tooling:
+
+- `reference_manager`
+
+Configured through:
+
+- `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
 
 ## Required Outputs
 
@@ -66,7 +75,8 @@ For the batch:
 1. Decisions must be traceable back to screening or full-text evidence.
 2. Kept papers need narrow roles, not vague “important” labels.
 3. Rejections should be explicit and auditable.
-4. If uncertainty remains meaningful, prefer `defer` or `revisit_later` over false confidence.
+4. Do not proceed if reference-manager tooling is missing.
+5. If uncertainty remains meaningful, prefer `defer` or `revisit_later` over false confidence.
 
 ## TaskManager Hand-off
 

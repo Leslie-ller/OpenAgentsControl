@@ -15,6 +15,7 @@
     "command:clean",
     "command:prompt-enhancer",
     "tool:env",
+    "tool:bibliography-stack",
     "tool:gemini",
     "context:root-navigation",
     "context:context-paths-config",

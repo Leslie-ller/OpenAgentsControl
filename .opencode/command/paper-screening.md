@@ -8,6 +8,7 @@ tags:
 dependencies:
   - subagent:contextscout
   - subagent:task-manager
+  - tool:bibliography-stack
   - context:bibliography-workflow
   - context:bibliography-paper-screening
   - context:bibliography-paper-screening-task-template
@@ -32,6 +33,16 @@ Load these before planning or execution:
 - `.opencode/context/core/workflows/bibliography-workflow.md`
 - `.opencode/context/core/workflows/bibliography-paper-screening.md`
 - `.opencode/context/openagents-repo/templates/bibliography-paper-screening-task-template.md`
+
+Required tooling:
+
+- `discovery`
+- `reference_manager`
+
+Configured through:
+
+- `BIBLIOGRAPHY_DISCOVERY_CMD` or `BIBLIOGRAPHY_SEARCH_CMD`
+- `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
 
 ## Required Outputs
 
@@ -60,7 +71,8 @@ For the batch:
 1. Screening is metadata-first triage, not full synthesis.
 2. `keep` should consume limited queue capacity intentionally.
 3. If criteria drift mid-batch, stop and rewrite them before continuing.
-4. If the batch is large or persistent tracking is needed, use `TaskManager`.
+4. Do not proceed if discovery or reference-manager tooling is missing.
+5. If the batch is large or persistent tracking is needed, use `TaskManager`.
 
 ## TaskManager Hand-off
 

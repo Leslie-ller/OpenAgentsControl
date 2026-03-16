@@ -8,6 +8,7 @@ tags:
 dependencies:
   - subagent:contextscout
   - subagent:task-manager
+  - tool:bibliography-stack
   - context:bibliography-workflow
   - context:bibliography-paper-screening
   - context:bibliography-fulltext-review
@@ -37,6 +38,23 @@ This command gives OpenAgents Control a single execution entrypoint for bibliogr
 - `.opencode/context/core/workflows/bibliography-fulltext-review.md`
 - `.opencode/context/core/workflows/bibliography-literature-decision.md`
 
+## Tool Contract
+
+Before non-trivial execution, verify bibliography tooling is actually configured:
+
+- `discovery` via `BIBLIOGRAPHY_DISCOVERY_CMD` or `BIBLIOGRAPHY_SEARCH_CMD`
+- `pdf_extract` via `BIBLIOGRAPHY_PDF_EXTRACT_CMD`, `BIBLIOGRAPHY_PDF_CMD`, or `MINERU_CMD`
+- `reference_manager` via `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
+
+Stage gates:
+
+- `screening` requires `discovery` and `reference_manager`
+- `review` requires `pdf_extract` and `reference_manager`
+- `decision` requires `reference_manager`
+- `audit` requires `reference_manager`
+
+If the relevant capability is missing, stop and report the missing tool instead of silently improvising around it.
+
 ## Core Model
 
 Always think in these layers:
@@ -58,8 +76,9 @@ Use when the user needs a workflow plan or when the literature task is still und
 Process:
 1. Call `ContextScout` to find local citation, review, and workflow patterns.
 2. Load bibliography workflow contexts.
-3. If work is larger than one paper or spans multiple files/outputs, use `TaskManager`.
-4. Produce a staged plan using the workflow vocabulary:
+3. Check `bibliography-stack` for the relevant stage before execution.
+4. If work is larger than one paper or spans multiple files/outputs, use `TaskManager`.
+5. Produce a staged plan using the workflow vocabulary:
    - literature pool
    - screening
    - full-text review

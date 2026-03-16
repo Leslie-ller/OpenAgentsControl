@@ -478,6 +478,14 @@ This stack is exposed through:
 - `/section-evidence-pack`
 - `/citation-audit`
 
+Tooling contract:
+- `screening` expects discovery plus reference-manager tooling
+- `review` expects PDF extraction plus reference-manager tooling
+- `decision` and `citation audit` expect reference-manager tooling
+- Configure these with `BIBLIOGRAPHY_DISCOVERY_CMD`, `BIBLIOGRAPHY_PDF_EXTRACT_CMD`, and `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`
+
+If those external tools are not configured, the bibliography commands should stop and report the missing capability instead of faking the stage.
+
 ### 📚 Context System (MVI Principle)
 Your coding standards automatically loaded by agents:
 - **Code quality** - Your patterns, security, standards

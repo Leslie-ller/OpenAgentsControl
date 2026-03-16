@@ -25,3 +25,12 @@ export {
   getApiKey,
   type EnvLoaderConfig
 } from "./env"
+
+// Bibliography tooling validation
+export {
+  status as bibliographyStatus,
+  requireReady as bibliographyRequireReady,
+  inspectBibliographyTooling,
+  default as bibliography,
+  type BibliographyToolingReport,
+} from "./bibliography"

@@ -8,6 +8,7 @@ tags:
 dependencies:
   - subagent:contextscout
   - subagent:task-manager
+  - tool:bibliography-stack
   - context:bibliography-workflow
   - context:bibliography-fulltext-review
   - context:bibliography-reading-card-template
@@ -34,6 +35,16 @@ Load these before planning or execution:
 - `.opencode/context/core/workflows/bibliography-fulltext-review.md`
 - `.opencode/context/openagents-repo/templates/bibliography-reading-card-template.md`
 - `.opencode/context/openagents-repo/templates/bibliography-fulltext-review-task-template.md`
+
+Required tooling:
+
+- `pdf_extract`
+- `reference_manager`
+
+Configured through:
+
+- `BIBLIOGRAPHY_PDF_EXTRACT_CMD`, `BIBLIOGRAPHY_PDF_CMD`, or `MINERU_CMD`
+- `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
 
 ## Required Outputs
 
@@ -68,7 +79,8 @@ For the batch:
 1. Review means full-text evidence extraction, not just abstract paraphrase.
 2. A paper is not considered reviewed until its reading card is reusable by another teammate.
 3. Findings and limitations must both be captured.
-4. If the paper collapses under full-text review, send that signal forward to `literature_decision`.
+4. Do not proceed if PDF extraction or reference-manager tooling is missing.
+5. If the paper collapses under full-text review, send that signal forward to `literature_decision`.
 
 ## TaskManager Hand-off
 

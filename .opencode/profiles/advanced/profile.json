@@ -38,6 +38,7 @@
     "command:validate-repo",
     "command:analyze-patterns",
     "tool:env",
+    "tool:bibliography-stack",
     "tool:gemini",
     "context:root-navigation",
     "context:context-paths-config",
