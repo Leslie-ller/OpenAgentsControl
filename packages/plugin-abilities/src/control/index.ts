@@ -9,6 +9,7 @@ import type {
   TaskType,
 } from '../types/index.js'
 import type { ControlEvent, StepCompletedPayload, ObligationSignalPayload } from './events.js'
+import { evaluateModelDrift } from './model-audit.js'
 
 // ─────────────────────────────────────────────────────────────
 // OBLIGATION DEFINITIONS
@@ -213,6 +214,7 @@ export function evaluateControl(ability: Ability, completedSteps: StepResult[]):
 /**
  * Event-based control evaluation.
  * Consumes the unified event stream to determine obligation satisfaction.
+ * Also evaluates model drift audit from model.observed events.
  * This is the preferred path when a ControlEventBus is available.
  */
 export function evaluateControlFromEvents(
@@ -225,10 +227,12 @@ export function evaluateControlFromEvents(
 
   const obligations = evaluateObligationsFromEvents(ability.task_type, events)
   const gate = evaluateGate(obligations)
+  const modelAudit = evaluateModelDrift(events)
 
   return {
     taskType: ability.task_type,
     obligations,
     gate,
+    modelAudit,
   }
 }

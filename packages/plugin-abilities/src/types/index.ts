@@ -46,7 +46,21 @@ export interface ScriptStep {
   }
 }
 
-export type Step = ScriptStep
+export interface AgentStep {
+  id: string
+  type: 'agent'
+  description?: string
+  agent: string
+  prompt: string
+  needs?: string[]
+  tags?: string[]
+  /** Expected model for drift audit (e.g. 'claude-sonnet-4') */
+  model?: string
+  /** Expected provider for drift audit (e.g. 'anthropic') */
+  provider?: string
+}
+
+export type Step = ScriptStep | AgentStep
 
 // ─────────────────────────────────────────────────────────────
 // ABILITY DEFINITION
@@ -80,6 +94,13 @@ export interface StepResult {
   startedAt: number
   completedAt: number
   duration: number
+  /** Model audit data, populated for agent steps when model info is available */
+  modelAudit?: {
+    expectedModel?: string
+    expectedProvider?: string
+    actualModel?: string
+    actualProvider?: string
+  }
 }
 
 export type ObligationStatus =
@@ -116,10 +137,36 @@ export interface GateResult {
   warnings: string[]
 }
 
+// ─────────────────────────────────────────────────────────────
+// MODEL DRIFT AUDIT TYPES
+// ─────────────────────────────────────────────────────────────
+
+export type DriftPolicy = 'audit-only' | 'soft-pin' | 'hard-pin'
+
+export interface ModelDriftEntry {
+  stepId: string
+  expectedModel?: string
+  actualModel?: string
+  expectedProvider?: string
+  actualProvider?: string
+  source: string
+}
+
+export interface ModelAuditResult {
+  /** Total model.observed events in this run */
+  observed: number
+  /** Number of observations where drift was detected */
+  driftCount: number
+  /** Individual drift records */
+  drifts: ModelDriftEntry[]
+}
+
 export interface ControlResult {
   taskType: TaskType
   obligations: ObligationResult[]
   gate: GateResult
+  /** Model drift audit summary (v1.8). Audit-only: does not affect gate verdict. */
+  modelAudit?: ModelAuditResult
 }
 
 export interface AbilityExecution {
@@ -171,7 +218,23 @@ export interface LoadedAbility {
 // EXECUTOR TYPES
 // ─────────────────────────────────────────────────────────────
 
+export interface AgentCallOptions {
+  agent: string
+  prompt: string
+  step?: AgentStep
+}
+
+/** Result from an agent call — plain string or structured with model info */
+export type AgentCallReturn = string | { output: string; model?: string; provider?: string }
+
+export interface AgentContext {
+  call(options: AgentCallOptions): Promise<AgentCallReturn>
+  background?(options: AgentCallOptions): Promise<AgentCallReturn>
+}
+
 export interface ExecutorContext {
   cwd: string
   env: Record<string, string>
+  /** Agent execution context. Required for agent steps. */
+  agents?: AgentContext
 }

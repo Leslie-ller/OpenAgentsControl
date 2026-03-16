@@ -10,11 +10,15 @@ export type {
   Ability,
   Step,
   ScriptStep,
+  AgentStep,
   InputDefinition,
   InputValues,
   AbilityExecution,
   StepResult,
   ExecutorContext,
+  AgentCallOptions,
+  AgentCallReturn,
+  AgentContext,
   LoadedAbility,
   ValidationResult,
   ControlResult,
@@ -25,6 +29,9 @@ export type {
   ObligationSeverity,
   ObligationStatus,
   TaskType,
+  DriftPolicy,
+  ModelDriftEntry,
+  ModelAuditResult,
 } from './types/index.js'
 
 // Loader
@@ -45,6 +52,9 @@ export { ExecutionManager } from './executor/execution-manager.js'
 
 // Control - Obligations & Gates
 export { evaluateControl, evaluateControlFromEvents } from './control/index.js'
+
+// Control - Model Drift Audit
+export { evaluateModelDrift, hasModelDrift } from './control/model-audit.js'
 
 // Control - Event Model
 export { ControlEventFactory, generateEventId } from './control/events.js'

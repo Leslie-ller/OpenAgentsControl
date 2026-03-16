@@ -3,6 +3,7 @@ import type {
   Ability,
   Step,
   ScriptStep,
+  AgentStep,
   AbilityExecution,
   StepResult,
   ExecutorContext,
@@ -12,6 +13,7 @@ import { validateInputs } from '../validator/index.js'
 import { evaluateControl, evaluateControlFromEvents } from '../control/index.js'
 import type { ControlEventBus } from '../control/event-bus.js'
 import { ControlEventFactory } from '../control/events.js'
+import { hasModelDrift } from '../control/model-audit.js'
 
 /**
  * Minimal Executor - Script Steps Only
@@ -103,6 +105,88 @@ async function executeScriptStep(
       startedAt,
       completedAt: Date.now(),
       duration: Date.now() - startedAt,
+    }
+  } catch (err) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: err instanceof Error ? err.message : String(err),
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+}
+
+/**
+ * Result from ctx.agents.call — can be a plain string or structured with model info.
+ */
+interface AgentCallResult {
+  output: string
+  model?: string
+  provider?: string
+}
+
+function normalizeAgentResult(raw: string | AgentCallResult): AgentCallResult {
+  if (typeof raw === 'string') {
+    return { output: raw }
+  }
+  return raw
+}
+
+async function executeAgentStep(
+  step: AgentStep,
+  execution: AbilityExecution,
+  ctx: ExecutorContext
+): Promise<StepResult> {
+  const startedAt = Date.now()
+
+  // Check if agent context is available
+  if (!ctx.agents?.call) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: 'Agent execution not available in current context',
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+
+  const prompt = interpolateVariables(step.prompt, execution.inputs)
+
+  console.log(`[abilities] Agent step: ${step.agent} — ${prompt.slice(0, 80)}`)
+
+  try {
+    const raw = await ctx.agents.call({
+      agent: step.agent,
+      prompt,
+      step,
+    })
+
+    const result = normalizeAgentResult(raw)
+
+    // Build model audit data for this step
+    const modelAudit = (step.model || step.provider || result.model || result.provider)
+      ? {
+          expectedModel: step.model,
+          expectedProvider: step.provider,
+          actualModel: result.model,
+          actualProvider: result.provider,
+        }
+      : undefined
+
+    return {
+      stepId: step.id,
+      status: 'completed',
+      tags: step.tags,
+      output: result.output,
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+      modelAudit,
     }
   } catch (err) {
     return {
@@ -235,7 +319,9 @@ export async function executeAbility(
       eventBus.emit(eventFactory.stepStarted(ability.name, step.id, step.type, step.needs))
     }
 
-    const result = await executeScriptStep(step as ScriptStep, execution, ctx)
+    const result = step.type === 'agent'
+      ? await executeAgentStep(step as AgentStep, execution, ctx)
+      : await executeScriptStep(step as ScriptStep, execution, ctx)
     execution.completedSteps.push(result)
     execution.pendingSteps = execution.pendingSteps.filter((s) => s.id !== step.id)
 
@@ -249,6 +335,27 @@ export async function executeAbility(
         eventBus.emit(eventFactory.stepCompleted(
           ability.name, step.id, step.type, result.status, result.duration,
           { tags: result.tags, output: result.output }
+        ))
+      }
+
+      // Emit model.observed for agent steps with model audit data
+      if (step.type === 'agent' && result.modelAudit) {
+        const agentStep = step as AgentStep
+        const audit = result.modelAudit
+        const drift = hasModelDrift(
+          { model: audit.expectedModel, provider: audit.expectedProvider },
+          { model: audit.actualModel, provider: audit.actualProvider }
+        )
+        eventBus.emit(eventFactory.modelObserved(
+          ability.name,
+          drift,
+          'agent_step_dispatch',
+          {
+            expected_model: audit.expectedModel,
+            actual_model: audit.actualModel,
+            expected_provider: audit.expectedProvider,
+            actual_provider: audit.actualProvider,
+          }
         ))
       }
 
