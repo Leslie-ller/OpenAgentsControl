@@ -696,6 +696,28 @@
         "category": "standard"
       },
       {
+        "id": "literature-decision",
+        "name": "Literature Decision",
+        "type": "command",
+        "path": ".opencode/command/literature-decision.md",
+        "description": "Run the literature decision stage for bibliography workflows",
+        "tags": [
+          "bibliography",
+          "decision",
+          "literature",
+          "research"
+        ],
+        "dependencies": [
+          "subagent:contextscout",
+          "subagent:task-manager",
+          "context:bibliography-workflow",
+          "context:bibliography-literature-decision",
+          "context:bibliography-decision-card-template",
+          "context:bibliography-literature-decision-task-template"
+        ],
+        "category": "standard"
+      },
+      {
         "id": "bibliography",
         "name": "Bibliography Workflow",
         "type": "command",
@@ -2385,6 +2407,43 @@
           "context:bibliography-workflow",
           "context:bibliography-fulltext-review",
           "context:bibliography-reading-card-template",
+          "context:task-schema"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-decision-card-template",
+        "name": "Bibliography Decision Card Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/bibliography-decision-card-template.md",
+        "description": "Reusable decision-card template for literature keep/defer/reject judgments",
+        "tags": [
+          "template",
+          "bibliography",
+          "decision-card",
+          "research"
+        ],
+        "dependencies": [
+          "context:bibliography-literature-decision"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-literature-decision-task-template",
+        "name": "Bibliography Literature Decision Task Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/bibliography-literature-decision-task-template.md",
+        "description": "TaskManager template for the literature_decision stage of bibliography workflows",
+        "tags": [
+          "template",
+          "bibliography",
+          "decision",
+          "tasks"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow",
+          "context:bibliography-literature-decision",
+          "context:bibliography-decision-card-template",
           "context:task-schema"
         ],
         "category": "standard"

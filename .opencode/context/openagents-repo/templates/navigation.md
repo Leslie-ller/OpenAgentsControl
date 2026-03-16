@@ -24,6 +24,8 @@ openagents-repo/templates/
 | **Bibliography screening task template** | `./bibliography-paper-screening-task-template.md` |
 | **Bibliography reading card template** | `./bibliography-reading-card-template.md` |
 | **Bibliography full-text review task template** | `./bibliography-fulltext-review-task-template.md` |
+| **Bibliography decision card template** | `./bibliography-decision-card-template.md` |
+| **Bibliography literature decision task template** | `./bibliography-literature-decision-task-template.md` |
 | **Blueprints** | `../blueprints/navigation.md` |
 | **Guides** | `../guides/navigation.md` |
 
