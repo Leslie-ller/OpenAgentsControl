@@ -17,6 +17,14 @@ export type {
   ExecutorContext,
   LoadedAbility,
   ValidationResult,
+  ControlResult,
+  GateResult,
+  GateVerdict,
+  ObligationResult,
+  ObligationKey,
+  ObligationSeverity,
+  ObligationStatus,
+  TaskType,
 } from './types/index.js'
 
 // Loader
@@ -32,7 +40,39 @@ export type { ContextDefinition, LoadedContext, AgentPermissions } from './conte
 
 // Executor
 export { executeAbility, formatExecutionResult } from './executor/index.js'
+export type { ExecuteAbilityOptions } from './executor/index.js'
 export { ExecutionManager } from './executor/execution-manager.js'
+
+// Control - Obligations & Gates
+export { evaluateControl, evaluateControlFromEvents } from './control/index.js'
+
+// Control - Event Model
+export { ControlEventFactory, generateEventId } from './control/events.js'
+export type {
+  ControlEvent,
+  ControlEventType,
+  ControlEventPayload,
+  Actor,
+  ActorKind,
+  EventContext,
+  EventFactoryOptions,
+  RunStartedPayload,
+  RunCompletedPayload,
+  StepStartedPayload,
+  StepCompletedPayload,
+  ToolCalledPayload,
+  ValidationResultPayload,
+  ObligationSignalPayload,
+  ModelObservedPayload,
+} from './control/events.js'
+
+// Control - Event Bus
+export { ControlEventBus } from './control/event-bus.js'
+export type { EventSubscriber, EventBusOptions } from './control/event-bus.js'
+
+// Control - Event Log
+export { EventLog } from './control/event-log.js'
+export type { EventLogOptions } from './control/event-log.js'
 
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'

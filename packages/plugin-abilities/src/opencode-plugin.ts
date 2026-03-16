@@ -5,6 +5,9 @@ import { loadAbilities } from './loader/index.js'
 import { validateAbility, validateInputs } from './validator/index.js'
 import { formatExecutionResult } from './executor/index.js'
 import { ExecutionManager } from './executor/execution-manager.js'
+import { ControlEventBus } from './control/event-bus.js'
+import { EventLog } from './control/event-log.js'
+import { join } from 'path'
 
 /**
  * Minimal Abilities Plugin
@@ -30,7 +33,12 @@ const ALWAYS_ALLOWED_TOOLS = [
 
 export const AbilitiesPlugin: Plugin = async (ctx) => {
   const abilities = new Map<string, LoadedAbility>()
-  const executionManager = new ExecutionManager()
+
+  // Initialize control event infrastructure
+  const controlLogDir = join(ctx.directory, '.opencode', 'control-logs')
+  const eventLog = new EventLog({ logDir: controlLogDir })
+  const eventBus = new ControlEventBus({ log: eventLog })
+  const executionManager = new ExecutionManager(eventBus)
 
   const abilitiesDir = `${ctx.directory}/.opencode/abilities`
 
@@ -207,6 +215,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
       try {
         if (event.type === 'session.deleted') {
           executionManager.cleanup()
+          eventBus.reset()
         }
       } catch (err) {
         console.error('[abilities] event handler error:', err)

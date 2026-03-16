@@ -1,16 +1,27 @@
 import type { Ability, AbilityExecution, ExecutorContext } from '../types/index.js'
 import { executeAbility } from './index.js'
+import type { ControlEventBus } from '../control/event-bus.js'
 
 /**
- * Minimal ExecutionManager
+ * ExecutionManager
  * 
- * Simplified to track SINGLE execution at a time.
- * No session management, no cleanup timers, no multi-execution.
- * 
- * This is the bare minimum to test the core concept.
+ * Tracks a single active execution at a time.
+ * When an eventBus is provided, all executions emit structured events.
  */
 export class ExecutionManager {
   private activeExecution: AbilityExecution | null = null
+  private eventBus: ControlEventBus | undefined
+
+  constructor(eventBus?: ControlEventBus) {
+    this.eventBus = eventBus
+  }
+
+  /**
+   * Set or replace the event bus at runtime.
+   */
+  setEventBus(eventBus: ControlEventBus | undefined): void {
+    this.eventBus = eventBus
+  }
 
   async execute(
     ability: Ability,
@@ -24,7 +35,9 @@ export class ExecutionManager {
 
     console.log(`[abilities] Starting execution: ${ability.name}`)
     
-    const execution = await executeAbility(ability, inputs, ctx)
+    const execution = await executeAbility(ability, inputs, ctx, {
+      eventBus: this.eventBus,
+    })
     this.activeExecution = execution
 
     // Clear active if completed/failed

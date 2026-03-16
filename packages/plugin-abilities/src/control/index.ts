@@ -8,6 +8,11 @@ import type {
   StepResult,
   TaskType,
 } from '../types/index.js'
+import type { ControlEvent, StepCompletedPayload, ObligationSignalPayload } from './events.js'
+
+// ─────────────────────────────────────────────────────────────
+// OBLIGATION DEFINITIONS
+// ─────────────────────────────────────────────────────────────
 
 interface ObligationDefinition {
   key: ObligationKey
@@ -39,6 +44,10 @@ const TASK_OBLIGATIONS: Partial<Record<TaskType, ObligationDefinition[]>> = {
   ],
 }
 
+// ─────────────────────────────────────────────────────────────
+// STEP-BASED EVALUATION (original path, backward compatible)
+// ─────────────────────────────────────────────────────────────
+
 function hasAnyTag(result: StepResult, tags: string[]): boolean {
   const stepTags = result.tags || []
   return tags.some((tag) => stepTags.includes(tag))
@@ -67,6 +76,84 @@ function evaluateObligations(taskType: TaskType, completedSteps: StepResult[]): 
     }
   })
 }
+
+// ─────────────────────────────────────────────────────────────
+// EVENT-BASED EVALUATION (new path, consumes event stream)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Evaluate obligations from the unified event stream.
+ * Instead of directly reading step tags, this reconstructs
+ * obligation satisfaction from step.completed and obligation.signal events.
+ */
+function evaluateObligationsFromEvents(
+  taskType: TaskType,
+  events: readonly ControlEvent[]
+): ObligationResult[] {
+  const definitions = TASK_OBLIGATIONS[taskType] || []
+
+  // Collect evidence from step completion events
+  const stepCompletedEvents = events.filter(
+    (e) => e.event_type === 'step.completed' || e.event_type === 'step.failed'
+  )
+  const obligationSignalEvents = events.filter(
+    (e) => e.event_type === 'obligation.signal'
+  )
+
+  return definitions.map((definition) => {
+    // Check step completion events for matching tags
+    const matchingStepEvents = stepCompletedEvents.filter((e) => {
+      const payload = e.payload as StepCompletedPayload
+      const tags = payload.tags || []
+      return definition.tags.some((tag) => tags.includes(tag))
+    })
+
+    // Check obligation signal events for matching tags
+    const matchingSignalEvents = obligationSignalEvents.filter((e) => {
+      const payload = e.payload as ObligationSignalPayload
+      return definition.tags.includes(payload.obligation_key)
+    })
+
+    // Determine satisfaction status
+    const successfulSteps = matchingStepEvents.filter((e) => {
+      const payload = e.payload as StepCompletedPayload
+      return payload.status === 'completed'
+    })
+    const failedSteps = matchingStepEvents.filter((e) => {
+      const payload = e.payload as StepCompletedPayload
+      return payload.status === 'failed'
+    })
+    const successfulSignals = matchingSignalEvents.filter((e) => {
+      const payload = e.payload as ObligationSignalPayload
+      const evidence = payload.evidence as Record<string, unknown>
+      return evidence.status === 'completed'
+    })
+
+    // Build evidence step IDs from both sources
+    const evidenceStepIds: string[] = [
+      ...matchingStepEvents.map((e) => (e.payload as StepCompletedPayload).step_id),
+      ...matchingSignalEvents.map((e) => (e.payload as ObligationSignalPayload).evidence?.step_id as string).filter(Boolean),
+    ]
+
+    let status: ObligationResult['status'] = 'missing'
+    if (successfulSteps.length > 0 || successfulSignals.length > 0) {
+      status = 'satisfied'
+    } else if (failedSteps.length > 0) {
+      status = 'failed'
+    }
+
+    return {
+      key: definition.key,
+      severity: definition.severity,
+      status,
+      evidenceStepIds,
+    }
+  })
+}
+
+// ─────────────────────────────────────────────────────────────
+// GATE EVALUATION (shared by both paths)
+// ─────────────────────────────────────────────────────────────
 
 function evaluateGate(obligations: ObligationResult[]): GateResult {
   const failedHard = obligations.filter((item) => item.severity === 'hard' && item.status === 'failed')
@@ -100,12 +187,43 @@ function evaluateGate(obligations: ObligationResult[]): GateResult {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// PUBLIC API
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Original step-based control evaluation.
+ * Kept for backward compatibility.
+ */
 export function evaluateControl(ability: Ability, completedSteps: StepResult[]): ControlResult | undefined {
   if (!ability.task_type) {
     return undefined
   }
 
   const obligations = evaluateObligations(ability.task_type, completedSteps)
+  const gate = evaluateGate(obligations)
+
+  return {
+    taskType: ability.task_type,
+    obligations,
+    gate,
+  }
+}
+
+/**
+ * Event-based control evaluation.
+ * Consumes the unified event stream to determine obligation satisfaction.
+ * This is the preferred path when a ControlEventBus is available.
+ */
+export function evaluateControlFromEvents(
+  ability: Ability,
+  events: readonly ControlEvent[]
+): ControlResult | undefined {
+  if (!ability.task_type) {
+    return undefined
+  }
+
+  const obligations = evaluateObligationsFromEvents(ability.task_type, events)
   const gate = evaluateGate(obligations)
 
   return {
