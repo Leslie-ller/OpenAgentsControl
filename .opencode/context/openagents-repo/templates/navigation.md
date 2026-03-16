@@ -28,6 +28,8 @@ openagents-repo/templates/
 | **Bibliography literature decision task template** | `./bibliography-literature-decision-task-template.md` |
 | **Section evidence pack template** | `./section-evidence-pack-template.md` |
 | **Section evidence pack task template** | `./section-evidence-pack-task-template.md` |
+| **Citation audit template** | `./citation-audit-template.md` |
+| **Citation audit task template** | `./citation-audit-task-template.md` |
 | **Blueprints** | `../blueprints/navigation.md` |
 | **Guides** | `../guides/navigation.md` |
 

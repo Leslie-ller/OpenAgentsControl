@@ -741,6 +741,28 @@
         "category": "standard"
       },
       {
+        "id": "citation-audit",
+        "name": "Citation Audit",
+        "type": "command",
+        "path": ".opencode/command/citation-audit.md",
+        "description": "Run citation audit on drafted sections using evidence packs and literature decisions",
+        "tags": [
+          "bibliography",
+          "citation-audit",
+          "review",
+          "research"
+        ],
+        "dependencies": [
+          "subagent:contextscout",
+          "subagent:task-manager",
+          "context:bibliography-workflow",
+          "context:section-evidence-pack-template",
+          "context:citation-audit-template",
+          "context:citation-audit-task-template"
+        ],
+        "category": "standard"
+      },
+      {
         "id": "bibliography",
         "name": "Bibliography Workflow",
         "type": "command",
@@ -2504,6 +2526,43 @@
         "dependencies": [
           "context:bibliography-workflow",
           "context:section-evidence-pack-template",
+          "context:task-schema"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "citation-audit-template",
+        "name": "Citation Audit Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/citation-audit-template.md",
+        "description": "Reusable reviewer-facing audit artifact for verifying claim-to-citation support",
+        "tags": [
+          "template",
+          "citation-audit",
+          "review",
+          "research"
+        ],
+        "dependencies": [
+          "context:section-evidence-pack-template"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "citation-audit-task-template",
+        "name": "Citation Audit Task Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/citation-audit-task-template.md",
+        "description": "TaskManager template for citation-audit work on drafted sections",
+        "tags": [
+          "template",
+          "citation-audit",
+          "tasks",
+          "review"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow",
+          "context:section-evidence-pack-template",
+          "context:citation-audit-template",
           "context:task-schema"
         ],
         "category": "standard"
