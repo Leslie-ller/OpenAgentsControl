@@ -15,6 +15,13 @@ Welcome to the OpenAgents Control documentation! This directory contains all doc
   - [Quick Start](features/system-builder/README.md) - Get started with the system builder
   - [Complete Guide](features/system-builder/guide.md) - Detailed documentation and examples
 - **[Agent System Blueprint](features/agent-system-blueprint.md)** - Architecture patterns and how to extend the system
+- **Research Workflow Stack** - Bibliography workflow assets available via `.opencode/command/` and `.opencode/context/openagents-repo/templates/`
+  - `/bibliography` - End-to-end literature workflow
+  - `/paper-screening` - Candidate paper triage
+  - `/paper-fulltext-review` - Reading card generation
+  - `/literature-decision` - Keep/defer/reject decisions
+  - `/section-evidence-pack` - Section-level evidence organization
+  - `/citation-audit` - Final citation support audit
 
 ### Contributing
 
@@ -75,6 +82,9 @@ docs/
 
 **...build a custom AI system**
 → [System Builder](features/system-builder/)
+
+**...run a literature or bibliography workflow**
+→ Start with [../README.md](../README.md) and the bibliography commands in `.opencode/command/`
 
 **...understand the architecture**
 → [Agent System Blueprint](features/agent-system-blueprint.md)

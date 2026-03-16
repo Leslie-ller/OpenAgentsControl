@@ -192,6 +192,7 @@ Add a login endpoint
 - ✅ Context-aware code generation
 - ✅ 7 specialized subagents (task-manager, context-scout, context-manager, coder-agent, test-engineer, code-reviewer, external-scout)
 - ✅ 9 workflow skills + 6 user commands
+- ✅ Research-grade bibliography workflow from screening to citation audit
 - ✅ Flexible context discovery (.oac config, .claude/context, context, .opencode/context)
 - ✅ Add context from GitHub, worktrees, local files, or URLs
 - ✅ Easy feature planning with `/oac:plan`
@@ -452,7 +453,30 @@ Interactive wizard generates orchestrators, subagents, context files, workflows,
 - `/test` - Testing workflows
 - `/optimize` - Code optimization
 - `/context` - Context management
+- `/bibliography` - Run staged literature workflows end-to-end
+- `/paper-screening` - Triage candidate papers into an active queue
+- `/paper-fulltext-review` - Generate reading cards from full-text review
+- `/literature-decision` - Turn evidence into keep/defer/reject decisions
+- `/section-evidence-pack` - Build section-level safe-claim packs for drafting
+- `/citation-audit` - Audit drafted claims against evidence support
 - And 7+ more productivity commands
+
+### Research Workflow Stack
+OpenAgents Control now includes a full bibliography pipeline for research-heavy projects:
+
+1. `literature pool` - Candidate paper collection
+2. `active reading queue` - Small bounded queue per topic or section
+3. `paper reading card` - Reusable paper-level notes
+4. `section evidence pack` - Section-level safe claims and source mapping
+5. `citation audit` - Final support check before adoption
+
+This stack is exposed through:
+- `/bibliography`
+- `/paper-screening`
+- `/paper-fulltext-review`
+- `/literature-decision`
+- `/section-evidence-pack`
+- `/citation-audit`
 
 ### 📚 Context System (MVI Principle)
 Your coding standards automatically loaded by agents:
