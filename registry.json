@@ -674,6 +674,28 @@
         "category": "standard"
       },
       {
+        "id": "paper-fulltext-review",
+        "name": "Paper Full-Text Review",
+        "type": "command",
+        "path": ".opencode/command/paper-fulltext-review.md",
+        "description": "Run the paper full-text review stage for bibliography workflows",
+        "tags": [
+          "bibliography",
+          "fulltext",
+          "review",
+          "research"
+        ],
+        "dependencies": [
+          "subagent:contextscout",
+          "subagent:task-manager",
+          "context:bibliography-workflow",
+          "context:bibliography-fulltext-review",
+          "context:bibliography-reading-card-template",
+          "context:bibliography-fulltext-review-task-template"
+        ],
+        "category": "standard"
+      },
+      {
         "id": "bibliography",
         "name": "Bibliography Workflow",
         "type": "command",
@@ -2326,6 +2348,43 @@
         "dependencies": [
           "context:bibliography-workflow",
           "context:bibliography-paper-screening",
+          "context:task-schema"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-reading-card-template",
+        "name": "Bibliography Reading Card Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/bibliography-reading-card-template.md",
+        "description": "Reusable reading card template for full-text reviewed papers",
+        "tags": [
+          "template",
+          "bibliography",
+          "reading-card",
+          "research"
+        ],
+        "dependencies": [
+          "context:bibliography-fulltext-review"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-fulltext-review-task-template",
+        "name": "Bibliography Full-Text Review Task Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/bibliography-fulltext-review-task-template.md",
+        "description": "TaskManager template for the paper_fulltext_review stage of bibliography workflows",
+        "tags": [
+          "template",
+          "bibliography",
+          "fulltext",
+          "tasks"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow",
+          "context:bibliography-fulltext-review",
+          "context:bibliography-reading-card-template",
           "context:task-schema"
         ],
         "category": "standard"
