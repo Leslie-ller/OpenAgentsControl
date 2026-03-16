@@ -38,11 +38,12 @@ Load these before planning or execution:
 
 Required tooling:
 
-- `reference_manager`
+- AgentOS Zotero integration
 
-Configured through:
+Validated against:
 
-- `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
+- `/home/leslie/code/AgentOS/.venv/bin/agentos`
+- `ZOTERO_USER_ID` and `ZOTERO_API_KEY` in `/home/leslie/code/AgentOS/.env`
 
 ## Required Outputs
 
@@ -68,7 +69,7 @@ next_action: {adopt | revise | gather evidence | downgrade claims}
 1. Audit claims, not citation counts.
 2. A cited paper is insufficient if the section overstates what it supports.
 3. Unsupported claims must be downgraded, removed, or sent back for evidence gathering.
-4. Do not proceed if reference-manager tooling is missing.
+4. Do not proceed if AgentOS Zotero tooling is missing.
 5. A section should not be considered safe just because it cites many papers.
 
 ## TaskManager Hand-off

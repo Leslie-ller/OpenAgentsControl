@@ -36,13 +36,13 @@ Load these before planning or execution:
 
 Required tooling:
 
-- `discovery`
-- `reference_manager`
+- AgentOS CLI academic search
+- AgentOS Zotero integration
 
-Configured through:
+Validated against:
 
-- `BIBLIOGRAPHY_DISCOVERY_CMD` or `BIBLIOGRAPHY_SEARCH_CMD`
-- `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
+- `/home/leslie/code/AgentOS/.venv/bin/agentos`
+- `ZOTERO_USER_ID` and `ZOTERO_API_KEY` in `/home/leslie/code/AgentOS/.env`
 
 ## Required Outputs
 
@@ -71,7 +71,7 @@ For the batch:
 1. Screening is metadata-first triage, not full synthesis.
 2. `keep` should consume limited queue capacity intentionally.
 3. If criteria drift mid-batch, stop and rewrite them before continuing.
-4. Do not proceed if discovery or reference-manager tooling is missing.
+4. Do not proceed if AgentOS academic search or Zotero tooling is missing.
 5. If the batch is large or persistent tracking is needed, use `TaskManager`.
 
 ## TaskManager Hand-off

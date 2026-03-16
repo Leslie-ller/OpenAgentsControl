@@ -1,24 +1,29 @@
 # Bibliography Tooling
 
-This tool validates whether the bibliography workflow has the external tooling it needs.
+This tool is customized to the local AgentOS toolchain instead of using generic command indirection.
 
-## Supported capabilities
+## Fixed toolchain contract
 
-- `discovery`
-  - `BIBLIOGRAPHY_DISCOVERY_CMD`
-  - fallback alias: `BIBLIOGRAPHY_SEARCH_CMD`
-- `pdf_extract`
-  - `BIBLIOGRAPHY_PDF_EXTRACT_CMD`
-  - fallback aliases: `BIBLIOGRAPHY_PDF_CMD`, `MINERU_CMD`
-- `reference_manager`
-  - `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`
-  - fallback aliases: `BIBLIOGRAPHY_ZOTERO_CMD`, `ZOTERO_CMD`
+- AgentOS CLI: `/home/leslie/code/AgentOS/.venv/bin/agentos`
+- AgentOS MCP server: `/home/leslie/code/AgentOS/.venv/bin/agentos-mcp`
+- AgentOS config: `/home/leslie/code/AgentOS/.env`
+
+## Checked capabilities
+
+- `academic_search`
+  - provided by `agentos search --mode academic`
+- `zotero`
+  - provided by `agentos zotero-search` and `agentos zotero-read`
+  - expects `ZOTERO_USER_ID` and `ZOTERO_API_KEY`
+- `mineru`
+  - provided by AgentOS MinerU adapters
+  - expects either `MINERU_API_TOKEN` or `MINERU_KIE_API_TOKEN` plus `MINERU_KIE_PIPELINE_ID`
 
 ## Stage requirements
 
-- `screening`: `discovery`, `reference_manager`
-- `review`: `pdf_extract`, `reference_manager`
-- `decision`: `reference_manager`
-- `audit`: `reference_manager`
-
-The tool checks whether each configured command exists on `PATH` or as an executable file path.
+- `plan`: AgentOS CLI
+- `screening`: AgentOS CLI + academic search + Zotero
+- `review`: AgentOS CLI + AgentOS MCP + Zotero + MinerU
+- `decision`: AgentOS CLI + Zotero
+- `evidence-pack`: AgentOS CLI
+- `audit`: AgentOS CLI + Zotero

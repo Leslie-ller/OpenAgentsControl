@@ -38,11 +38,12 @@ Load these before planning or execution:
 
 Required tooling:
 
-- `reference_manager`
+- AgentOS Zotero integration
 
-Configured through:
+Validated against:
 
-- `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
+- `/home/leslie/code/AgentOS/.venv/bin/agentos`
+- `ZOTERO_USER_ID` and `ZOTERO_API_KEY` in `/home/leslie/code/AgentOS/.env`
 
 ## Required Outputs
 
@@ -75,7 +76,7 @@ For the batch:
 1. Decisions must be traceable back to screening or full-text evidence.
 2. Kept papers need narrow roles, not vague “important” labels.
 3. Rejections should be explicit and auditable.
-4. Do not proceed if reference-manager tooling is missing.
+4. Do not proceed if AgentOS Zotero tooling is missing.
 5. If uncertainty remains meaningful, prefer `defer` or `revisit_later` over false confidence.
 
 ## TaskManager Hand-off

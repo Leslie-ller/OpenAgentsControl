@@ -40,18 +40,18 @@ This command gives OpenAgents Control a single execution entrypoint for bibliogr
 
 ## Tool Contract
 
-Before non-trivial execution, verify bibliography tooling is actually configured:
+Before non-trivial execution, verify the local AgentOS bibliography toolchain is actually available:
 
-- `discovery` via `BIBLIOGRAPHY_DISCOVERY_CMD` or `BIBLIOGRAPHY_SEARCH_CMD`
-- `pdf_extract` via `BIBLIOGRAPHY_PDF_EXTRACT_CMD`, `BIBLIOGRAPHY_PDF_CMD`, or `MINERU_CMD`
-- `reference_manager` via `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`, `BIBLIOGRAPHY_ZOTERO_CMD`, or `ZOTERO_CMD`
+- academic discovery via `/home/leslie/code/AgentOS/.venv/bin/agentos search --mode academic`
+- Zotero access via `/home/leslie/code/AgentOS/.venv/bin/agentos zotero-search` and `zotero-read`
+- full-text extraction via AgentOS MinerU adapters exposed through `/home/leslie/code/AgentOS/.venv/bin/agentos-mcp`
 
 Stage gates:
 
-- `screening` requires `discovery` and `reference_manager`
-- `review` requires `pdf_extract` and `reference_manager`
-- `decision` requires `reference_manager`
-- `audit` requires `reference_manager`
+- `screening` requires AgentOS academic search and Zotero
+- `review` requires AgentOS MCP plus Zotero and MinerU
+- `decision` requires Zotero
+- `audit` requires Zotero
 
 If the relevant capability is missing, stop and report the missing tool instead of silently improvising around it.
 

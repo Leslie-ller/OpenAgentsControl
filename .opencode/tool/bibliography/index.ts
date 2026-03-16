@@ -1,9 +1,7 @@
 import { constants } from "fs"
-import { access } from "fs/promises"
-import { spawnSync } from "child_process"
+import { access, readFile } from "fs/promises"
 import { resolve } from "path"
 import { tool } from "@opencode-ai/plugin/tool"
-import { getEnvVariable, loadEnvVariables } from "../env"
 
 type BibliographyStage =
   | "plan"
@@ -13,98 +11,152 @@ type BibliographyStage =
   | "evidence-pack"
   | "audit"
 
-type Capability = "discovery" | "pdf_extract" | "reference_manager"
+type Capability = "agentos_cli" | "agentos_mcp" | "academic_search" | "zotero" | "mineru"
 
 interface CapabilityStatus {
   capability: Capability
-  configured: boolean
-  envVar: string | null
-  value: string | null
-  executable: string | null
-  executableFound: boolean
+  ready: boolean
+  details: string
   requiredBy: BibliographyStage[]
 }
 
+interface AgentOSEnv {
+  [key: string]: string
+}
+
+const AGENTOS_ROOT = "/home/leslie/code/AgentOS"
+const AGENTOS_CLI = `${AGENTOS_ROOT}/.venv/bin/agentos`
+const AGENTOS_MCP = `${AGENTOS_ROOT}/.venv/bin/agentos-mcp`
+const AGENTOS_ENV = `${AGENTOS_ROOT}/.env`
+
 const STAGE_REQUIREMENTS: Record<BibliographyStage, Capability[]> = {
-  plan: [],
-  screening: ["discovery", "reference_manager"],
-  review: ["pdf_extract", "reference_manager"],
-  decision: ["reference_manager"],
-  "evidence-pack": [],
-  audit: ["reference_manager"],
+  plan: ["agentos_cli"],
+  screening: ["agentos_cli", "academic_search", "zotero"],
+  review: ["agentos_cli", "agentos_mcp", "zotero", "mineru"],
+  decision: ["agentos_cli", "zotero"],
+  "evidence-pack": ["agentos_cli"],
+  audit: ["agentos_cli", "zotero"],
 }
 
-const CAPABILITY_ENV_VARS: Record<Capability, string[]> = {
-  discovery: ["BIBLIOGRAPHY_DISCOVERY_CMD", "BIBLIOGRAPHY_SEARCH_CMD"],
-  pdf_extract: ["BIBLIOGRAPHY_PDF_EXTRACT_CMD", "BIBLIOGRAPHY_PDF_CMD", "MINERU_CMD"],
-  reference_manager: [
-    "BIBLIOGRAPHY_REFERENCE_MANAGER_CMD",
-    "BIBLIOGRAPHY_ZOTERO_CMD",
-    "ZOTERO_CMD",
-  ],
-}
-
-function shellEscape(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
-}
-
-function extractExecutable(commandValue: string): string | null {
-  const tokens = commandValue.match(/"[^"]*"|'[^']*'|\S+/g)
-  if (!tokens || tokens.length === 0) {
-    return null
-  }
-
-  return tokens[0].replace(/^['"]|['"]$/g, "")
-}
-
-async function executableExists(executable: string | null): Promise<boolean> {
-  if (!executable) {
+async function executableExists(path: string): Promise<boolean> {
+  try {
+    await access(resolve(path), constants.X_OK)
+    return true
+  } catch {
     return false
   }
-
-  if (executable.includes("/") || executable.startsWith(".")) {
-    try {
-      await access(resolve(executable), constants.X_OK)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  const result = spawnSync("bash", ["-lc", `command -v ${shellEscape(executable)}`], {
-    stdio: "ignore",
-  })
-  return result.status === 0
 }
 
-async function readConfiguredValue(envVars: string[]): Promise<{ envVar: string | null; value: string | null }> {
-  for (const envVar of envVars) {
-    const value = await getEnvVariable(envVar)
-    if (value) {
-      return { envVar, value }
+async function loadAgentOSEnv(): Promise<AgentOSEnv> {
+  try {
+    const raw = await readFile(AGENTOS_ENV, "utf8")
+    const env: AgentOSEnv = {}
+    for (const line of raw.split("\n")) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) {
+        continue
+      }
+      const [key, ...parts] = trimmed.split("=")
+      env[key.trim()] = parts.join("=").trim()
     }
+    return env
+  } catch {
+    return {}
   }
-
-  return { envVar: null, value: null }
 }
 
-async function inspectCapability(capability: Capability): Promise<CapabilityStatus> {
-  const requiredBy = Object.entries(STAGE_REQUIREMENTS)
-    .filter(([, capabilities]) => capabilities.includes(capability))
-    .map(([stage]) => stage as BibliographyStage)
+function stageList(capability: Capability): BibliographyStage[] {
+  return (Object.keys(STAGE_REQUIREMENTS) as BibliographyStage[]).filter((stage) =>
+    STAGE_REQUIREMENTS[stage].includes(capability),
+  )
+}
 
-  const { envVar, value } = await readConfiguredValue(CAPABILITY_ENV_VARS[capability])
-  const executable = value ? extractExecutable(value) : null
-  const executableFound = await executableExists(executable)
+async function inspectAgentOSCli(): Promise<CapabilityStatus> {
+  const ready = await executableExists(AGENTOS_CLI)
+  return {
+    capability: "agentos_cli",
+    ready,
+    details: ready
+      ? `found \`${AGENTOS_CLI}\``
+      : `missing executable \`${AGENTOS_CLI}\``,
+    requiredBy: stageList("agentos_cli"),
+  }
+}
+
+async function inspectAgentOSMcp(): Promise<CapabilityStatus> {
+  const ready = await executableExists(AGENTOS_MCP)
+  return {
+    capability: "agentos_mcp",
+    ready,
+    details: ready
+      ? `found \`${AGENTOS_MCP}\``
+      : `missing executable \`${AGENTOS_MCP}\``,
+    requiredBy: stageList("agentos_mcp"),
+  }
+}
+
+function inspectAcademicSearch(env: AgentOSEnv): CapabilityStatus {
+  const openAlex = Boolean(env.OPENALEX_EMAIL)
+  const s2 = Boolean(env.S2_API_KEY)
+  const ready = true
+  const configured = [
+    openAlex ? "OPENALEX_EMAIL" : "",
+    s2 ? "S2_API_KEY" : "",
+  ].filter(Boolean)
 
   return {
-    capability,
-    configured: Boolean(value),
-    envVar,
-    value,
-    executable,
-    executableFound,
-    requiredBy,
+    capability: "academic_search",
+    ready,
+    details: configured.length > 0
+      ? `academic search available via AgentOS search; configured extras: ${configured.join(", ")}`
+      : "academic search available via AgentOS search (OpenAlex + ArXiv baseline, no optional extras configured)",
+    requiredBy: stageList("academic_search"),
+  }
+}
+
+function inspectZotero(env: AgentOSEnv): CapabilityStatus {
+  const hasApi = Boolean(env.ZOTERO_USER_ID && env.ZOTERO_API_KEY)
+  const hasLocalAttachmentPath = Boolean(
+    env.ZOTERO_STORAGE_DIR || env.ZOTERO_DATA_DIR || env.ZOTERO_LINKED_ATTACHMENT_BASE_DIR,
+  )
+  const ready = hasApi
+  let details = "missing Zotero API config in AgentOS .env"
+
+  if (hasApi && hasLocalAttachmentPath) {
+    details = "Zotero API and local attachment fallback are configured"
+  } else if (hasApi) {
+    details = "Zotero API is configured"
+  } else if (hasLocalAttachmentPath) {
+    details = "local Zotero attachment paths exist, but API config is missing"
+  }
+
+  return {
+    capability: "zotero",
+    ready,
+    details,
+    requiredBy: stageList("zotero"),
+  }
+}
+
+function inspectMineru(env: AgentOSEnv): CapabilityStatus {
+  const hasMineru = Boolean(env.MINERU_API_TOKEN)
+  const hasMineruKie = Boolean(env.MINERU_KIE_API_TOKEN && env.MINERU_KIE_PIPELINE_ID)
+  const ready = hasMineru || hasMineruKie
+
+  let details = "missing MinerU config in AgentOS .env"
+  if (hasMineru && hasMineruKie) {
+    details = "MinerU API and MinerU KIE are both configured"
+  } else if (hasMineru) {
+    details = "MinerU API is configured"
+  } else if (hasMineruKie) {
+    details = "MinerU KIE is configured"
+  }
+
+  return {
+    capability: "mineru",
+    ready,
+    details,
+    requiredBy: stageList("mineru"),
   }
 }
 
@@ -114,24 +166,31 @@ export interface BibliographyToolingReport {
   requiredCapabilities: Capability[]
   missingRequired: Capability[]
   capabilities: CapabilityStatus[]
+  toolchain: {
+    agentosRoot: string
+    envFile: string
+  }
 }
 
 export async function inspectBibliographyTooling(
   stage: BibliographyStage | "all" = "all",
 ): Promise<BibliographyToolingReport> {
-  await loadEnvVariables()
-
-  const capabilities = await Promise.all(
-    (Object.keys(CAPABILITY_ENV_VARS) as Capability[]).map(inspectCapability),
-  )
+  const env = await loadAgentOSEnv()
+  const capabilities = [
+    await inspectAgentOSCli(),
+    await inspectAgentOSMcp(),
+    inspectAcademicSearch(env),
+    inspectZotero(env),
+    inspectMineru(env),
+  ]
 
   const requiredCapabilities = stage === "all"
-    ? (Object.keys(CAPABILITY_ENV_VARS) as Capability[])
+    ? Array.from(new Set((Object.values(STAGE_REQUIREMENTS).flat()))) as Capability[]
     : STAGE_REQUIREMENTS[stage]
 
   const missingRequired = requiredCapabilities.filter((capability) => {
     const status = capabilities.find((item) => item.capability === capability)
-    return !status || !status.configured || !status.executableFound
+    return !status || !status.ready
   })
 
   return {
@@ -140,51 +199,37 @@ export async function inspectBibliographyTooling(
     requiredCapabilities,
     missingRequired,
     capabilities,
+    toolchain: {
+      agentosRoot: AGENTOS_ROOT,
+      envFile: AGENTOS_ENV,
+    },
   }
 }
 
-function formatCapability(status: CapabilityStatus): string {
-  const configured = status.configured ? "configured" : "missing"
-  const executable = status.executableFound ? "executable-ok" : "executable-missing"
-  const value = status.value ? `\`${status.value}\`` : "_not set_"
-  const source = status.envVar ? ` via \`${status.envVar}\`` : ""
-  const requiredBy = status.requiredBy.length > 0
-    ? status.requiredBy.map((stage) => `\`${stage}\``).join(", ")
-    : "_none_"
-
-  return [
-    `- \`${status.capability}\`: ${configured}, ${executable}${source}`,
-    `  value: ${value}`,
-    `  required by: ${requiredBy}`,
-  ].join("\n")
-}
-
 function formatReport(report: BibliographyToolingReport): string {
-  const title = report.stage === "all"
-    ? "Bibliography tooling status"
-    : `Bibliography tooling status for ${report.stage}`
-  const readiness = report.ready ? "ready" : "not ready"
-  const required = report.requiredCapabilities.length > 0
-    ? report.requiredCapabilities.map((item) => `\`${item}\``).join(", ")
-    : "_none_"
-  const missing = report.missingRequired.length > 0
-    ? report.missingRequired.map((item) => `\`${item}\``).join(", ")
-    : "_none_"
-
-  return [
-    `# ${title}`,
+  const required = report.requiredCapabilities.map((item) => `\`${item}\``).join(", ") || "_none_"
+  const missing = report.missingRequired.map((item) => `\`${item}\``).join(", ") || "_none_"
+  const lines = [
+    `# Bibliography tooling status${report.stage === "all" ? "" : ` for ${report.stage}`}`,
     "",
-    `status: ${readiness}`,
+    `status: ${report.ready ? "ready" : "not ready"}`,
+    `agentos root: \`${report.toolchain.agentosRoot}\``,
+    `agentos env: \`${report.toolchain.envFile}\``,
     `required capabilities: ${required}`,
     `missing required: ${missing}`,
     "",
     "## Capability details",
-    ...report.capabilities.map(formatCapability),
-  ].join("\n")
+  ]
+
+  for (const capability of report.capabilities) {
+    lines.push(`- \`${capability.capability}\`: ${capability.ready ? "ready" : "missing"}; ${capability.details}`)
+  }
+
+  return lines.join("\n")
 }
 
 export const status = tool({
-  description: "Inspect bibliography workflow tooling configuration and stage readiness",
+  description: "Inspect whether the local AgentOS-based bibliography toolchain is ready",
   args: {
     stage: tool.schema
       .enum(["all", "plan", "screening", "review", "decision", "evidence-pack", "audit"])
@@ -193,8 +238,7 @@ export const status = tool({
   },
   async execute(args) {
     try {
-      const report = await inspectBibliographyTooling(args.stage ?? "all")
-      return formatReport(report)
+      return formatReport(await inspectBibliographyTooling(args.stage ?? "all"))
     } catch (error) {
       return `Error: ${error instanceof Error ? error.message : String(error)}`
     }
@@ -202,7 +246,7 @@ export const status = tool({
 })
 
 export const requireReady = tool({
-  description: "Check bibliography stage tooling and return an error-style response when required capabilities are missing",
+  description: "Check whether the local AgentOS-based bibliography toolchain is ready for a stage",
   args: {
     stage: tool.schema
       .enum(["plan", "screening", "review", "decision", "evidence-pack", "audit"])
@@ -214,13 +258,10 @@ export const requireReady = tool({
       if (report.ready) {
         return `Bibliography tooling ready for ${args.stage}.`
       }
-
       return [
         `Bibliography tooling is not ready for ${args.stage}.`,
-        `Missing required capabilities: ${report.missingRequired.join(", ") || "none"}.`,
-        "",
         formatReport(report),
-      ].join("\n")
+      ].join("\n\n")
     } catch (error) {
       return `Error: ${error instanceof Error ? error.message : String(error)}`
     }

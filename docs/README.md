@@ -22,7 +22,7 @@ Welcome to the OpenAgents Control documentation! This directory contains all doc
   - `/literature-decision` - Keep/defer/reject decisions
   - `/section-evidence-pack` - Section-level evidence organization
   - `/citation-audit` - Final citation support audit
-  - Tooling contract env vars: `BIBLIOGRAPHY_DISCOVERY_CMD`, `BIBLIOGRAPHY_PDF_EXTRACT_CMD`, `BIBLIOGRAPHY_REFERENCE_MANAGER_CMD`
+  - Tooling contract: local AgentOS CLI + MCP + Zotero + MinerU setup under `/home/leslie/code/AgentOS`
 
 ### Contributing
 
