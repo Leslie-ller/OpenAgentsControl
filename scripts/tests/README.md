@@ -124,6 +124,22 @@ bash scripts/tests/test-collision-detection.sh
 
 ---
 
+### 5. Test Runner Argument Parsing (`test-test-runner.sh`)
+
+Validates `scripts/testing/test.sh` positional argument parsing without requiring a real OpenCode server.
+
+**Run locally:**
+```bash
+bash scripts/tests/test-test-runner.sh
+```
+
+**What it tests:**
+- ✅ `--core` is not misread as the model argument
+- ✅ Explicit `provider/model` values are passed through correctly
+- ✅ Flag-only invocation keeps default agent/model behavior
+
+---
+
 ## Running All Tests
 
 ```bash
