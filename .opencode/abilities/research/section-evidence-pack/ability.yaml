@@ -1,0 +1,14 @@
+name: research/section-evidence-pack
+description: Assemble section-level evidence packs from reviewed literature artifacts.
+task_type: section_evidence_pack
+
+inputs:
+  section:
+    type: string
+    required: true
+
+steps:
+  - id: record-evidence-pack
+    type: script
+    run: echo "Produce section evidence pack for {{inputs.section}}"
+    tags: [evidence-pack]

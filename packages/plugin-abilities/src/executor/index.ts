@@ -9,6 +9,7 @@ import type {
   InputValues,
 } from '../types/index.js'
 import { validateInputs } from '../validator/index.js'
+import { evaluateControl } from '../control/index.js'
 
 /**
  * Minimal Executor - Script Steps Only
@@ -92,6 +93,7 @@ async function executeScriptStep(
     return {
       stepId: step.id,
       status: failed ? 'failed' : 'completed',
+      tags: step.tags,
       output: result.stdout || result.stderr,
       error,
       startedAt,
@@ -102,6 +104,7 @@ async function executeScriptStep(
     return {
       stepId: step.id,
       status: 'failed',
+      tags: step.tags,
       error: err instanceof Error ? err.message : String(err),
       startedAt,
       completedAt: Date.now(),
@@ -147,6 +150,7 @@ export async function executeAbility(
       ability,
       inputs,
       status: 'failed',
+      executionStatus: 'failed',
       currentStep: null,
       currentStepIndex: -1,
       completedSteps: [],
@@ -175,6 +179,7 @@ export async function executeAbility(
     ability,
     inputs: resolvedInputs,
     status: 'running',
+    executionStatus: 'running',
     currentStep: null,
     currentStepIndex: -1,
     completedSteps: [],
@@ -203,8 +208,15 @@ export async function executeAbility(
   }
 
   execution.status = 'completed'
+  execution.executionStatus = 'completed'
   execution.currentStep = null
   execution.completedAt = Date.now()
+  execution.control = evaluateControl(ability, execution.completedSteps)
+
+  if (execution.control?.gate.verdict === 'block') {
+    execution.status = 'failed'
+    execution.error = execution.control.gate.reasons.join('; ') || 'Control gate blocked completion'
+  }
 
   return execution
 }

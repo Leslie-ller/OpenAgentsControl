@@ -202,6 +202,45 @@ steps:
   when: inputs.environment == "production"
 ```
 
+## Minimal Control Layer
+
+The current runtime also supports a small control result surface for task types that need completion discipline.
+
+Ability-level:
+
+```yaml
+task_type: paper_fulltext_review
+```
+
+Step-level evidence signaling:
+
+```yaml
+- id: extract
+  type: script
+  run: ./extract.sh
+  tags: [fulltext-extract]
+
+- id: card
+  type: script
+  run: ./write-card.sh
+  tags: [reading-card]
+```
+
+When `task_type` is set, the executor returns:
+
+- `executionStatus`: raw executor result
+- `status`: final status after gate evaluation
+- `control.obligations`: obligation states
+- `control.gate`: `allow`, `warn`, or `block`
+
+Built-in bibliography task types:
+
+- `paper_screening`
+- `paper_fulltext_review`
+- `literature_decision`
+- `section_evidence_pack`
+- `citation_audit`
+
 ## Enforcement
 
 Abilities enforce execution order via hooks:

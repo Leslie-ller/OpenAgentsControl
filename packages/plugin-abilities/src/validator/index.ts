@@ -30,6 +30,7 @@ const BaseStepSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/, 'Step ID must be lowercase alphanumeric with hyphens'),
   description: z.string().optional(),
   needs: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   when: z.string().optional(),
   timeout: z.string().optional(),
   on_failure: z.enum(['stop', 'continue', 'retry', 'ask']).optional(),
@@ -107,6 +108,14 @@ const AbilitySchema = z.object({
     'Name must be lowercase alphanumeric with hyphens and slashes'
   ),
   description: z.string().min(1, 'Description is required'),
+  task_type: z.enum([
+    'code_change',
+    'paper_screening',
+    'paper_fulltext_review',
+    'literature_decision',
+    'section_evidence_pack',
+    'citation_audit',
+  ]).optional(),
   version: z.string().optional(),
   triggers: TriggersSchema.optional(),
   inputs: z.record(InputDefinitionSchema).optional(),

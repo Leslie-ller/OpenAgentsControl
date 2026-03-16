@@ -13,6 +13,14 @@
 
 export type InputType = 'string' | 'number' | 'boolean'
 
+export type TaskType =
+  | 'code_change'
+  | 'paper_screening'
+  | 'paper_fulltext_review'
+  | 'literature_decision'
+  | 'section_evidence_pack'
+  | 'citation_audit'
+
 export interface InputDefinition {
   type: InputType
   required?: boolean
@@ -32,6 +40,7 @@ export interface ScriptStep {
   description?: string
   run: string
   needs?: string[]
+  tags?: string[]
   validation?: {
     exit_code?: number
   }
@@ -46,6 +55,7 @@ export type Step = ScriptStep
 export interface Ability {
   name: string
   description: string
+  task_type?: TaskType
   inputs?: Record<string, InputDefinition>
   steps: Step[]
   _meta?: {
@@ -64,6 +74,7 @@ export type StepStatus = 'completed' | 'failed' | 'skipped'
 export interface StepResult {
   stepId: string
   status: StepStatus
+  tags?: string[]
   output?: string
   error?: string
   startedAt: number
@@ -71,11 +82,52 @@ export interface StepResult {
   duration: number
 }
 
+export type ObligationStatus =
+  | 'expected'
+  | 'satisfied'
+  | 'failed'
+  | 'missing'
+
+export type ObligationSeverity = 'hard' | 'soft'
+
+export type ObligationKey =
+  | 'run_tests'
+  | 'record_validation'
+  | 'commit_if_required'
+  | 'record_screening_decision'
+  | 'extract_fulltext'
+  | 'record_reading_card'
+  | 'record_decision_card'
+  | 'record_evidence_pack'
+  | 'record_citation_audit'
+
+export interface ObligationResult {
+  key: ObligationKey
+  severity: ObligationSeverity
+  status: ObligationStatus
+  evidenceStepIds: string[]
+}
+
+export type GateVerdict = 'allow' | 'warn' | 'block'
+
+export interface GateResult {
+  verdict: GateVerdict
+  reasons: string[]
+  warnings: string[]
+}
+
+export interface ControlResult {
+  taskType: TaskType
+  obligations: ObligationResult[]
+  gate: GateResult
+}
+
 export interface AbilityExecution {
   id: string
   ability: Ability
   inputs: InputValues
   status: ExecutionStatus
+  executionStatus?: ExecutionStatus
   currentStep: Step | null
   currentStepIndex: number
   completedSteps: StepResult[]
@@ -83,6 +135,7 @@ export interface AbilityExecution {
   startedAt: number
   completedAt?: number
   error?: string
+  control?: ControlResult
 }
 
 // ─────────────────────────────────────────────────────────────

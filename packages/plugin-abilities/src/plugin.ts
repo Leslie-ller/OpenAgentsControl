@@ -605,8 +605,10 @@ Use: ability.run({ name: "ability-name", inputs: { ... } })`,
 
             return {
               status: execution.status,
+              executionStatus: execution.executionStatus || execution.status,
               ability: ability.name,
               result: formatExecutionResult(execution),
+              control: execution.control,
               steps: execution.completedSteps.map((s) => ({
                 id: s.stepId,
                 status: s.status,

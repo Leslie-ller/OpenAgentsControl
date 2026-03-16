@@ -1,0 +1,14 @@
+name: research/citation-audit
+description: Produce a citation-audit artifact with explicit pass, revise, or fail outcomes.
+task_type: citation_audit
+
+inputs:
+  section:
+    type: string
+    required: true
+
+steps:
+  - id: record-citation-audit
+    type: script
+    run: echo "Produce citation audit for {{inputs.section}}"
+    tags: [citation-audit]

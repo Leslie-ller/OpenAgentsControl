@@ -1,0 +1,28 @@
+name: research/paper-screening
+description: Screen candidate papers into keep, defer, or reject with auditable output.
+task_type: paper_screening
+
+inputs:
+  query:
+    type: string
+    required: true
+  limit:
+    type: number
+    required: false
+    default: 10
+
+steps:
+  - id: search-academic
+    type: script
+    run: /home/leslie/code/AgentOS/.venv/bin/agentos search --mode academic --query "{{inputs.query}}" --limit {{inputs.limit}}
+
+  - id: search-zotero
+    type: script
+    run: /home/leslie/code/AgentOS/.venv/bin/agentos zotero-search --query "{{inputs.query}}" --limit {{inputs.limit}}
+    needs: [search-academic]
+
+  - id: record-screening-decision
+    type: script
+    run: echo "Produce keep/defer/reject screening artifact for {{inputs.query}}"
+    tags: [screening-decision]
+    needs: [search-zotero]

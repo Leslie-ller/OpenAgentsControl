@@ -1,0 +1,14 @@
+name: research/literature-decision
+description: Turn reviewed evidence into an explicit literature decision card.
+task_type: literature_decision
+
+inputs:
+  paper_key:
+    type: string
+    required: true
+
+steps:
+  - id: record-decision-card
+    type: script
+    run: echo "Produce decision card for {{inputs.paper_key}}"
+    tags: [decision-card]

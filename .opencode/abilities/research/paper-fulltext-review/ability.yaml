@@ -1,0 +1,20 @@
+name: research/paper-fulltext-review
+description: Extract full-text evidence and produce a reusable reading card.
+task_type: paper_fulltext_review
+
+inputs:
+  zotero_key:
+    type: string
+    required: true
+
+steps:
+  - id: read-zotero-pdf
+    type: script
+    run: /home/leslie/code/AgentOS/.venv/bin/agentos zotero-read --key "{{inputs.zotero_key}}"
+    tags: [fulltext-extract]
+
+  - id: record-reading-card
+    type: script
+    run: echo "Produce reading card for {{inputs.zotero_key}}"
+    tags: [reading-card]
+    needs: [read-zotero-pdf]

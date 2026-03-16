@@ -180,7 +180,9 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
             
             return JSON.stringify({
               status: execution.status,
+              executionStatus: execution.executionStatus || execution.status,
               ability: ability.name,
+              control: execution.control,
               result: formatExecutionResult(execution),
             })
           } catch (error) {
