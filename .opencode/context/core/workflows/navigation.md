@@ -18,6 +18,10 @@
 | `external-libraries-scenarios.md` | Common scenarios | ⭐⭐⭐ | Examples needed |
 | `external-libraries-faq.md` | Troubleshooting | ⭐⭐⭐ | Errors/questions |
 | `feature-breakdown.md` | Breaking down features | ⭐⭐⭐⭐ | 4+ files, complex tasks |
+| `bibliography-workflow.md` | End-to-end bibliography process | ⭐⭐⭐⭐ | Literature workflows |
+| `bibliography-paper-screening.md` | Candidate paper triage | ⭐⭐⭐⭐ | Screening papers |
+| `bibliography-fulltext-review.md` | Deep paper review | ⭐⭐⭐⭐ | Reading full texts |
+| `bibliography-literature-decision.md` | Evidence-backed keep/drop decisions | ⭐⭐⭐⭐ | Final literature decisions |
 | `session-management.md` | Managing sessions | ⭐⭐⭐ | Session cleanup |
 | `design-iteration-overview.md` | Design workflow overview | ⭐⭐⭐⭐ | Starting design work |
 | `design-iteration-plan-file.md` | Design plan template | ⭐⭐⭐⭐ | Creating design plan |
@@ -48,6 +52,13 @@
 **For complex features**:
 1. Load `feature-breakdown.md` (high)
 2. Depends on: `task-delegation-basics.md`
+
+**For bibliography workflows**:
+1. Load `bibliography-workflow.md` (high)
+2. Then load the stage file needed:
+   - `bibliography-paper-screening.md`
+   - `bibliography-fulltext-review.md`
+   - `bibliography-literature-decision.md`
 
 **For session management**:
 1. Load `session-management.md` (medium)

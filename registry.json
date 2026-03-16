@@ -1569,6 +1569,90 @@
         "category": "standard"
       },
       {
+        "id": "bibliography-workflow",
+        "name": "Bibliography Workflow",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/bibliography-workflow.md",
+        "aliases": [
+          "workflows-bibliography",
+          "reference-workflow"
+        ],
+        "description": "End-to-end workflow for paper screening, full-text review, and literature decisions",
+        "tags": [
+          "workflows",
+          "bibliography",
+          "literature",
+          "research"
+        ],
+        "dependencies": [],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-paper-screening",
+        "name": "Bibliography Paper Screening",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/bibliography-paper-screening.md",
+        "aliases": [
+          "paper-screening",
+          "workflows-paper-screening"
+        ],
+        "description": "Fast triage workflow for candidate papers before full-text review",
+        "tags": [
+          "workflows",
+          "bibliography",
+          "screening",
+          "research"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-fulltext-review",
+        "name": "Bibliography Full-Text Review",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/bibliography-fulltext-review.md",
+        "aliases": [
+          "paper-fulltext-review",
+          "workflows-fulltext-review"
+        ],
+        "description": "Structured workflow for reviewing full papers and extracting reusable evidence",
+        "tags": [
+          "workflows",
+          "bibliography",
+          "review",
+          "research"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow",
+          "context:bibliography-paper-screening"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-literature-decision",
+        "name": "Bibliography Literature Decision",
+        "type": "context",
+        "path": ".opencode/context/core/workflows/bibliography-literature-decision.md",
+        "aliases": [
+          "literature-decision",
+          "workflows-literature-decision"
+        ],
+        "description": "Decision workflow for keeping, deferring, rejecting, or revisiting papers",
+        "tags": [
+          "workflows",
+          "bibliography",
+          "decision",
+          "research"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow",
+          "context:bibliography-fulltext-review"
+        ],
+        "category": "standard"
+      },
+      {
         "id": "session-management",
         "name": "Session Management",
         "type": "context",
