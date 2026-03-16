@@ -241,6 +241,19 @@ Built-in bibliography task types:
 - `section_evidence_pack`
 - `citation_audit`
 
+Bibliography command bridge:
+
+```ts
+await sdk.executeCommand('/paper-screening', '{"query":"retrieval augmented generation","limit":5}')
+await sdk.executeCommand('/bibliography', 'review ABC12345')
+```
+
+Plugin tool bridge:
+
+```text
+ability.command({ command: "/paper-fulltext-review", arguments: "{\"zotero_key\":\"ABC12345\"}" })
+```
+
 ## Enforcement
 
 Abilities enforce execution order via hooks:

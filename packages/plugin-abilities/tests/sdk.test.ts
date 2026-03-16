@@ -109,6 +109,12 @@ steps:
 
     expect(cancelled).toBe(false)
   })
+
+  test('should return command routing error for unknown command', async () => {
+    const result = await sdk.executeCommand('/unknown-command', '')
+
+    expect(result.error).toContain('No runtime ability mapping')
+  })
 })
 
 describe('createAbilitiesSDK', () => {

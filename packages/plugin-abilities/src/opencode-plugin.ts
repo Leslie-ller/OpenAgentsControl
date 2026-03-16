@@ -77,6 +77,87 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     return lines.join('\n')
   }
 
+  const parseCommandInput = (raw?: string): Record<string, unknown> => {
+    if (!raw || !raw.trim()) return {}
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      // fall through
+    }
+    return { value: raw.trim() }
+  }
+
+  const routeBibliographyCommand = (
+    commandName: string,
+    args: Record<string, unknown>
+  ): { abilityName: string; inputs: Record<string, unknown> } | null => {
+    const value = typeof args.value === 'string' ? args.value : ''
+
+    switch (commandName) {
+      case '/paper-screening':
+        return { abilityName: 'research/paper-screening', inputs: { query: String(args.query ?? value), limit: Number(args.limit ?? 10) } }
+      case '/paper-fulltext-review':
+        return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: String(args.zotero_key ?? args.paper_key ?? value) } }
+      case '/literature-decision':
+        return { abilityName: 'research/literature-decision', inputs: { paper_key: String(args.paper_key ?? value) } }
+      case '/section-evidence-pack':
+        return { abilityName: 'research/section-evidence-pack', inputs: { section: String(args.section ?? value) } }
+      case '/citation-audit':
+        return { abilityName: 'research/citation-audit', inputs: { section: String(args.section ?? value) } }
+      case '/bibliography': {
+        const stage = String(args.stage ?? '').trim() || value.split(/\s+/)[0] || 'plan'
+        const rest = String(args.payload ?? value.split(/\s+/).slice(1).join(' ')).trim()
+        if (stage === 'screening') return { abilityName: 'research/paper-screening', inputs: { query: rest, limit: Number(args.limit ?? 10) } }
+        if (stage === 'review') return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: rest } }
+        if (stage === 'decision') return { abilityName: 'research/literature-decision', inputs: { paper_key: rest } }
+        if (stage === 'audit') return { abilityName: 'research/citation-audit', inputs: { section: rest } }
+        return null
+      }
+      default:
+        return null
+    }
+  }
+
+  const executeAbilityByName = async (name: string, inputs: Record<string, unknown> = {}) => {
+    const loaded = abilities.get(name)
+    if (!loaded) {
+      return JSON.stringify({ error: `Ability '${name}' not found` })
+    }
+
+    const ability = loaded.ability
+    const inputErrors = validateInputs(ability, inputs)
+    if (inputErrors.length > 0) {
+      return JSON.stringify({
+        error: 'Input validation failed',
+        details: inputErrors.map(e => e.message),
+      })
+    }
+
+    try {
+      const execution = await executionManager.execute(
+        ability,
+        inputs,
+        createExecutorContext()
+      )
+
+      return JSON.stringify({
+        status: execution.status,
+        executionStatus: execution.executionStatus || execution.status,
+        ability: ability.name,
+        control: execution.control,
+        result: formatExecutionResult(execution),
+      })
+    } catch (error) {
+      return JSON.stringify({
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
   return {
     // Hook: Inject ability context into every chat message
     async 'chat.message'(_input, output) {
@@ -155,42 +236,35 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
           inputs: tool.schema.optional(tool.schema.any()).describe('Input values for the ability'),
         },
         async execute({ name, inputs = {} }) {
-          const loaded = abilities.get(name)
-          if (!loaded) {
-            return JSON.stringify({ error: `Ability '${name}' not found` })
-          }
+          return executeAbilityByName(name, inputs as Record<string, unknown>)
+        },
+      }),
 
-          const ability = loaded.ability
-          
-          // Validate inputs
-          const inputErrors = validateInputs(ability, inputs as Record<string, unknown>)
-          if (inputErrors.length > 0) {
-            return JSON.stringify({ 
-              error: 'Input validation failed', 
-              details: inputErrors.map(e => e.message) 
-            })
-          }
+      'ability.command': tool({
+        description: 'Bridge bibliography slash commands to runtime abilities',
+        args: {
+          command: tool.schema.string().describe('Slash command name, e.g. /paper-screening or /bibliography'),
+          arguments: tool.schema.string().optional().describe('Raw command arguments as plain text or JSON object string'),
+        },
+        async execute({ command, arguments: commandArguments }) {
+          const parsedArgs = parseCommandInput(commandArguments)
+          const routed = routeBibliographyCommand(command, parsedArgs)
 
-          try {
-            const execution = await executionManager.execute(
-              ability, 
-              inputs as Record<string, unknown>, 
-              createExecutorContext()
-            )
-            
+          if (!routed) {
             return JSON.stringify({
-              status: execution.status,
-              executionStatus: execution.executionStatus || execution.status,
-              ability: ability.name,
-              control: execution.control,
-              result: formatExecutionResult(execution),
-            })
-          } catch (error) {
-            return JSON.stringify({ 
-              status: 'error', 
-              error: error instanceof Error ? error.message : String(error) 
+              status: 'error',
+              error: `No runtime ability mapping for command '${command}'`,
             })
           }
+
+          const result = await executeAbilityByName(routed.abilityName, routed.inputs)
+
+          return JSON.stringify({
+            command,
+            routedAbility: routed.abilityName,
+            inputs: routed.inputs,
+            result,
+          })
         },
       }),
 

@@ -151,6 +151,101 @@ class AbilitiesPlugin {
     return false
   }
 
+  private parseCommandInput(raw: string | undefined): Record<string, unknown> {
+    if (!raw) return {}
+    const trimmed = raw.trim()
+    if (!trimmed) return {}
+
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      // fall through
+    }
+
+    return { value: trimmed }
+  }
+
+  private routeBibliographyCommand(
+    commandName: string,
+    args: Record<string, unknown>
+  ): { abilityName: string; inputs: Record<string, unknown> } | null {
+    const value = typeof args.value === 'string' ? args.value : ''
+
+    switch (commandName) {
+      case '/paper-screening':
+        return {
+          abilityName: 'research/paper-screening',
+          inputs: {
+            query: String(args.query ?? value),
+            limit: Number(args.limit ?? 10),
+          },
+        }
+      case '/paper-fulltext-review':
+        return {
+          abilityName: 'research/paper-fulltext-review',
+          inputs: {
+            zotero_key: String(args.zotero_key ?? args.paper_key ?? value),
+          },
+        }
+      case '/literature-decision':
+        return {
+          abilityName: 'research/literature-decision',
+          inputs: {
+            paper_key: String(args.paper_key ?? value),
+          },
+        }
+      case '/section-evidence-pack':
+        return {
+          abilityName: 'research/section-evidence-pack',
+          inputs: {
+            section: String(args.section ?? value),
+          },
+        }
+      case '/citation-audit':
+        return {
+          abilityName: 'research/citation-audit',
+          inputs: {
+            section: String(args.section ?? value),
+          },
+        }
+      case '/bibliography': {
+        const stage = String(args.stage ?? '').trim() || value.split(/\s+/)[0] || 'plan'
+        const rest = String(args.payload ?? value.split(/\s+/).slice(1).join(' ')).trim()
+
+        if (stage === 'screening') {
+          return {
+            abilityName: 'research/paper-screening',
+            inputs: { query: rest, limit: Number(args.limit ?? 10) },
+          }
+        }
+        if (stage === 'review') {
+          return {
+            abilityName: 'research/paper-fulltext-review',
+            inputs: { zotero_key: rest },
+          }
+        }
+        if (stage === 'decision') {
+          return {
+            abilityName: 'research/literature-decision',
+            inputs: { paper_key: rest },
+          }
+        }
+        if (stage === 'audit') {
+          return {
+            abilityName: 'research/citation-audit',
+            inputs: { section: rest },
+          }
+        }
+        return null
+      }
+      default:
+        return null
+    }
+  }
+
   private detectAbility(text: string): Ability | null {
     for (const [, loaded] of this.abilities) {
       if (this.matchesTrigger(text, loaded.ability)) {
@@ -620,6 +715,37 @@ Use: ability.run({ name: "ability-name", inputs: { ... } })`,
               status: 'error',
               error: error instanceof Error ? error.message : String(error),
             }
+          }
+        },
+      },
+
+      'ability.command': {
+        description: 'Bridge selected slash-command style bibliography commands to runtime abilities',
+        parameters: {
+          command: { type: 'string', description: 'Slash command name, e.g. /paper-screening or /bibliography' },
+          arguments: { type: 'string', description: 'Raw command arguments as plain text or JSON object string' },
+        },
+        execute: async (params: { command: string; arguments?: string }) => {
+          const parsedArgs = this.parseCommandInput(params.arguments)
+          const routed = this.routeBibliographyCommand(params.command, parsedArgs)
+
+          if (!routed) {
+            return {
+              status: 'error',
+              error: `No runtime ability mapping for command '${params.command}'`,
+            }
+          }
+
+          const result = await this.getTools()['ability.run'].execute({
+            name: routed.abilityName,
+            inputs: routed.inputs,
+          })
+
+          return {
+            command: params.command,
+            routedAbility: routed.abilityName,
+            inputs: routed.inputs,
+            result,
           }
         },
       },

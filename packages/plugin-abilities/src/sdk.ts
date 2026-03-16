@@ -35,6 +35,14 @@ export interface ExecutionResult {
   formatted: string
 }
 
+export interface CommandExecutionResult {
+  command: string
+  routedAbility?: string
+  inputs?: Record<string, unknown>
+  result?: ExecutionResult
+  error?: string
+}
+
 export class AbilitiesSDK {
   private abilities: Map<string, LoadedAbility> = new Map()
   private executionManager: ExecutionManager
@@ -176,6 +184,63 @@ export class AbilitiesSDK {
         error: error instanceof Error ? error.message : String(error),
         formatted: `Execution error: ${error instanceof Error ? error.message : String(error)}`,
       }
+    }
+  }
+
+  async executeCommand(command: string, rawArguments = ''): Promise<CommandExecutionResult> {
+    const parseArgs = (raw: string): Record<string, unknown> => {
+      if (!raw.trim()) return {}
+      try {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          return parsed as Record<string, unknown>
+        }
+      } catch {
+        // fall through
+      }
+      return { value: raw.trim() }
+    }
+
+    const args = parseArgs(rawArguments)
+    const value = typeof args.value === 'string' ? args.value : ''
+
+    const route = (): { abilityName: string; inputs: Record<string, unknown> } | null => {
+      switch (command) {
+        case '/paper-screening':
+          return { abilityName: 'research/paper-screening', inputs: { query: String(args.query ?? value), limit: Number(args.limit ?? 10) } }
+        case '/paper-fulltext-review':
+          return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: String(args.zotero_key ?? args.paper_key ?? value) } }
+        case '/literature-decision':
+          return { abilityName: 'research/literature-decision', inputs: { paper_key: String(args.paper_key ?? value) } }
+        case '/section-evidence-pack':
+          return { abilityName: 'research/section-evidence-pack', inputs: { section: String(args.section ?? value) } }
+        case '/citation-audit':
+          return { abilityName: 'research/citation-audit', inputs: { section: String(args.section ?? value) } }
+        case '/bibliography': {
+          const stage = String(args.stage ?? '').trim() || value.split(/\s+/)[0] || 'plan'
+          const rest = String(args.payload ?? value.split(/\s+/).slice(1).join(' ')).trim()
+          if (stage === 'screening') return { abilityName: 'research/paper-screening', inputs: { query: rest, limit: Number(args.limit ?? 10) } }
+          if (stage === 'review') return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: rest } }
+          if (stage === 'decision') return { abilityName: 'research/literature-decision', inputs: { paper_key: rest } }
+          if (stage === 'audit') return { abilityName: 'research/citation-audit', inputs: { section: rest } }
+          return null
+        }
+        default:
+          return null
+      }
+    }
+
+    const routed = route()
+    if (!routed) {
+      return { command, error: `No runtime ability mapping for command '${command}'` }
+    }
+
+    const result = await this.execute(routed.abilityName, routed.inputs)
+    return {
+      command,
+      routedAbility: routed.abilityName,
+      inputs: routed.inputs,
+      result,
     }
   }
 
