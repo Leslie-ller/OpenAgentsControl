@@ -2,6 +2,12 @@ name: research/paper-fulltext-review
 description: Extract full-text evidence and produce a reusable reading card.
 task_type: paper_fulltext_review
 
+triggers:
+  keywords:
+    - "/paper-fulltext-review"
+    - "paper fulltext review"
+    - "paper full-text review"
+
 inputs:
   zotero_key:
     type: string

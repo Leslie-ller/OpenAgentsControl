@@ -2,6 +2,11 @@ name: research/literature-decision
 description: Turn reviewed evidence into an explicit literature decision card.
 task_type: literature_decision
 
+triggers:
+  keywords:
+    - "/literature-decision"
+    - "literature decision"
+
 inputs:
   paper_key:
     type: string

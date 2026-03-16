@@ -2,6 +2,11 @@ name: research/citation-audit
 description: Produce a citation-audit artifact with explicit pass, revise, or fail outcomes.
 task_type: citation_audit
 
+triggers:
+  keywords:
+    - "/citation-audit"
+    - "citation audit"
+
 inputs:
   section:
     type: string

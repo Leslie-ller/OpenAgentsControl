@@ -2,6 +2,11 @@ name: research/paper-screening
 description: Screen candidate papers into keep, defer, or reject with auditable output.
 task_type: paper_screening
 
+triggers:
+  keywords:
+    - "/paper-screening"
+    - "paper screening"
+
 inputs:
   query:
     type: string

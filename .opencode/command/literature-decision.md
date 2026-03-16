@@ -25,6 +25,8 @@ Use this command for the `literature_decision` stage of the bibliography workflo
 /literature-decision {paper, cluster, reading card set, or evidence pack}
 ```
 
+Runtime ability: `research/literature-decision`
+
 ## Purpose
 
 This is the focused execution entrypoint for the `AGE-32` line: turn reviewed papers into explicit keep/defer/reject/revisit decisions with writing-relevant roles.

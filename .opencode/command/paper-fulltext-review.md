@@ -25,6 +25,8 @@ Use this command for the `paper_fulltext_review` stage of the bibliography workf
 /paper-fulltext-review {paper key, shortlist, or reading queue}
 ```
 
+Runtime ability: `research/paper-fulltext-review`
+
 ## Purpose
 
 This is the focused execution entrypoint for the `AGE-31` line: turn screened papers into reusable reading cards and evidence notes.

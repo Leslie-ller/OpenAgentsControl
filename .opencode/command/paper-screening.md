@@ -24,6 +24,8 @@ Use this command for the `paper_screening` stage of the bibliography workflow.
 /paper-screening {candidate set, search query, or collection name}
 ```
 
+Runtime ability: `research/paper-screening`
+
 ## Purpose
 
 This is the focused execution entrypoint for the `AGE-30` line: move a candidate set into a small active reading queue using explicit screening criteria.

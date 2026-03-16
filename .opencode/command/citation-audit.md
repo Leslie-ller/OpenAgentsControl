@@ -25,6 +25,8 @@ Use this command for the `citation_audit` stage of the bibliography workflow.
 /citation-audit {draft section, section evidence pack, or chapter excerpt}
 ```
 
+Runtime ability: `research/citation-audit`
+
 ## Purpose
 
 This command is the final safety gate in the bibliography workflow. It checks whether drafted claims are actually supported by approved evidence instead of merely accompanied by citations.

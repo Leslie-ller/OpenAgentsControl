@@ -26,6 +26,8 @@ Use this command to build a `section_evidence_pack` from reading cards and liter
 /section-evidence-pack {section, claim cluster, or chapter topic}
 ```
 
+Runtime ability: `research/section-evidence-pack`
+
 ## Purpose
 
 This command bridges bibliography work into writing-safe evidence organization. It turns paper-level assets into section-level support that drafting and citation audit can trust.

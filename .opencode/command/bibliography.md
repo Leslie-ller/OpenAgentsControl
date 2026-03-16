@@ -29,6 +29,15 @@ Use this command to run a staged literature workflow instead of treating paper h
 /bibliography audit {draft section or citation set}
 ```
 
+## Runtime Ability Mapping
+
+When this workflow is executed through `plugin-abilities`, route stages to:
+
+- `screening` -> `research/paper-screening`
+- `review` -> `research/paper-fulltext-review`
+- `decision` -> `research/literature-decision`
+- `audit` -> `research/citation-audit`
+
 ## Purpose
 
 This command gives OpenAgents Control a single execution entrypoint for bibliography-heavy work. It aligns with the staged workflow in:
