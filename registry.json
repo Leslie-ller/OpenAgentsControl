@@ -651,6 +651,28 @@
           "refactoring"
         ],
         "category": "standard"
+      },
+      {
+        "id": "bibliography",
+        "name": "Bibliography Workflow",
+        "type": "command",
+        "path": ".opencode/command/bibliography.md",
+        "description": "Run staged bibliography workflows for screening, review, decision, and citation audit",
+        "tags": [
+          "bibliography",
+          "literature",
+          "research",
+          "workflow"
+        ],
+        "dependencies": [
+          "subagent:contextscout",
+          "subagent:task-manager",
+          "context:bibliography-workflow",
+          "context:bibliography-paper-screening",
+          "context:bibliography-fulltext-review",
+          "context:bibliography-literature-decision"
+        ],
+        "category": "standard"
       }
     ],
     "tools": [
