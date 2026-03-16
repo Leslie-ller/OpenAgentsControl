@@ -26,6 +26,8 @@ openagents-repo/templates/
 | **Bibliography full-text review task template** | `./bibliography-fulltext-review-task-template.md` |
 | **Bibliography decision card template** | `./bibliography-decision-card-template.md` |
 | **Bibliography literature decision task template** | `./bibliography-literature-decision-task-template.md` |
+| **Section evidence pack template** | `./section-evidence-pack-template.md` |
+| **Section evidence pack task template** | `./section-evidence-pack-task-template.md` |
 | **Blueprints** | `../blueprints/navigation.md` |
 | **Guides** | `../guides/navigation.md` |
 

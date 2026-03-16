@@ -718,6 +718,29 @@
         "category": "standard"
       },
       {
+        "id": "section-evidence-pack",
+        "name": "Section Evidence Pack",
+        "type": "command",
+        "path": ".opencode/command/section-evidence-pack.md",
+        "description": "Build section evidence packs from reviewed and decided literature assets",
+        "tags": [
+          "bibliography",
+          "evidence-pack",
+          "writing",
+          "research"
+        ],
+        "dependencies": [
+          "subagent:contextscout",
+          "subagent:task-manager",
+          "context:bibliography-workflow",
+          "context:bibliography-reading-card-template",
+          "context:bibliography-decision-card-template",
+          "context:section-evidence-pack-template",
+          "context:section-evidence-pack-task-template"
+        ],
+        "category": "standard"
+      },
+      {
         "id": "bibliography",
         "name": "Bibliography Workflow",
         "type": "command",
@@ -2444,6 +2467,43 @@
           "context:bibliography-workflow",
           "context:bibliography-literature-decision",
           "context:bibliography-decision-card-template",
+          "context:task-schema"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "section-evidence-pack-template",
+        "name": "Section Evidence Pack Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/section-evidence-pack-template.md",
+        "description": "Reusable section-level evidence pack template for drafting and citation safety",
+        "tags": [
+          "template",
+          "evidence-pack",
+          "writing",
+          "research"
+        ],
+        "dependencies": [
+          "context:bibliography-reading-card-template",
+          "context:bibliography-decision-card-template"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "section-evidence-pack-task-template",
+        "name": "Section Evidence Pack Task Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/section-evidence-pack-task-template.md",
+        "description": "TaskManager template for building section evidence packs from reading and decision assets",
+        "tags": [
+          "template",
+          "evidence-pack",
+          "tasks",
+          "writing"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow",
+          "context:section-evidence-pack-template",
           "context:task-schema"
         ],
         "category": "standard"
