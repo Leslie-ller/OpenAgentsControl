@@ -28,6 +28,7 @@ export type {
   ObligationKey,
   ObligationSeverity,
   ObligationStatus,
+  ObligationDefinition,
   TaskType,
   DriftPolicy,
   ModelDriftEntry,
@@ -52,6 +53,9 @@ export { ExecutionManager } from './executor/execution-manager.js'
 
 // Control - Obligations & Gates
 export { evaluateControl, evaluateControlFromEvents } from './control/index.js'
+
+// Control - Obligation Registry
+export { ObligationRegistry, defaultRegistry, resolveObligations, getBuiltinObligations } from './control/obligation-registry.js'
 
 // Control - Model Drift Audit
 export { evaluateModelDrift, hasModelDrift } from './control/model-audit.js'

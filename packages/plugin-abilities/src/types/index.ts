@@ -13,13 +13,17 @@
 
 export type InputType = 'string' | 'number' | 'boolean'
 
-export type TaskType =
-  | 'code_change'
-  | 'paper_screening'
-  | 'paper_fulltext_review'
-  | 'literature_decision'
-  | 'section_evidence_pack'
-  | 'citation_audit'
+/**
+ * Task type identifier.
+ *
+ * Built-in task types have predefined obligation templates:
+ *   code_change, paper_screening, paper_fulltext_review,
+ *   literature_decision, section_evidence_pack, citation_audit
+ *
+ * Arbitrary strings are allowed — abilities can define custom obligations
+ * inline via the `obligations` field in their YAML definition.
+ */
+export type TaskType = string
 
 export interface InputDefinition {
   type: InputType
@@ -70,6 +74,13 @@ export interface Ability {
   name: string
   description: string
   task_type?: TaskType
+  /**
+   * Inline obligation definitions.
+   * When present, these override the built-in defaults for this ability's task_type.
+   * This enables custom task types to declare their own obligations
+   * without modifying the control layer source code.
+   */
+  obligations?: ObligationDefinition[]
   inputs?: Record<string, InputDefinition>
   steps: Step[]
   _meta?: {
@@ -111,16 +122,25 @@ export type ObligationStatus =
 
 export type ObligationSeverity = 'hard' | 'soft'
 
-export type ObligationKey =
-  | 'run_tests'
-  | 'record_validation'
-  | 'commit_if_required'
-  | 'record_screening_decision'
-  | 'extract_fulltext'
-  | 'record_reading_card'
-  | 'record_decision_card'
-  | 'record_evidence_pack'
-  | 'record_citation_audit'
+/**
+ * Obligation key identifier.
+ * Arbitrary strings are allowed — abilities can define custom obligation keys
+ * via inline obligation definitions.
+ */
+export type ObligationKey = string
+
+/**
+ * Obligation definition — the template for a single obligation.
+ * Can come from built-in defaults or inline in an ability YAML file.
+ */
+export interface ObligationDefinition {
+  key: ObligationKey
+  severity: ObligationSeverity
+  /** Tags that satisfy this obligation when found on a completed step */
+  tags: string[]
+  /** Human-readable description (optional, for documentation/tooling) */
+  description?: string
+}
 
 export interface ObligationResult {
   key: ObligationKey

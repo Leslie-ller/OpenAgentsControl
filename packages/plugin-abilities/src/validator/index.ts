@@ -102,20 +102,24 @@ const HooksSchema = z.object({
   after: z.array(z.string()).optional(),
 })
 
+const ObligationDefinitionSchema = z.object({
+  key: z.string().min(1, 'Obligation key is required'),
+  severity: z.enum(['hard', 'soft']),
+  tags: z.array(z.string()).min(1, 'At least one tag is required'),
+  description: z.string().optional(),
+})
+
 const AbilitySchema = z.object({
   name: z.string().regex(
     /^[a-z0-9-/]+$/,
     'Name must be lowercase alphanumeric with hyphens and slashes'
   ),
   description: z.string().min(1, 'Description is required'),
-  task_type: z.enum([
-    'code_change',
-    'paper_screening',
-    'paper_fulltext_review',
-    'literature_decision',
-    'section_evidence_pack',
-    'citation_audit',
-  ]).optional(),
+  task_type: z.string().regex(
+    /^[a-z0-9_]+$/,
+    'Task type must be lowercase alphanumeric with underscores'
+  ).optional(),
+  obligations: z.array(ObligationDefinitionSchema).optional(),
   version: z.string().optional(),
   triggers: TriggersSchema.optional(),
   inputs: z.record(InputDefinitionSchema).optional(),
