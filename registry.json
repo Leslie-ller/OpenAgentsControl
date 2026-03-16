@@ -653,6 +653,27 @@
         "category": "standard"
       },
       {
+        "id": "paper-screening",
+        "name": "Paper Screening",
+        "type": "command",
+        "path": ".opencode/command/paper-screening.md",
+        "description": "Run the paper screening stage for bibliography workflows",
+        "tags": [
+          "bibliography",
+          "screening",
+          "literature",
+          "research"
+        ],
+        "dependencies": [
+          "subagent:contextscout",
+          "subagent:task-manager",
+          "context:bibliography-workflow",
+          "context:bibliography-paper-screening",
+          "context:bibliography-paper-screening-task-template"
+        ],
+        "category": "standard"
+      },
+      {
         "id": "bibliography",
         "name": "Bibliography Workflow",
         "type": "command",
@@ -2287,6 +2308,25 @@
           "template",
           "context",
           "bundle"
+        ],
+        "category": "standard"
+      },
+      {
+        "id": "bibliography-paper-screening-task-template",
+        "name": "Bibliography Paper Screening Task Template",
+        "type": "context",
+        "path": ".opencode/context/openagents-repo/templates/bibliography-paper-screening-task-template.md",
+        "description": "TaskManager template for the paper_screening stage of bibliography workflows",
+        "tags": [
+          "template",
+          "bibliography",
+          "screening",
+          "tasks"
+        ],
+        "dependencies": [
+          "context:bibliography-workflow",
+          "context:bibliography-paper-screening",
+          "context:task-schema"
         ],
         "category": "standard"
       },

@@ -21,6 +21,7 @@ openagents-repo/templates/
 | Task | Path |
 |------|------|
 | **View templates** | `./` |
+| **Bibliography screening task template** | `./bibliography-paper-screening-task-template.md` |
 | **Blueprints** | `../blueprints/navigation.md` |
 | **Guides** | `../guides/navigation.md` |
 
