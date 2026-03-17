@@ -91,6 +91,25 @@ export type { EventSubscriber, EventBusOptions } from './control/event-bus.js'
 export { EventLog } from './control/event-log.js'
 export type { EventLogOptions } from './control/event-log.js'
 
+// Bibliography Store
+export { BibliographyStore, createBibliographyStore } from './bibliography/store.js'
+export type {
+  ArtifactType,
+  ArtifactMeta,
+  Artifact,
+  PlanData,
+  ScreeningData,
+  ReadingCardData,
+  DecisionData,
+  EvidencePackData,
+  AuditData,
+  BibliographyStoreOptions,
+} from './bibliography/store.js'
+
+// Bibliography Pipeline
+export { BibliographyPipeline, createBibliographyPipeline, STAGE_CONFIGS } from './bibliography/pipeline.js'
+export type { StageConfig, PipelineOptions, StageResult } from './bibliography/pipeline.js'
+
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'
 export { default } from './opencode-plugin.js'

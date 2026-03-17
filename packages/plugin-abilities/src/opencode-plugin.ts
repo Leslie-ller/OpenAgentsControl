@@ -118,9 +118,11 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
       case '/bibliography': {
         const stage = String(args.stage ?? '').trim() || value.split(/\s+/)[0] || 'plan'
         const rest = String(args.payload ?? value.split(/\s+/).slice(1).join(' ')).trim()
+        if (stage === 'plan') return { abilityName: 'research/bibliography-plan', inputs: { topic: rest } }
         if (stage === 'screening') return { abilityName: 'research/paper-screening', inputs: { query: rest, limit: Number(args.limit ?? 10) } }
         if (stage === 'review') return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: rest } }
         if (stage === 'decision') return { abilityName: 'research/literature-decision', inputs: { paper_key: rest } }
+        if (stage === 'evidence-pack') return { abilityName: 'research/section-evidence-pack', inputs: { section: rest } }
         if (stage === 'audit') return { abilityName: 'research/citation-audit', inputs: { section: rest } }
         return null
       }

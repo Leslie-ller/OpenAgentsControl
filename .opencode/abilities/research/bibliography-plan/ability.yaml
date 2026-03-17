@@ -1,0 +1,20 @@
+name: research/bibliography-plan
+description: Generate a bibliography search plan with candidate queries and inclusion criteria for a research topic.
+task_type: bibliography_plan
+
+triggers:
+  keywords:
+    - "/bibliography plan"
+    - "bibliography plan"
+
+inputs:
+  topic:
+    type: string
+    required: true
+    description: Research topic or thesis section to plan bibliography search for
+
+steps:
+  - id: generate-plan
+    type: script
+    run: echo '{"topic":"{{inputs.topic}}","queries":["{{inputs.topic}}","{{inputs.topic}} systematic review"],"inclusion_criteria":["peer-reviewed","2020-2026","English"],"exclusion_criteria":["non-peer-reviewed","pre-2015"],"target_count":20}'
+    tags: [bibliography-plan]

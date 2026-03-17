@@ -328,6 +328,12 @@ export interface ExecutorContext {
    * Only effective when permissionValidator is also provided.
    */
   agentPermissions?: AgentPermissionsData
+  /**
+   * Key-value store for inter-stage artifact passing.
+   * Stages can read prior-stage outputs and write their own artifacts.
+   * The executor does not interpret these — they are passed through to steps.
+   */
+  stageOutputs?: Record<string, unknown>
   /** Callback fired when a step starts */
   onStepStart?: (step: Step) => void
   /** Callback fired when a step completes */

@@ -1,0 +1,216 @@
+/**
+ * BibliographyPipeline — Orchestrates multi-stage bibliography workflow execution.
+ *
+ * This class sits above the executor and BibliographyStore, providing:
+ *
+ * 1. **Stage execution** — runs a single bibliography stage through the executor,
+ *    capturing the output and persisting it as a typed artifact.
+ *
+ * 2. **Inter-stage data flow** — when running a stage, automatically loads
+ *    relevant prior-stage artifacts and injects them via `stageOutputs` on
+ *    the ExecutorContext so steps can reference them via interpolation.
+ *
+ * 3. **Pipeline status** — delegates to BibliographyStore.getPipelineStatus()
+ *    for a complete picture of what's been processed.
+ *
+ * Design:
+ * - The pipeline does NOT modify the core executor — it wraps it.
+ * - Artifact parsing is best-effort: if step output is valid JSON it's stored
+ *   as structured data, otherwise as `{ raw: string }`.
+ * - Each stage maps to a specific ability name + artifact type.
+ */
+
+import type { Ability, AbilityExecution, ExecutorContext, InputValues } from '../types/index.js'
+import { executeAbility } from '../executor/index.js'
+import type { ExecuteAbilityOptions } from '../executor/index.js'
+import { BibliographyStore } from './store.js'
+import type { ArtifactType, Artifact } from './store.js'
+
+// ─── Stage → Artifact mapping ──────────────────────────────
+
+export interface StageConfig {
+  /** The ability name to execute */
+  abilityName: string
+  /** What artifact type the output maps to */
+  artifactType: ArtifactType
+  /** How to derive the artifact key from inputs */
+  keyFrom: string
+  /** Which prior-stage artifact types to inject as stageOutputs */
+  dependsOn: ArtifactType[]
+}
+
+export const STAGE_CONFIGS: Record<string, StageConfig> = {
+  plan: {
+    abilityName: 'research/bibliography-plan',
+    artifactType: 'plan',
+    keyFrom: 'topic',
+    dependsOn: [],
+  },
+  screening: {
+    abilityName: 'research/paper-screening',
+    artifactType: 'screening',
+    keyFrom: 'query',
+    dependsOn: ['plan'],
+  },
+  review: {
+    abilityName: 'research/paper-fulltext-review',
+    artifactType: 'reading-card',
+    keyFrom: 'zotero_key',
+    dependsOn: ['screening'],
+  },
+  decision: {
+    abilityName: 'research/literature-decision',
+    artifactType: 'decision',
+    keyFrom: 'paper_key',
+    dependsOn: ['reading-card'],
+  },
+  'evidence-pack': {
+    abilityName: 'research/section-evidence-pack',
+    artifactType: 'evidence-pack',
+    keyFrom: 'section',
+    dependsOn: ['decision'],
+  },
+  audit: {
+    abilityName: 'research/citation-audit',
+    artifactType: 'audit',
+    keyFrom: 'section',
+    dependsOn: ['evidence-pack'],
+  },
+}
+
+// ─── Pipeline ──────────────────────────────────────────────
+
+export interface PipelineOptions {
+  /** Executor options (eventBus, etc.) */
+  executorOptions?: ExecuteAbilityOptions
+}
+
+export interface StageResult {
+  stage: string
+  execution: AbilityExecution
+  artifact: Artifact | null
+  artifactKey: string
+}
+
+export class BibliographyPipeline {
+  private store: BibliographyStore
+
+  constructor(store: BibliographyStore) {
+    this.store = store
+  }
+
+  getStore(): BibliographyStore {
+    return this.store
+  }
+
+  /**
+   * Run a single stage of the bibliography pipeline.
+   *
+   * 1. Loads prior-stage artifacts relevant to this stage's inputs.
+   * 2. Executes the ability through the standard executor.
+   * 3. Parses the final step output and saves it as a typed artifact.
+   */
+  async runStage(
+    stage: string,
+    ability: Ability,
+    inputs: InputValues,
+    ctx: ExecutorContext,
+    options?: PipelineOptions
+  ): Promise<StageResult> {
+    const config = STAGE_CONFIGS[stage]
+    if (!config) {
+      throw new Error(`Unknown bibliography stage: '${stage}'`)
+    }
+
+    // Derive artifact key from inputs
+    const rawKey = String(inputs[config.keyFrom] ?? stage)
+    const artifactKey = rawKey.replace(/[^a-zA-Z0-9_\-]/g, '_').toLowerCase()
+
+    // Load prior-stage artifacts into stageOutputs
+    const stageOutputs: Record<string, unknown> = { ...ctx.stageOutputs }
+    for (const depType of config.dependsOn) {
+      const artifacts = await this.store.listAll(depType)
+      stageOutputs[depType] = artifacts.map(a => a.data)
+    }
+
+    // Build enriched context
+    const enrichedCtx: ExecutorContext = {
+      ...ctx,
+      stageOutputs,
+    }
+
+    // Execute the ability
+    const execution = await executeAbility(
+      ability,
+      inputs,
+      enrichedCtx,
+      options?.executorOptions
+    )
+
+    // Persist artifact from the last successful step's output
+    let artifact: Artifact | null = null
+    if (execution.status === 'completed' || execution.completedSteps.length > 0) {
+      // Find the last completed (non-skipped, non-failed) step with output
+      const successSteps = execution.completedSteps.filter(
+        s => s.status === 'completed' && s.output
+      )
+      const lastStep = successSteps[successSteps.length - 1]
+
+      if (lastStep?.output) {
+        const parsed = tryParseJSON(lastStep.output.trim())
+        artifact = await this.store.save(
+          config.artifactType,
+          artifactKey,
+          parsed,
+          {
+            executionId: execution.id,
+            sourceStage: stage,
+          }
+        )
+      }
+    }
+
+    return { stage, execution, artifact, artifactKey }
+  }
+
+  /**
+   * Get the current pipeline status.
+   */
+  async getStatus() {
+    return this.store.getPipelineStatus()
+  }
+
+  /**
+   * Get the review queue (papers screened as 'keep' but not yet reviewed).
+   */
+  async getReviewQueue() {
+    return this.store.getReviewQueue()
+  }
+
+  /**
+   * Get the decision queue (papers reviewed but not yet decided).
+   */
+  async getDecisionQueue() {
+    return this.store.getDecisionQueue()
+  }
+}
+
+// ─── Helpers ───────────────────────────────────────────────
+
+function tryParseJSON(text: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(text)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+    // If it's an array or primitive, wrap it
+    return { value: parsed }
+  } catch {
+    // Not JSON — store as raw text
+    return { raw: text }
+  }
+}
+
+export function createBibliographyPipeline(store: BibliographyStore): BibliographyPipeline {
+  return new BibliographyPipeline(store)
+}
