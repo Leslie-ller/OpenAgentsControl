@@ -45,9 +45,15 @@ export interface ScriptStep {
   run: string
   needs?: string[]
   tags?: string[]
+  /** Condition expression — step is skipped when it evaluates to false */
+  when?: string
+  /** Behaviour on step failure: 'stop' (default) or 'continue' */
+  on_failure?: 'stop' | 'continue'
   validation?: {
     exit_code?: number
   }
+  cwd?: string
+  env?: Record<string, string>
 }
 
 export interface AgentStep {
@@ -62,9 +68,39 @@ export interface AgentStep {
   model?: string
   /** Expected provider for drift audit (e.g. 'anthropic') */
   provider?: string
+  /** If true, output is summarized before passing to dependent steps */
+  summarize?: boolean
 }
 
-export type Step = ScriptStep | AgentStep
+export interface SkillStep {
+  id: string
+  type: 'skill'
+  description?: string
+  skill: string
+  needs?: string[]
+  tags?: string[]
+}
+
+export interface ApprovalStep {
+  id: string
+  type: 'approval'
+  description?: string
+  prompt: string
+  needs?: string[]
+  tags?: string[]
+}
+
+export interface WorkflowStep {
+  id: string
+  type: 'workflow'
+  description?: string
+  workflow: string
+  inputs?: Record<string, string>
+  needs?: string[]
+  tags?: string[]
+}
+
+export type Step = ScriptStep | AgentStep | SkillStep | ApprovalStep | WorkflowStep
 
 // ─────────────────────────────────────────────────────────────
 // ABILITY DEFINITION
@@ -252,9 +288,72 @@ export interface AgentContext {
   background?(options: AgentCallOptions): Promise<AgentCallReturn>
 }
 
+export interface SkillContext {
+  load(name: string): Promise<string>
+}
+
+export interface ApprovalCallOptions {
+  prompt: string
+  step?: ApprovalStep
+}
+
+export interface ApprovalContext {
+  request(options?: ApprovalCallOptions): Promise<boolean>
+}
+
+export interface AbilitiesContext {
+  get(name: string): Ability | undefined
+  execute(ability: Ability, inputs: InputValues): Promise<AbilityExecution>
+}
+
 export interface ExecutorContext {
   cwd: string
   env: Record<string, string>
   /** Agent execution context. Required for agent steps. */
   agents?: AgentContext
+  /** Skill execution context. Required for skill steps. */
+  skills?: SkillContext
+  /** Approval context. Required for approval steps. */
+  approval?: ApprovalContext
+  /** Abilities context. Required for workflow (nested) steps. */
+  abilities?: AbilitiesContext
+  /**
+   * Permission validator instance. When provided together with agentPermissions,
+   * the executor performs a pre-step permission check and fails steps that are
+   * not permitted for the current agent.
+   */
+  permissionValidator?: PermissionValidatorInterface
+  /**
+   * Agent permissions for the current execution context.
+   * Only effective when permissionValidator is also provided.
+   */
+  agentPermissions?: AgentPermissionsData
+  /** Callback fired when a step starts */
+  onStepStart?: (step: Step) => void
+  /** Callback fired when a step completes */
+  onStepComplete?: (step: Step, result: StepResult) => void
+  /** Callback fired when a step fails */
+  onStepFail?: (step: Step, error: string) => void
+}
+
+/**
+ * Minimal interface for the permission validator, matching PermissionValidator.checkStepPermission().
+ * Using an interface here avoids a circular dependency between types and validator modules.
+ */
+export interface PermissionValidatorInterface {
+  checkStepPermission(step: Step, agentPermissions?: AgentPermissionsData): { allowed: boolean; reason?: string }
+}
+
+/**
+ * Minimal agent permissions shape expected by the executor.
+ * Compatible with AgentPermissions from context/types.
+ */
+export interface AgentPermissionsData {
+  agent: string
+  permissions: Array<{
+    skill: string
+    tools?: string[]
+    resources?: string[]
+    description?: string
+  }>
 }

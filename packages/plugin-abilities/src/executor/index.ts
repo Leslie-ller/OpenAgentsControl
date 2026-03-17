@@ -4,6 +4,9 @@ import type {
   Step,
   ScriptStep,
   AgentStep,
+  SkillStep,
+  ApprovalStep,
+  WorkflowStep,
   AbilityExecution,
   StepResult,
   ExecutorContext,
@@ -32,11 +35,19 @@ function generateRunId(): string {
   return `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
-function interpolateVariables(text: string, inputs: InputValues): string {
-  return text.replace(/\{\{inputs\.(\w+)\}\}/g, (match, name) => {
+function interpolateVariables(text: string, inputs: InputValues, completedSteps?: StepResult[]): string {
+  if (!text) return text
+  let result = text.replace(/\{\{inputs\.(\w+)\}\}/g, (match, name) => {
     const value = inputs[name]
     return value !== undefined ? String(value) : match
   })
+  if (completedSteps) {
+    result = result.replace(/\{\{steps\.(\w+)\.output\}\}/g, (match, stepId) => {
+      const step = completedSteps.find(s => s.stepId === stepId)
+      return step?.output !== undefined ? step.output.trim() : match
+    })
+  }
+  return result
 }
 
 async function runScript(
@@ -77,7 +88,7 @@ async function executeScriptStep(
 ): Promise<StepResult> {
   const startedAt = Date.now()
 
-  const command = interpolateVariables(step.run, execution.inputs)
+  const command = interpolateVariables(step.run, execution.inputs, execution.completedSteps)
 
   console.log(`[abilities] Executing: ${command}`)
 
@@ -155,7 +166,39 @@ async function executeAgentStep(
     }
   }
 
-  const prompt = interpolateVariables(step.prompt, execution.inputs)
+  let prompt = interpolateVariables(step.prompt, execution.inputs, execution.completedSteps)
+
+  // Append prior step outputs as context when this step has dependencies
+  if (step.needs && step.needs.length > 0) {
+    const contextParts: string[] = []
+    for (const depId of step.needs) {
+      const depResult = execution.completedSteps.find(s => s.stepId === depId)
+      if (depResult?.output) {
+        const output = depResult.output.trim()
+        if (output) {
+          // Check if prior step had summarize flag; if so, provide a summary
+          const depStep = execution.ability.steps.find(s => s.id === depId) as AgentStep | undefined
+          if (depStep && 'summarize' in depStep && depStep.summarize) {
+            const lines = output.split('\n')
+            if (lines.length > 10) {
+              const kept = lines.slice(0, 10).join('\n')
+              contextParts.push(`[${depId}] Output Summary (${lines.length - 10} lines omitted):\n${kept}`)
+            } else {
+              contextParts.push(`[${depId}] Output Summary:\n${output}`)
+            }
+          } else if (output.length > 50000) {
+            // Auto-truncate very large outputs
+            contextParts.push(`[${depId}] (truncated to 50000 chars):\n${output.slice(0, 50000)}`)
+          } else {
+            contextParts.push(`[${depId}]:\n${output}`)
+          }
+        }
+      }
+    }
+    if (contextParts.length > 0) {
+      prompt = `${prompt}\n\nContext from prior steps:\n${contextParts.join('\n\n')}`
+    }
+  }
 
   console.log(`[abilities] Agent step: ${step.agent} — ${prompt.slice(0, 80)}`)
 
@@ -199,6 +242,183 @@ async function executeAgentStep(
       duration: Date.now() - startedAt,
     }
   }
+}
+
+async function executeSkillStep(
+  step: SkillStep,
+  execution: AbilityExecution,
+  ctx: ExecutorContext
+): Promise<StepResult> {
+  const startedAt = Date.now()
+
+  if (!ctx.skills?.load) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: 'Skill execution not available in current context',
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+
+  try {
+    const output = await ctx.skills.load(step.skill)
+    return {
+      stepId: step.id,
+      status: 'completed',
+      tags: step.tags,
+      output,
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  } catch (err) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: err instanceof Error ? err.message : String(err),
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+}
+
+async function executeApprovalStep(
+  step: ApprovalStep,
+  execution: AbilityExecution,
+  ctx: ExecutorContext
+): Promise<StepResult> {
+  const startedAt = Date.now()
+
+  if (!ctx.approval?.request) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: 'Approval not available in current context',
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+
+  try {
+    const prompt = interpolateVariables(step.prompt, execution.inputs, execution.completedSteps)
+    const approved = await ctx.approval.request({ prompt, step })
+    return {
+      stepId: step.id,
+      status: approved ? 'completed' : 'failed',
+      tags: step.tags,
+      output: approved ? 'Approved' : 'Rejected',
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  } catch (err) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: err instanceof Error ? err.message : String(err),
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+}
+
+async function executeWorkflowStep(
+  step: WorkflowStep,
+  execution: AbilityExecution,
+  ctx: ExecutorContext
+): Promise<StepResult> {
+  const startedAt = Date.now()
+
+  if (!ctx.abilities) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: 'Workflow execution not available in current context',
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+
+  const childAbility = ctx.abilities.get(step.workflow)
+  if (!childAbility) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: `Nested ability '${step.workflow}' not found`,
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+
+  try {
+    // Interpolate workflow inputs
+    const workflowInputs: InputValues = {}
+    if (step.inputs) {
+      for (const [key, value] of Object.entries(step.inputs)) {
+        workflowInputs[key] = interpolateVariables(String(value), execution.inputs, execution.completedSteps)
+      }
+    }
+
+    const childExecution = await ctx.abilities.execute(childAbility, workflowInputs)
+
+    if (childExecution.status === 'completed') {
+      return {
+        stepId: step.id,
+        status: 'completed',
+        tags: step.tags,
+        output: `Nested workflow '${step.workflow}' completed successfully`,
+        startedAt,
+        completedAt: Date.now(),
+        duration: Date.now() - startedAt,
+      }
+    } else {
+      return {
+        stepId: step.id,
+        status: 'failed',
+        tags: step.tags,
+        error: childExecution.error || `Nested workflow '${step.workflow}' failed`,
+        startedAt,
+        completedAt: Date.now(),
+        duration: Date.now() - startedAt,
+      }
+    }
+  } catch (err) {
+    return {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: err instanceof Error ? err.message : String(err),
+      startedAt,
+      completedAt: Date.now(),
+      duration: Date.now() - startedAt,
+    }
+  }
+}
+
+function evaluateCondition(condition: string, inputs: InputValues): boolean {
+  // Simple condition evaluator for expressions like: inputs.env == "production"
+  const match = condition.match(/^inputs\.(\w+)\s*(==|!=)\s*"([^"]*)"$/)
+  if (match) {
+    const [, name, op, value] = match
+    const actual = String(inputs[name] ?? '')
+    if (op === '==') return actual === value
+    if (op === '!=') return actual !== value
+  }
+  // Fallback: treat truthy/falsy
+  return Boolean(condition)
 }
 
 function buildExecutionOrder(steps: Step[]): Step[] {
@@ -314,14 +534,113 @@ export async function executeAbility(
 
     console.log(`[abilities] Step ${i + 1}/${orderedSteps.length}: ${step.id}`)
 
+    // Evaluate `when` condition — skip step if condition is false
+    if ('when' in step && step.when) {
+      const conditionMet = evaluateCondition(step.when, resolvedInputs)
+      if (!conditionMet) {
+        const skippedResult: StepResult = {
+          stepId: step.id,
+          status: 'skipped',
+          tags: step.tags,
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+          duration: 0,
+        }
+        execution.completedSteps.push(skippedResult)
+        execution.pendingSteps = execution.pendingSteps.filter((s) => s.id !== step.id)
+
+        if (eventBus && eventFactory) {
+          eventBus.emit(eventFactory.stepCompleted(
+            ability.name, step.id, step.type, 'skipped', 0,
+            { tags: step.tags }
+          ))
+        }
+
+        // Fire onStepComplete callback
+        if (ctx.onStepComplete) ctx.onStepComplete(step, skippedResult)
+        continue
+      }
+    }
+
     // Emit step.started
     if (eventBus && eventFactory) {
       eventBus.emit(eventFactory.stepStarted(ability.name, step.id, step.type, step.needs))
     }
 
-    const result = step.type === 'agent'
-      ? await executeAgentStep(step as AgentStep, execution, ctx)
-      : await executeScriptStep(step as ScriptStep, execution, ctx)
+    // Fire onStepStart callback
+    if (ctx.onStepStart) ctx.onStepStart(step)
+
+    // ── Permission check ──────────────────────────────────
+    // When a permissionValidator and agentPermissions are both provided,
+    // check whether this step is permitted before dispatching.
+    if (ctx.permissionValidator && ctx.agentPermissions) {
+      const permResult = ctx.permissionValidator.checkStepPermission(step, ctx.agentPermissions)
+      if (!permResult.allowed) {
+        const permError = permResult.reason || `Permission denied for step '${step.id}'`
+        console.log(`[abilities] Permission denied: ${permError}`)
+
+        const deniedResult: StepResult = {
+          stepId: step.id,
+          status: 'failed',
+          tags: step.tags,
+          error: permError,
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+          duration: 0,
+        }
+
+        execution.completedSteps.push(deniedResult)
+        execution.pendingSteps = execution.pendingSteps.filter((s) => s.id !== step.id)
+
+        // Emit step.failed for permission denial
+        if (eventBus && eventFactory) {
+          eventBus.emit(eventFactory.stepFailed(
+            ability.name, step.id, step.type, 0, permError, step.tags
+          ))
+        }
+
+        // Fire onStepFail callback
+        if (ctx.onStepFail) ctx.onStepFail(step, permError)
+
+        // Respect on_failure policy
+        const failPolicy = ('on_failure' in step) ? (step as ScriptStep).on_failure : undefined
+        if (failPolicy === 'continue') {
+          continue
+        }
+
+        execution.status = 'failed'
+        execution.error = permError
+        execution.completedAt = Date.now()
+
+        if (eventBus && eventFactory) {
+          const duration = execution.completedAt - execution.startedAt
+          eventBus.emit(eventFactory.runFailed(ability.name, duration, permError))
+        }
+
+        return execution
+      }
+    }
+
+    // Dispatch to the appropriate step handler
+    let result: StepResult
+    switch (step.type) {
+      case 'agent':
+        result = await executeAgentStep(step as AgentStep, execution, ctx)
+        break
+      case 'skill':
+        result = await executeSkillStep(step as SkillStep, execution, ctx)
+        break
+      case 'approval':
+        result = await executeApprovalStep(step as ApprovalStep, execution, ctx)
+        break
+      case 'workflow':
+        result = await executeWorkflowStep(step as WorkflowStep, execution, ctx)
+        break
+      default:
+        result = await executeScriptStep(step as ScriptStep, execution, ctx)
+        break
+    }
+
     execution.completedSteps.push(result)
     execution.pendingSteps = execution.pendingSteps.filter((s) => s.id !== step.id)
 
@@ -391,6 +710,16 @@ export async function executeAbility(
     }
 
     if (result.status === 'failed') {
+      // Fire onStepFail callback
+      if (ctx.onStepFail) ctx.onStepFail(step, result.error || 'Unknown error')
+
+      // Check on_failure policy
+      const failPolicy = ('on_failure' in step) ? (step as ScriptStep).on_failure : undefined
+      if (failPolicy === 'continue') {
+        // Continue to next step despite failure
+        continue
+      }
+
       execution.status = 'failed'
       execution.error = result.error
       execution.completedAt = Date.now()
@@ -402,6 +731,9 @@ export async function executeAbility(
       }
 
       return execution
+    } else {
+      // Fire onStepComplete callback
+      if (ctx.onStepComplete) ctx.onStepComplete(step, result)
     }
   }
 

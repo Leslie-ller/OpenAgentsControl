@@ -11,7 +11,7 @@ describe('Context Passing', () => {
         name: 'test-truncation',
         description: 'Test output truncation',
         steps: [
-          { id: 'generate', type: 'script', run: 'node -e "console.log(\'x\'.repeat(100000))"' },
+          { id: 'generate', type: 'script', run: 'python3 -c "print(\'x\'*100000)"' },
           { id: 'use', type: 'agent', agent: 'test', prompt: 'Process the output', needs: ['generate'] }
         ]
       }

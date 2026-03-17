@@ -5,11 +5,13 @@ import type { ControlEventBus } from '../control/event-bus.js'
 /**
  * ExecutionManager
  * 
- * Tracks a single active execution at a time.
+ * Tracks a single active execution at a time, plus a history of past executions.
  * When an eventBus is provided, all executions emit structured events.
  */
 export class ExecutionManager {
   private activeExecution: AbilityExecution | null = null
+  private history: AbilityExecution[] = []
+  private maxHistory = 50
   private eventBus: ControlEventBus | undefined
 
   constructor(eventBus?: ControlEventBus) {
@@ -40,6 +42,14 @@ export class ExecutionManager {
     })
     this.activeExecution = execution
 
+    // Store in history
+    this.history.push(execution)
+
+    // Trim history to max size
+    if (this.history.length > this.maxHistory) {
+      this.history = this.history.slice(this.history.length - this.maxHistory)
+    }
+
     // Clear active if completed/failed
     if (execution.status !== 'running') {
       this.activeExecution = null
@@ -52,7 +62,27 @@ export class ExecutionManager {
     return this.activeExecution
   }
 
-  cancel(): boolean {
+  /**
+   * Get an execution by ID (from history or active).
+   */
+  get(executionId: string): AbilityExecution | undefined {
+    if (this.activeExecution?.id === executionId) {
+      return this.activeExecution
+    }
+    return this.history.find(e => e.id === executionId)
+  }
+
+  /**
+   * List all stored executions (history).
+   */
+  list(): AbilityExecution[] {
+    return [...this.history]
+  }
+
+  /**
+   * Cancel the currently active execution.
+   */
+  cancelActive(): boolean {
     if (!this.activeExecution) return false
     
     if (this.activeExecution.status === 'running') {
@@ -66,7 +96,25 @@ export class ExecutionManager {
     return false
   }
 
+  cancel(executionId?: string): boolean {
+    if (executionId) {
+      const execution = this.get(executionId)
+      if (execution && execution.status === 'running') {
+        execution.status = 'failed'
+        execution.error = 'Cancelled by user'
+        execution.completedAt = Date.now()
+        if (this.activeExecution?.id === executionId) {
+          this.activeExecution = null
+        }
+        return true
+      }
+      return false
+    }
+    return this.cancelActive()
+  }
+
   cleanup(): void {
     this.activeExecution = null
+    this.history = []
   }
 }
