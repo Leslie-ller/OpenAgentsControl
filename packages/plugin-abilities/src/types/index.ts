@@ -38,17 +38,25 @@ export type InputValues = Record<string, unknown>
 // STEP TYPES (Script only for minimal version)
 // ─────────────────────────────────────────────────────────────
 
-export interface ScriptStep {
+/** Fields shared by all step types */
+interface BaseStepFields {
   id: string
-  type: 'script'
   description?: string
-  run: string
   needs?: string[]
   tags?: string[]
   /** Condition expression — step is skipped when it evaluates to false */
   when?: string
-  /** Behaviour on step failure: 'stop' (default) or 'continue' */
-  on_failure?: 'stop' | 'continue'
+  /** Behaviour on step failure */
+  on_failure?: 'stop' | 'continue' | 'retry' | 'ask'
+  /** Timeout for this step (e.g. "30s", "5m", "1h") */
+  timeout?: string
+  /** Maximum retry attempts when on_failure is 'retry' */
+  max_retries?: number
+}
+
+export interface ScriptStep extends BaseStepFields {
+  type: 'script'
+  run: string
   validation?: {
     exit_code?: number
   }
@@ -56,14 +64,10 @@ export interface ScriptStep {
   env?: Record<string, string>
 }
 
-export interface AgentStep {
-  id: string
+export interface AgentStep extends BaseStepFields {
   type: 'agent'
-  description?: string
   agent: string
   prompt: string
-  needs?: string[]
-  tags?: string[]
   /** Expected model for drift audit (e.g. 'claude-sonnet-4') */
   model?: string
   /** Expected provider for drift audit (e.g. 'anthropic') */
@@ -72,32 +76,22 @@ export interface AgentStep {
   summarize?: boolean
 }
 
-export interface SkillStep {
-  id: string
+export interface SkillStep extends BaseStepFields {
   type: 'skill'
-  description?: string
   skill: string
-  needs?: string[]
-  tags?: string[]
+  /** Inputs to forward to the skill */
+  inputs?: Record<string, unknown>
 }
 
-export interface ApprovalStep {
-  id: string
+export interface ApprovalStep extends BaseStepFields {
   type: 'approval'
-  description?: string
   prompt: string
-  needs?: string[]
-  tags?: string[]
 }
 
-export interface WorkflowStep {
-  id: string
+export interface WorkflowStep extends BaseStepFields {
   type: 'workflow'
-  description?: string
   workflow: string
   inputs?: Record<string, string>
-  needs?: string[]
-  tags?: string[]
 }
 
 export type Step = ScriptStep | AgentStep | SkillStep | ApprovalStep | WorkflowStep
@@ -119,6 +113,19 @@ export interface Ability {
   obligations?: ObligationDefinition[]
   inputs?: Record<string, InputDefinition>
   steps: Step[]
+  /** Hooks executed before and after the ability run */
+  hooks?: {
+    before?: string[]
+    after?: string[]
+  }
+  /** Ability-level settings */
+  settings?: {
+    timeout?: string
+    parallel?: boolean
+    enforcement?: 'strict' | 'normal' | 'loose'
+    approval?: 'plan' | 'checkpoint' | 'none'
+    on_failure?: 'stop' | 'continue' | 'retry' | 'ask'
+  }
   _meta?: {
     filePath: string
     directory: string
@@ -289,7 +296,7 @@ export interface AgentContext {
 }
 
 export interface SkillContext {
-  load(name: string): Promise<string>
+  load(name: string, inputs?: Record<string, unknown>): Promise<string>
 }
 
 export interface ApprovalCallOptions {

@@ -35,6 +35,45 @@ function generateRunId(): string {
   return `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
+/**
+ * Parse a human-readable timeout string into milliseconds.
+ * Supported formats: "30s", "5m", "1h", "500ms", "2m30s", or plain number (treated as ms).
+ */
+export function parseTimeout(timeout: string | undefined): number | undefined {
+  if (!timeout) return undefined
+  // Plain number → treat as milliseconds
+  if (/^\d+$/.test(timeout)) return parseInt(timeout, 10)
+
+  let totalMs = 0
+  const hourMatch = timeout.match(/(\d+)h/)
+  const minMatch = timeout.match(/(\d+)m(?!s)/)
+  const secMatch = timeout.match(/(\d+)s/)
+  const msMatch = timeout.match(/(\d+)ms/)
+
+  if (hourMatch) totalMs += parseInt(hourMatch[1], 10) * 3600000
+  if (minMatch) totalMs += parseInt(minMatch[1], 10) * 60000
+  if (secMatch) totalMs += parseInt(secMatch[1], 10) * 1000
+  if (msMatch) totalMs += parseInt(msMatch[1], 10)
+
+  return totalMs > 0 ? totalMs : undefined
+}
+
+/**
+ * Wrap a promise with a timeout. Rejects with a TimeoutError if the timeout expires.
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, stepId: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Step '${stepId}' timed out after ${timeoutMs}ms`))
+    }, timeoutMs)
+
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value) },
+      (err) => { clearTimeout(timer); reject(err) }
+    )
+  })
+}
+
 function interpolateVariables(text: string, inputs: InputValues, completedSteps?: StepResult[]): string {
   if (!text) return text
   let result = text.replace(/\{\{inputs\.(\w+)\}\}/g, (match, name) => {
@@ -264,7 +303,7 @@ async function executeSkillStep(
   }
 
   try {
-    const output = await ctx.skills.load(step.skill)
+    const output = await ctx.skills.load(step.skill, step.inputs)
     return {
       stepId: step.id,
       status: 'completed',
@@ -450,6 +489,29 @@ export interface ExecuteAbilityOptions {
   eventBus?: ControlEventBus
 }
 
+/**
+ * Run an array of hook commands (shell scripts) sequentially.
+ * Returns on first failure. Hooks are best-effort: a hook failure is logged but
+ * does not prevent the ability from running — the caller decides how to handle it.
+ */
+async function runHooks(
+  hooks: string[] | undefined,
+  ctx: ExecutorContext,
+  label: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!hooks || hooks.length === 0) return { ok: true }
+  for (const cmd of hooks) {
+    console.log(`[abilities] Running ${label} hook: ${cmd}`)
+    const { exitCode, stderr } = await runScript(cmd, { cwd: ctx.cwd, env: ctx.env })
+    if (exitCode !== 0) {
+      const error = `${label} hook failed (exit ${exitCode}): ${cmd}${stderr ? ' — ' + stderr.trim() : ''}`
+      console.error(`[abilities] ${error}`)
+      return { ok: false, error }
+    }
+  }
+  return { ok: true }
+}
+
 export async function executeAbility(
   ability: Ability,
   inputs: InputValues,
@@ -524,6 +586,21 @@ export async function executeAbility(
   // Emit run.started
   if (eventBus && eventFactory) {
     eventBus.emit(eventFactory.runStarted(ability.name, resolvedInputs))
+  }
+
+  // Run before hooks
+  if (ability.hooks?.before) {
+    const hookResult = await runHooks(ability.hooks.before, ctx, 'before')
+    if (!hookResult.ok) {
+      execution.status = 'failed'
+      execution.error = hookResult.error
+      execution.completedAt = Date.now()
+      if (eventBus && eventFactory) {
+        const duration = execution.completedAt - execution.startedAt
+        eventBus.emit(eventFactory.runFailed(ability.name, duration, hookResult.error))
+      }
+      return execution
+    }
   }
 
   // Execute steps sequentially
@@ -603,8 +680,8 @@ export async function executeAbility(
         if (ctx.onStepFail) ctx.onStepFail(step, permError)
 
         // Respect on_failure policy
-        const failPolicy = ('on_failure' in step) ? (step as ScriptStep).on_failure : undefined
-        if (failPolicy === 'continue') {
+        const permFailPolicy = step.on_failure
+        if (permFailPolicy === 'continue') {
           continue
         }
 
@@ -621,24 +698,55 @@ export async function executeAbility(
       }
     }
 
-    // Dispatch to the appropriate step handler
+    // Dispatch to the appropriate step handler (with timeout + retry)
+    const stepTimeoutMs = parseTimeout(step.timeout) || parseTimeout(ability.settings?.timeout)
+    const maxRetries = step.max_retries ?? 0
+    const failPolicy = step.on_failure
+
     let result: StepResult
-    switch (step.type) {
-      case 'agent':
-        result = await executeAgentStep(step as AgentStep, execution, ctx)
-        break
-      case 'skill':
-        result = await executeSkillStep(step as SkillStep, execution, ctx)
-        break
-      case 'approval':
-        result = await executeApprovalStep(step as ApprovalStep, execution, ctx)
-        break
-      case 'workflow':
-        result = await executeWorkflowStep(step as WorkflowStep, execution, ctx)
-        break
-      default:
-        result = await executeScriptStep(step as ScriptStep, execution, ctx)
-        break
+    let attempts = 0
+    const maxAttempts = failPolicy === 'retry' ? Math.max(maxRetries, 1) + 1 : 1
+
+    while (attempts < maxAttempts) {
+      attempts++
+
+      const dispatchStep = async (): Promise<StepResult> => {
+        switch (step.type) {
+          case 'agent':
+            return executeAgentStep(step as AgentStep, execution, ctx)
+          case 'skill':
+            return executeSkillStep(step as SkillStep, execution, ctx)
+          case 'approval':
+            return executeApprovalStep(step as ApprovalStep, execution, ctx)
+          case 'workflow':
+            return executeWorkflowStep(step as WorkflowStep, execution, ctx)
+          default:
+            return executeScriptStep(step as ScriptStep, execution, ctx)
+        }
+      }
+
+      try {
+        result = stepTimeoutMs
+          ? await withTimeout(dispatchStep(), stepTimeoutMs, step.id)
+          : await dispatchStep()
+      } catch (err) {
+        // Timeout or unexpected error
+        result = {
+          stepId: step.id,
+          status: 'failed',
+          tags: step.tags,
+          error: err instanceof Error ? err.message : String(err),
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+          duration: 0,
+        }
+      }
+
+      // If succeeded or this is the last attempt, break out
+      if (result.status !== 'failed' || attempts >= maxAttempts) break
+
+      // Retry: log and loop
+      console.log(`[abilities] Step '${step.id}' failed (attempt ${attempts}/${maxAttempts}), retrying...`)
     }
 
     execution.completedSteps.push(result)
@@ -713,8 +821,7 @@ export async function executeAbility(
       // Fire onStepFail callback
       if (ctx.onStepFail) ctx.onStepFail(step, result.error || 'Unknown error')
 
-      // Check on_failure policy
-      const failPolicy = ('on_failure' in step) ? (step as ScriptStep).on_failure : undefined
+      // Check on_failure policy (retry already handled above)
       if (failPolicy === 'continue') {
         // Continue to next step despite failure
         continue
@@ -741,6 +848,14 @@ export async function executeAbility(
   execution.executionStatus = 'completed'
   execution.currentStep = null
   execution.completedAt = Date.now()
+
+  // Run after hooks (best-effort — failure is recorded but does not block control evaluation)
+  if (ability.hooks?.after) {
+    const hookResult = await runHooks(ability.hooks.after, ctx, 'after')
+    if (!hookResult.ok) {
+      console.error(`[abilities] After-hook failed: ${hookResult.error}`)
+    }
+  }
 
   // Evaluate control: prefer event-based evaluation when bus is available
   if (eventBus) {
