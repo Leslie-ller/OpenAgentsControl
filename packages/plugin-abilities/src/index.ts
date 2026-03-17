@@ -33,6 +33,8 @@ export type {
   DriftPolicy,
   ModelDriftEntry,
   ModelAuditResult,
+  PermissionValidatorInterface,
+  AgentPermissionsData,
 } from './types/index.js'
 
 // Loader
@@ -41,6 +43,7 @@ export { loadAbilities, loadAbility } from './loader/index.js'
 // Validator
 export { validateAbility, validateInputs } from './validator/index.js'
 export { PermissionValidator } from './validator/permissions.js'
+export type { PermissionValidationResult, StepPermissionResult } from './validator/permissions.js'
 
 // Context Discovery
 export { ContextDiscovery } from './context/discovery.js'
