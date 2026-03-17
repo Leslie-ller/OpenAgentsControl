@@ -1,8 +1,8 @@
-import type { Ability, LoadedAbility, ExecutorContext, AbilityExecution, Step, AgentStep, SkillStep, ApprovalStep, WorkflowStep } from './types/index.js'
-import { loadAbilities, listAbilities } from './loader/index.js'
-import { validateAbility, validateInputs } from './validator/index.js'
-import { executeAbility, formatExecutionResult } from './executor/index.js'
-import { ExecutionManager } from './executor/execution-manager.js'
+import type { Ability, LoadedAbility, ExecutorContext, AbilityExecution, Step, AgentStep, SkillStep, ApprovalStep, WorkflowStep } from '../types/index.js'
+import { loadAbilities, listAbilities } from '../loader/index.js'
+import { validateAbility, validateInputs } from '../validator/index.js'
+import { executeAbility, formatExecutionResult } from '../executor/index.js'
+import { ExecutionManager } from '../executor/execution-manager.js'
 
 interface OpencodeClient {
   session: {

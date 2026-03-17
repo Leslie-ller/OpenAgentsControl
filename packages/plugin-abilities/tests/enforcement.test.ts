@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
-import { AbilitiesPlugin } from '../src/plugin.js'
+import { AbilitiesPlugin } from '../src/_legacy/plugin.js'
 
 describe('Agent Attachment', () => {
   let plugin: AbilitiesPlugin
