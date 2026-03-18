@@ -14,7 +14,156 @@ inputs:
     description: Research topic or thesis section to plan bibliography search for
 
 steps:
+  - id: search-academic-landscape
+    type: script
+    run: |
+      timeout 30s /home/leslie/code/AgentOS/.venv/bin/agentos search --mode academic --query "{{inputs.topic}}" --limit 5 || \
+      python3 - <<'PY'
+      import json
+      print(json.dumps({
+        "query": "{{inputs.topic}}",
+        "result_count": 0,
+        "results": [],
+        "warning": "academic search timed out or failed"
+      }))
+      PY
+
+  - id: search-zotero-coverage
+    type: script
+    run: |
+      set -e
+      set -a
+      . /home/leslie/code/AgentOS/.env
+      set +a
+      /home/leslie/code/AgentOS/.venv/bin/agentos zotero-search --query "{{inputs.topic}}" --limit 5
+    needs: [search-academic-landscape]
+
   - id: generate-plan
     type: script
-    run: echo '{"topic":"{{inputs.topic}}","queries":["{{inputs.topic}}","{{inputs.topic}} systematic review"],"inclusion_criteria":["peer-reviewed","2020-2026","English"],"exclusion_criteria":["non-peer-reviewed","pre-2015"],"target_count":20}'
+    run: |
+      python3 - <<'PY'
+      import json
+      import os
+      from datetime import datetime
+
+      topic = "{{inputs.topic}}".strip()
+      step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+
+      def load_step_output(step_id):
+        payload = step_outputs.get(step_id, {})
+        raw = payload.get("output") if isinstance(payload, dict) else None
+        if not isinstance(raw, str) or not raw.strip():
+          return {}
+        try:
+          parsed = json.loads(raw)
+          return parsed if isinstance(parsed, dict) else {"value": parsed}
+        except Exception:
+          return {"raw": raw}
+
+      academic = load_step_output("search-academic-landscape")
+      zotero = load_step_output("search-zotero-coverage")
+
+      academic_results = academic.get("results", [])
+      zotero_items = zotero.get("items", [])
+      if not isinstance(academic_results, list):
+        academic_results = []
+      if not isinstance(zotero_items, list):
+        zotero_items = []
+
+      queries = [topic]
+      lowered_topic = topic.lower()
+      if "systematic review" not in lowered_topic and "review" not in lowered_topic:
+        queries.append(f"{topic} systematic review")
+
+      has_review_like_result = False
+      for result in academic_results:
+        if not isinstance(result, dict):
+          continue
+        title = str(result.get("title", "")).lower()
+        result_type = str((result.get("metadata") or {}).get("type", "")).lower() if isinstance(result.get("metadata"), dict) else ""
+        if "review" in title or "survey" in title or result_type == "review":
+          has_review_like_result = True
+          break
+      if not has_review_like_result and "survey" not in lowered_topic:
+        queries.append(f"{topic} survey")
+
+      queries = list(dict.fromkeys(query.strip() for query in queries if query.strip()))
+
+      years = []
+      for result in academic_results:
+        if not isinstance(result, dict):
+          continue
+        metadata = result.get("metadata", {})
+        if not isinstance(metadata, dict):
+          continue
+        year = metadata.get("year")
+        if isinstance(year, int):
+          years.append(year)
+        published = metadata.get("published")
+        if isinstance(published, str) and len(published) >= 4 and published[:4].isdigit():
+          years.append(int(published[:4]))
+      current_year = datetime.utcnow().year
+      year_floor = max(current_year - 10, min(years)) if years else current_year - 10
+
+      academic_preview = []
+      for result in academic_results[:3]:
+        if not isinstance(result, dict):
+          continue
+        academic_preview.append({
+          "title": result.get("title"),
+          "provider": result.get("provider"),
+          "url": result.get("url"),
+          "year": result.get("metadata", {}).get("year") if isinstance(result.get("metadata"), dict) else None,
+        })
+
+      zotero_preview = []
+      for item in zotero_items[:3]:
+        if not isinstance(item, dict):
+          continue
+        zotero_preview.append({
+          "key": item.get("key"),
+          "title": item.get("title"),
+          "date": item.get("date"),
+          "item_type": item.get("item_type"),
+        })
+
+      academic_count = academic.get("result_count")
+      zotero_count = zotero.get("result_count")
+      if not isinstance(academic_count, int):
+        academic_count = len(academic_results)
+      if not isinstance(zotero_count, int):
+        zotero_count = len(zotero_items)
+
+      target_count = 8
+      if academic_count >= 10 or zotero_count >= 5:
+        target_count = 20
+      elif academic_count >= 5 or zotero_count >= 2:
+        target_count = 12
+
+      print(json.dumps({
+        "topic": topic,
+        "queries": queries,
+        "inclusion_criteria": [
+          f"Title or abstract clearly matches {topic}",
+          "Prefer peer-reviewed or strongly cited academic sources",
+          f"Prioritize results from {year_floor}-{current_year}",
+        ],
+        "exclusion_criteria": [
+          "Weak topical match in title/snippet",
+          "Duplicate library entries with no added evidence value",
+          f"Results published before {year_floor} unless historically foundational",
+        ],
+        "target_count": target_count,
+        "search_summary": {
+          "academic_result_count": academic_count,
+          "zotero_result_count": zotero_count,
+          "academic_warning": academic.get("warning"),
+        },
+        "candidate_papers": {
+          "academic": academic_preview,
+          "zotero": zotero_preview,
+        },
+      }))
+      PY
     tags: [bibliography-plan]
+    needs: [search-zotero-coverage]

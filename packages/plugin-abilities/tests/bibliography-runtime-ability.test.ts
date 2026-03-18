@@ -18,6 +18,77 @@ function shellEchoJson(payload: Record<string, unknown>): string {
 describe('bibliography runtime abilities', () => {
   const projectDir = resolve(import.meta.dir, '..', '..', '..', '.opencode', 'abilities')
 
+  it('bibliography-plan derives plan data from upstream search evidence', async () => {
+    const loaded = await loadAbility('research/bibliography-plan', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const ability = structuredClone(loaded!.ability)
+    ability.steps[0] = {
+      ...ability.steps[0],
+      run: shellEchoJson({
+        query: 'agent safety',
+        result_count: 2,
+        results: [
+          {
+            title: 'Agent safety benchmark',
+            provider: 'openalex',
+            url: 'https://openalex.org/W1',
+            metadata: {
+              year: 2024,
+              type: 'article',
+            },
+          },
+          {
+            title: 'Reliable evaluation for agent safety',
+            provider: 'arxiv',
+            url: 'https://arxiv.org/abs/1234.5678',
+            metadata: {
+              year: 2023,
+              type: 'article',
+            },
+          },
+        ],
+      }),
+    }
+    ability.steps[1] = {
+      ...ability.steps[1],
+      run: shellEchoJson({
+        query: 'agent safety',
+        result_count: 1,
+        items: [
+          {
+            key: 'ABCD1234',
+            title: 'Existing Zotero agent safety paper',
+            date: '2024',
+            item_type: 'journalArticle',
+          },
+        ],
+      }),
+    }
+
+    const execution = await executeAbility(
+      ability,
+      { topic: 'agent safety' },
+      createContext()
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.topic).toBe('agent safety')
+    expect(output.queries).toEqual([
+      'agent safety',
+      'agent safety systematic review',
+      'agent safety survey',
+    ])
+    expect(output.search_summary.academic_result_count).toBe(2)
+    expect(output.search_summary.zotero_result_count).toBe(1)
+    expect(output.candidate_papers.academic[0].title).toBe('Agent safety benchmark')
+    expect(output.candidate_papers.zotero[0].key).toBe('ABCD1234')
+  })
+
   it('paper-fulltext-review derives reading card content from text_preview', async () => {
     const loaded = await loadAbility('research/paper-fulltext-review', {
       projectDir,
