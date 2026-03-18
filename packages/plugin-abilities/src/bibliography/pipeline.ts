@@ -99,6 +99,8 @@ export interface StageCommandResult {
     id: string
     status: AbilityExecution['status']
     control?: AbilityExecution['control']
+    error?: string
+    failedStepId?: string
   }
   artifact: {
     key: string
@@ -227,12 +229,16 @@ export class BibliographyPipeline {
     options?: PipelineOptions
   ): Promise<StageCommandResult> {
     const result = await this.runStage(stage, ability, inputs, ctx, options)
+    const failedStep = [...result.execution.completedSteps].reverse().find((step) => step.status === 'failed')
+    const executionError = result.execution.error ?? failedStep?.error
     return {
       stage: result.stage,
       execution: {
         id: result.execution.id,
         status: result.execution.status,
         control: result.execution.control,
+        error: executionError,
+        failedStepId: failedStep?.stepId,
       },
       artifact: {
         key: result.artifact?.meta.key ?? result.artifactKey,

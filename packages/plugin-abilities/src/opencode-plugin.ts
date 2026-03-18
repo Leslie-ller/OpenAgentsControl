@@ -182,13 +182,16 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
       )
 
       return JSON.stringify({
-        status: 'ok',
+        status: stageResult.execution.status === 'completed' ? 'ok' : 'error',
         command,
         stage: routed.stage,
         routedAbility: routed.abilityName,
         inputs: routed.inputs,
         execution: stageResult.execution,
         artifact: stageResult.artifact,
+        error: stageResult.execution.status === 'failed'
+          ? (stageResult.execution.error || 'Ability execution failed')
+          : undefined,
       })
     } catch (error) {
       return JSON.stringify({

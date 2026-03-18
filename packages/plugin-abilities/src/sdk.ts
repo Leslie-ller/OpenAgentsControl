@@ -59,6 +59,8 @@ export interface CommandExecutionResult {
     id: string
     status: 'running' | 'completed' | 'failed' | 'cancelled'
     control?: ControlResult
+    error?: string
+    failedStepId?: string
   }
   artifact?: {
     key: string
@@ -279,6 +281,7 @@ export class AbilitiesSDK {
         inputs: routed.inputs,
         execution: stageResult.execution,
         artifact: stageResult.artifact,
+        error: stageResult.execution.status === 'failed' ? (stageResult.execution.error || 'Ability execution failed') : undefined,
       }
     } catch (error) {
       return {

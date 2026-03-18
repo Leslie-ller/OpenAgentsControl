@@ -15,6 +15,7 @@ describe('bibliography command integration', () => {
 
     await fs.mkdir(path.join(abilitiesDir, 'bibliography-plan'), { recursive: true })
     await fs.mkdir(path.join(abilitiesDir, 'paper-screening'), { recursive: true })
+    await fs.mkdir(path.join(abilitiesDir, 'section-evidence-pack'), { recursive: true })
 
     await fs.writeFile(
       path.join(abilitiesDir, 'bibliography-plan', 'ability.yaml'),
@@ -49,6 +50,27 @@ describe('bibliography command integration', () => {
         '    type: script',
         '    run: echo "{\\"items\\":[{\\"paper_key\\":\\"p1\\",\\"title\\":\\"P1\\",\\"decision\\":\\"keep\\",\\"reason\\":\\"r\\"}],\\"sufficiency_score\\":0.8,\\"anchors_count\\":2,\\"uncertainty_level\\":\\"low\\",\\"source_stage\\":\\"screening\\"}"',
         '    tags: [screening-decision, task-sufficiency-check, evidence-grounding, uncertainty-annotation, artifact-lineage]',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    await fs.writeFile(
+      path.join(abilitiesDir, 'section-evidence-pack', 'ability.yaml'),
+      [
+        'name: research/section-evidence-pack',
+        'description: test evidence pack',
+        'task_type: section_evidence_pack',
+        'inputs:',
+        '  section:',
+        '    type: string',
+        '    required: true',
+        'steps:',
+        '  - id: record-evidence-pack',
+        '    type: script',
+        '    run: |',
+        '      python3 - <<\'PY\'',
+        '      raise SystemExit("No decision artifacts available for section {{inputs.section}}")',
+        '      PY',
       ].join('\n'),
       'utf-8'
     )
@@ -92,5 +114,16 @@ describe('bibliography command integration', () => {
       'p1.json'
     )
     await expect(fs.access(storedPath)).resolves.toBeNull()
+  })
+
+  it('surfaces stage failure reasons for command execution', async () => {
+    const result = await sdk.executeCommand('/section-evidence-pack', '{"section":"methods"}')
+
+    expect(result.stage).toBe('evidence-pack')
+    expect(result.execution?.status).toBe('failed')
+    expect(result.execution?.failedStepId).toBe('record-evidence-pack')
+    expect(result.execution?.error).toContain('No decision artifacts available for section methods')
+    expect(result.error).toContain('No decision artifacts available for section methods')
+    expect(result.artifact?.meta).toBeNull()
   })
 })

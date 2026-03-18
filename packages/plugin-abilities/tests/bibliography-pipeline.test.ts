@@ -583,6 +583,37 @@ describe('BibliographyPipeline', () => {
       expect(result.artifacts).toEqual([])
       expect(await store.list('reading-card')).toEqual([])
     })
+
+    it('runStageCommand exposes failed step error details', async () => {
+      const ability: Ability = {
+        name: 'research/section-evidence-pack',
+        description: 'Fail with explicit message',
+        task_type: 'section_evidence_pack',
+        inputs: {
+          section: { type: 'string', required: true },
+        },
+        steps: [
+          {
+            id: 'record-evidence-pack',
+            type: 'script',
+            run: 'python3 - <<\'PY\'\nraise SystemExit("No decision artifacts available for this section")\nPY',
+            tags: ['evidence-pack'],
+          },
+        ],
+      }
+
+      const result = await pipeline.runStageCommand(
+        'evidence-pack',
+        ability,
+        { section: 'methods' },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('failed')
+      expect(result.execution.error).toContain('No decision artifacts available for this section')
+      expect(result.execution.failedStepId).toBe('record-evidence-pack')
+      expect(result.artifact.meta).toBeNull()
+    })
   })
 
   // ── Non-JSON step output ──────────────────────────────────
