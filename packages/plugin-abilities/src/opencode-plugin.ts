@@ -12,6 +12,11 @@ import { BibliographyPipeline } from './bibliography/pipeline.js'
 import { parseCommandInput, routeBibliographyCommand } from './bibliography/command-routing.js'
 import { scanBibliographyArtifacts } from './bibliography/audit-scan.js'
 import { deriveCompletionSummary } from './coding/completion-summary.js'
+import { createCheckpointStore } from './runtime/context/checkpoint-store.js'
+import { createCompactionCheckpoint } from './runtime/context/compaction-checkpoint.js'
+import { renderFocusRefreshBlock } from './runtime/context/focus-refresh.js'
+import { PendingCheckpointSummaries } from './runtime/context/pending-checkpoint-summaries.js'
+import { resolveTopicFromExecution } from './runtime/context/topic-resolver.js'
 import { join } from 'path'
 
 /**
@@ -38,6 +43,7 @@ const ALWAYS_ALLOWED_TOOLS = [
 
 export const AbilitiesPlugin: Plugin = async (ctx) => {
   const abilities = new Map<string, LoadedAbility>()
+  const pendingCheckpointSummaries = new PendingCheckpointSummaries()
 
   // Initialize control event infrastructure
   const controlLogDir = join(ctx.directory, '.opencode', 'control-logs')
@@ -46,6 +52,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
   const executionManager = new ExecutionManager(eventBus)
   const bibliographyStore = createBibliographyStore(ctx.directory)
   const bibliographyPipeline = new BibliographyPipeline(bibliographyStore)
+  const checkpointStore = createCheckpointStore(ctx.directory)
 
   const abilitiesDir = `${ctx.directory}/.opencode/abilities`
 
@@ -197,14 +204,33 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
 
   return {
     // Hook: Inject ability context into every chat message
-    async 'chat.message'(_input, output) {
+    async 'chat.message'(input, output) {
       try {
+        const sessionID = (input as any)?.message?.sessionID
+        const injections: string[] = []
+        const pendingSummary = pendingCheckpointSummaries.consume(
+          typeof sessionID === 'string' ? sessionID : undefined
+        )
+        if (pendingSummary) {
+          injections.push(`Post-Compaction Recovery:\n${pendingSummary}`)
+        }
+
         const activeExecution = executionManager.getActive()
 
         if (activeExecution && activeExecution.status === 'running') {
+          const topic = resolveTopicFromExecution(activeExecution)
+          const state = await checkpointStore.loadState(topic)
+          if (state) {
+            injections.push(renderFocusRefreshBlock(state, 'pre_high_impact_decision'))
+          }
+
+          injections.push(buildAbilityContextInjection(activeExecution))
+        }
+
+        for (let i = injections.length - 1; i >= 0; i -= 1) {
           output.parts.unshift({
             type: 'text',
-            text: buildAbilityContextInjection(activeExecution),
+            text: injections[i],
           } as any)
         }
       } catch (err) {
@@ -242,7 +268,19 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     // Hook: Cleanup on session deletion
     async event({ event }) {
       try {
+        if (event.type === 'session.compacted') {
+          const activeExecution = executionManager.getActive()
+          if (activeExecution) {
+            const checkpoint = await createCompactionCheckpoint(activeExecution, checkpointStore)
+            const sessionID = (event as any)?.properties?.info?.id
+            pendingCheckpointSummaries.put(typeof sessionID === 'string' ? sessionID : undefined, checkpoint.summary)
+            console.log(`[abilities] Compaction checkpoint saved for topic '${checkpoint.topic}'`)
+          }
+        }
+
         if (event.type === 'session.deleted') {
+          const sessionID = (event as any)?.properties?.info?.id
+          pendingCheckpointSummaries.clear(typeof sessionID === 'string' ? sessionID : undefined)
           executionManager.cleanup()
           eventBus.reset()
         }
@@ -308,11 +346,19 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
             return JSON.stringify({ status: 'none', message: 'No active ability' })
           }
 
+          const topic = resolveTopicFromExecution(execution)
+          const state = await checkpointStore.loadState(topic)
+          const focus = state
+            ? renderFocusRefreshBlock(state, 'pre_high_impact_decision')
+            : undefined
+
           return JSON.stringify({
             status: execution.status,
             ability: execution.ability.name,
             currentStep: execution.currentStep?.id,
             progress: `${execution.completedSteps.length}/${execution.ability.steps.length}`,
+            topic,
+            focus,
           })
         },
       }),

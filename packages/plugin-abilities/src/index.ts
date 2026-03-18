@@ -136,6 +136,19 @@ export { deriveCompletionSummary } from './coding/completion-summary.js'
 export { writeTaskBreakdownArtifacts } from './coding/task-breakdown-bridge.js'
 export type { TaskBreakdownBridgeOptions } from './coding/task-breakdown-bridge.js'
 
+// Runtime Context Checkpoint MVP
+export { resolveTopicFromExecution } from './runtime/context/topic-resolver.js'
+export { CheckpointStore, createCheckpointStore } from './runtime/context/checkpoint-store.js'
+export { renderFocusRefreshBlock } from './runtime/context/focus-refresh.js'
+export { createCompactionCheckpoint } from './runtime/context/compaction-checkpoint.js'
+export { selectDetailFields } from './runtime/context/detail-reinjector.js'
+export { PendingCheckpointSummaries } from './runtime/context/pending-checkpoint-summaries.js'
+export type {
+  StateCapsule,
+  DetailCapsule,
+  DetailUseCase,
+} from './runtime/context/types.js'
+
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'
 export { default } from './opencode-plugin.js'

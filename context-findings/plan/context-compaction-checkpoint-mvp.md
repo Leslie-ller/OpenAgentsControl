@@ -500,3 +500,68 @@ This MVP is complete when:
 ## Delegation Request (TaskManager)
 
 Break this plan into atomic implementation tasks. Prioritize real hook verification first, then store + focus refresh, then compaction checkpoint, then selective detail reinjection.
+
+---
+
+## Implementation Progress (2026-03-18)
+
+### WS1: Hook Surface and Integration Point — implemented
+
+- Verified event surface from local OpenCode plugin docs (`dev/ai-tools/opencode/building-plugins.md`):
+  - `session.compacted` event is available and can be handled in plugin `event(...)` hook.
+  - `chat.message` hook supports prompt/context augmentation.
+- Integration path selected in plugin runtime:
+  - compaction checkpoint writes are attached to `session.compacted` handling in `packages/plugin-abilities/src/opencode-plugin.ts`.
+  - focus-refresh text can be surfaced via runtime status path and chat injection hook.
+
+### WS2: Topic Resolution and Checkpoint Store — implemented
+
+- Added `TopicResolver`:
+  - `packages/plugin-abilities/src/runtime/context/topic-resolver.ts`
+  - exports `resolveTopicFromExecution(...)`
+- Added `CheckpointStore` with isolated state/detail namespaces and overwrite semantics:
+  - `packages/plugin-abilities/src/runtime/context/checkpoint-store.ts`
+  - storage roots: `state/<topic>.json`, `detail/<topic>.json`
+
+### WS3: Focus Refresh — implemented (MVP)
+
+- Added short state reinjection formatter:
+  - `packages/plugin-abilities/src/runtime/context/focus-refresh.ts`
+  - exports `renderFocusRefreshBlock(...)`
+- Wired focus refresh into plugin chat injection path during active execution:
+  - `packages/plugin-abilities/src/opencode-plugin.ts`
+  - `chat.message` now prepends a short focus block when topic state exists
+- Detail capsule is not injected by default.
+
+### WS4: Compaction Checkpoint — implemented (MVP)
+
+- Added checkpoint generation + persistence + compaction summary rendering:
+  - `packages/plugin-abilities/src/runtime/context/compaction-checkpoint.ts`
+  - exports `createCompactionCheckpoint(...)`
+- Plugin integrates compaction event handling (`session.compacted`) and stores fresh checkpoints before continuing runtime flow.
+- Added post-compaction recovery injection path:
+  - `session.compacted` stores pending checkpoint summary by session key
+  - `chat.message` injects one-shot `Post-Compaction Recovery` block on next turn
+
+### WS5: Conditional Detail Reinjection — implemented (MVP)
+
+- Added selective detail projection by use case:
+  - `packages/plugin-abilities/src/runtime/context/detail-reinjector.ts`
+  - exports `selectDetailFields(...)`
+- Supported selectors:
+  - `continue_implementation`
+  - `explain_reasoning`
+  - `recover_execution_context`
+  - `resolve_pending_work`
+
+### Test Coverage (MVP)
+
+- Added test suite:
+  - `packages/plugin-abilities/tests/context-checkpoint-mvp.test.ts`
+- Covered scenarios:
+  1. stable topic resolution and fallback behavior
+  2. state/detail overwrite semantics and topic isolation
+  3. short focus refresh injection rendering
+  4. selective detail reinjection by use case
+5. compaction checkpoint creation and store persistence
+6. pending checkpoint summary consume-once behavior with session/global fallback and clear semantics
