@@ -260,6 +260,14 @@ Named gates for `code_change`:
 - `completion_claim_gate` — blocks completion claims without validation + review evidence
 - `subtask_dependency_gate` — blocks when complex-path dependency violations are present
 
+Final completion contract (`code_change`):
+
+- completion metadata is derived from actual control evidence, not optimistic text
+- summary status is one of `completed` | `partial` | `blocked`
+- `partial` is used when warnings or missing non-blocking evidence remain
+- `blocked` is used when hard obligations/gates fail
+- completion payload includes `remaining_risks` and `next_actions` for honest user-facing reporting
+
 High-level development ability:
 
 ```bash

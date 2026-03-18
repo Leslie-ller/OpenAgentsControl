@@ -468,4 +468,53 @@ describe('formatExecutionResult', () => {
     expect(formatted).toContain('✅ Complete')
     expect(formatted).toContain('✅ step1')
   })
+
+  it('should mark code_change summary as partial when control gate warns', async () => {
+    const ability: Ability = {
+      name: 'code-change-partial-format',
+      description: 'Code change with warning gate',
+      task_type: 'code_change',
+      obligations: [
+        { key: 'run_tests', severity: 'hard', tags: ['test'] },
+        { key: 'record_validation', severity: 'hard', tags: ['validation'] },
+        {
+          key: 'verification_evidence_recorded',
+          severity: 'hard',
+          tags: ['verification-evidence'],
+          requiredFields: ['commands', 'results', 'exit_codes'],
+        },
+        {
+          key: 'review_completed',
+          severity: 'hard',
+          tags: ['review-completed'],
+          requiredFields: ['verdict', 'blocking_findings'],
+        },
+        { key: 'commit_if_required', severity: 'soft', tags: ['commit'] },
+      ],
+      steps: [
+        { id: 'test', type: 'script', run: 'echo test', tags: ['test'] },
+        {
+          id: 'validate',
+          type: 'script',
+          run: 'python3 -c "import json; print(json.dumps({\'commands\':[\'bun test\'],\'results\':[\'pass\'],\'exit_codes\':[0]}))"',
+          tags: ['validation', 'verification-evidence'],
+          needs: ['test'],
+        },
+        {
+          id: 'review',
+          type: 'script',
+          run: 'python3 -c "import json; print(json.dumps({\'verdict\':\'pass\',\'blocking_findings\':[]}))"',
+          tags: ['review-completed'],
+          needs: ['validate'],
+        },
+      ],
+    }
+
+    const execution = await executeAbility(ability, { task_id: 'task_warn' }, createMockContext())
+    const formatted = formatExecutionResult(execution)
+
+    expect(execution.control?.gate.verdict).toBe('warn')
+    expect(formatted).toContain('Status: ⚠️ Partial')
+    expect(formatted).toContain('Completion Summary:')
+  })
 })

@@ -11,6 +11,7 @@ import { createBibliographyStore } from './bibliography/store.js'
 import { BibliographyPipeline } from './bibliography/pipeline.js'
 import { parseCommandInput, routeBibliographyCommand } from './bibliography/command-routing.js'
 import { scanBibliographyArtifacts } from './bibliography/audit-scan.js'
+import { deriveCompletionSummary } from './coding/completion-summary.js'
 import { join } from 'path'
 
 /**
@@ -118,6 +119,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         executionStatus: execution.executionStatus || execution.status,
         ability: ability.name,
         control: execution.control,
+        completion: deriveCompletionSummary(execution) ?? undefined,
         result: formatExecutionResult(execution),
       })
     } catch (error) {

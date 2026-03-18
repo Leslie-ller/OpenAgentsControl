@@ -17,6 +17,7 @@ import { evaluateControl, evaluateControlFromEvents } from '../control/index.js'
 import type { ControlEventBus } from '../control/event-bus.js'
 import { ControlEventFactory } from '../control/events.js'
 import { hasModelDrift } from '../control/model-audit.js'
+import { deriveCompletionSummary } from '../coding/completion-summary.js'
 
 /**
  * Minimal Executor - Script Steps Only
@@ -941,9 +942,20 @@ function extractEvidenceStats(output: string | undefined): Record<string, unknow
 
 export function formatExecutionResult(execution: AbilityExecution): string {
   const lines: string[] = []
+  const completion = deriveCompletionSummary(execution)
+
+  const statusLine = completion
+    ? completion.status === 'completed'
+      ? '✅ Complete'
+      : completion.status === 'partial'
+        ? '⚠️ Partial'
+        : '❌ Blocked'
+    : execution.status === 'completed'
+      ? '✅ Complete'
+      : '❌ Failed'
 
   lines.push(`Ability: ${execution.ability.name}`)
-  lines.push(`Status: ${execution.status === 'completed' ? '✅ Complete' : '❌ Failed'}`)
+  lines.push(`Status: ${statusLine}`)
 
   if (execution.error) {
     lines.push(`Error: ${execution.error}`)
@@ -966,6 +978,25 @@ export function formatExecutionResult(execution: AbilityExecution): string {
     : 'N/A'
   lines.push('')
   lines.push(`Duration: ${totalDuration}s`)
+
+  if (completion) {
+    const statusLabel = completion.status === 'completed'
+      ? 'completed'
+      : completion.status === 'partial'
+        ? 'partial'
+        : 'blocked'
+    lines.push('')
+    lines.push('Completion Summary:')
+    lines.push(`  Status: ${statusLabel}`)
+    lines.push(`  Validated: ${completion.validated ? 'yes' : 'no'}`)
+    lines.push(`  Reviewed: ${completion.reviewed ? 'yes' : 'no'}`)
+    if (completion.remaining_risks.length > 0) {
+      lines.push(`  Remaining risks: ${completion.remaining_risks.join('; ')}`)
+    }
+    if (completion.next_actions.length > 0) {
+      lines.push(`  Next actions: ${completion.next_actions.join('; ')}`)
+    }
+  }
 
   return lines.join('\n')
 }

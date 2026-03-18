@@ -571,6 +571,22 @@ Acceptance criteria:
 1. Final summary cannot overstate completion.
 2. Partial work is reported explicitly as partial.
 
+Implementation mapping (2026-03-18):
+- Completion summary derivation for `code_change` is implemented in `packages/plugin-abilities/src/coding/completion-summary.ts` via `deriveCompletionSummary(...)`.
+- User-facing formatting now uses derived completion state in `packages/plugin-abilities/src/executor/index.ts` (`formatExecutionResult`):
+  - `completed` → success status
+  - `partial` → explicit partial status (instead of done-language)
+  - `blocked` → explicit blocked status
+- SDK and plugin response payloads include derived completion metadata:
+  - `packages/plugin-abilities/src/sdk.ts`
+  - `packages/plugin-abilities/src/opencode-plugin.ts`
+
+Verification coverage (2026-03-18):
+- `packages/plugin-abilities/tests/completion-summary.test.ts`
+  - validates completed/partial/blocked derivation and non-`code_change` bypass
+- `packages/plugin-abilities/tests/executor.test.ts`
+  - validates formatted output marks warning-path `code_change` runs as partial
+
 ## Suggested Delivery Order
 
 Phase 1:

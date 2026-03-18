@@ -3,6 +3,7 @@ import { loadAbilities, listAbilities } from './loader/index.js'
 import { validateAbility, validateInputs } from './validator/index.js'
 import { executeAbility, formatExecutionResult } from './executor/index.js'
 import { ExecutionManager } from './executor/execution-manager.js'
+import { deriveCompletionSummary } from './coding/completion-summary.js'
 import { createBibliographyStore } from './bibliography/store.js'
 import { BibliographyPipeline } from './bibliography/pipeline.js'
 import { parseCommandInput, routeBibliographyCommand } from './bibliography/command-routing.js'
@@ -37,6 +38,14 @@ export interface ExecutionResult {
     error?: string
   }>
   error?: string
+  completion?: {
+    task_id: string
+    status: 'completed' | 'partial' | 'blocked'
+    validated: boolean
+    reviewed: boolean
+    remaining_risks: string[]
+    next_actions: string[]
+  }
   formatted: string
 }
 
@@ -205,6 +214,7 @@ export class AbilitiesSDK {
           error: s.error,
         })),
         error: execution.error,
+        completion: deriveCompletionSummary(execution) ?? undefined,
         formatted: formatExecutionResult(execution),
       }
     } catch (error) {
@@ -339,6 +349,7 @@ export class AbilitiesSDK {
             error: s.error,
           })),
           error: execution.error,
+          completion: deriveCompletionSummary(execution) ?? undefined,
           formatted: formatExecutionResult(execution),
         }
       }

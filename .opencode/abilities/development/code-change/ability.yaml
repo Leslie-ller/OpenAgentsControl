@@ -258,11 +258,15 @@ steps:
     run: |
       python3 - <<'PY'
       import json
+      remaining = [item.strip() for item in "{{inputs.dependency_violations}}".split(';') if item.strip()]
+      status = "partial" if remaining else "completed"
+      next_actions = ["Resolve dependency violations before final completion claim"] if remaining else []
       print(json.dumps({
-        "status": "completed",
+        "status": status,
         "validated": True,
         "reviewed": True,
-        "remaining_risks": [],
+        "remaining_risks": remaining,
+        "next_actions": next_actions,
       }))
       PY
     tags: [commit]
