@@ -48,11 +48,16 @@ describe('ObligationRegistry', () => {
         steps: [],
       }
       const defs = registry.resolve(ability)
-      expect(defs).toHaveLength(3)
+      expect(defs).toHaveLength(8)
       expect(defs.map((d) => d.key)).toEqual([
         'run_tests',
         'record_validation',
         'commit_if_required',
+        'requirements_checked',
+        'affected_files_identified',
+        'implementation_recorded',
+        'review_completed',
+        'verification_evidence_recorded',
       ])
     })
 
@@ -148,7 +153,7 @@ describe('ObligationRegistry', () => {
       }
       const defs = registry.resolve(ability)
       // Empty array means "no inline", so falls through to built-in
-      expect(defs).toHaveLength(3)
+      expect(defs).toHaveLength(8)
     })
   })
 
@@ -217,7 +222,7 @@ describe('ObligationRegistry', () => {
         steps: [],
       }
       const defs = registry.resolve(ability)
-      expect(defs).toHaveLength(3) // back to built-in
+      expect(defs).toHaveLength(8) // back to built-in
     })
   })
 
@@ -280,7 +285,7 @@ describe('ObligationRegistry', () => {
 describe('getBuiltinObligations', () => {
   it('returns built-in obligations for code_change', () => {
     const defs = getBuiltinObligations('code_change')
-    expect(defs).toHaveLength(3)
+    expect(defs).toHaveLength(8)
   })
 
   it('returns empty for unknown task type', () => {
@@ -610,9 +615,9 @@ describe('end-to-end: custom task_type through execution pipeline', () => {
 
     const execution = await executeAbility(ability, {}, createMockContext(), { eventBus: bus })
     expect(execution.status).toBe('completed')
-    expect(execution.control!.gate.verdict).toBe('allow')
-    // Built-in code_change has 3 obligations
-    expect(execution.control!.obligations).toHaveLength(3)
+    expect(execution.control!.gate.verdict).toBe('warn')
+    // Built-in code_change has 8 obligations
+    expect(execution.control!.obligations).toHaveLength(8)
   })
 
   it('works without event bus (step-based evaluation) with custom obligations', async () => {

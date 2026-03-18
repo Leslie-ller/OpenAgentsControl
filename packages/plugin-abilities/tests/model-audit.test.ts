@@ -381,7 +381,7 @@ describe('evaluateControlFromEvents — modelAudit integration', () => {
     ]
 
     const result = evaluateControlFromEvents(ability, events)!
-    expect(result.gate.verdict).toBe('allow')
+    expect(result.gate.verdict).toBe('warn')
     expect(result.modelAudit).toBeDefined()
     expect(result.modelAudit!.driftCount).toBe(1)
     expect(result.modelAudit!.drifts[0].expectedModel).toBe('claude-sonnet-4')
@@ -789,7 +789,7 @@ describe('end-to-end: model drift audit through execution pipeline', () => {
 
     expect(execution.status).toBe('completed')
     expect(execution.control).toBeDefined()
-    expect(execution.control!.gate.verdict).toBe('allow')
+    expect(execution.control!.gate.verdict).toBe('warn')
     expect(execution.control!.modelAudit).toBeDefined()
     expect(execution.control!.modelAudit!.observed).toBe(1)
     expect(execution.control!.modelAudit!.driftCount).toBe(0)
@@ -837,7 +837,7 @@ describe('end-to-end: model drift audit through execution pipeline', () => {
 
     // Audit-only: drift does NOT change gate verdict
     expect(execution.status).toBe('completed')
-    expect(execution.control!.gate.verdict).toBe('allow')
+    expect(execution.control!.gate.verdict).toBe('warn')
 
     // But drift IS recorded
     expect(execution.control!.modelAudit).toBeDefined()
@@ -882,7 +882,7 @@ describe('end-to-end: model drift audit through execution pipeline', () => {
     const execution = await executeAbility(ability, {}, ctx, { eventBus: bus })
 
     expect(execution.status).toBe('completed')
-    expect(execution.control!.gate.verdict).toBe('allow')
+    expect(execution.control!.gate.verdict).toBe('warn')
     expect(execution.control!.modelAudit).toBeUndefined()
   })
 
@@ -919,7 +919,7 @@ describe('end-to-end: model drift audit through execution pipeline', () => {
     const execution = await executeAbility(ability, {}, ctx)
 
     expect(execution.status).toBe('completed')
-    expect(execution.control!.gate.verdict).toBe('allow')
+    expect(execution.control!.gate.verdict).toBe('warn')
     // Step-based evaluateControl does not produce modelAudit
     expect(execution.control!.modelAudit).toBeUndefined()
   })

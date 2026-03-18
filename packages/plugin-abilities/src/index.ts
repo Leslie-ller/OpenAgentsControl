@@ -117,6 +117,22 @@ export type { StageConfig, PipelineOptions, StageResult, StageCommandResult } fr
 export { scanBibliographyArtifacts } from './bibliography/audit-scan.js'
 export type { AuditFinding, AuditScanResult, AuditFindingSeverity } from './bibliography/audit-scan.js'
 
+// Coding Artifacts & Gates
+export { CodingArtifactStore, createCodingArtifactStore } from './coding/artifact-store.js'
+export type {
+  CodingArtifactType,
+  CodingArtifactMeta,
+  CodingArtifact,
+  CodingArtifactStoreOptions,
+  TaskPlanData,
+  SubtaskRecordData,
+  ImplementationResultData,
+  ValidationReportData,
+  ReviewReportData,
+  CompletionSummaryData,
+} from './coding/artifact-store.js'
+export { evaluateCodeChangeGates } from './coding/gates.js'
+
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'
 export { default } from './opencode-plugin.js'

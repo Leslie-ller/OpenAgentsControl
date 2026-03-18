@@ -10,6 +10,7 @@ import type {
 import type { ControlEvent, StepCompletedPayload, ObligationSignalPayload } from './events.js'
 import { evaluateModelDrift } from './model-audit.js'
 import { resolveObligations, ObligationRegistry, defaultRegistry } from './obligation-registry.js'
+import { evaluateCodeChangeGates } from '../coding/gates.js'
 
 // ─────────────────────────────────────────────────────────────
 // STEP-BASED EVALUATION (original path, backward compatible)
@@ -342,6 +343,11 @@ function mergeGates(gates: NamedGateResult[]): GateResult {
   return { verdict: 'allow', reasons: [], warnings: [] }
 }
 
+function appendCodeChangeGates(ability: Ability, obligations: ObligationResult[], existing: NamedGateResult[]): NamedGateResult[] {
+  if (ability.task_type !== 'code_change') return existing
+  return [...existing, ...evaluateCodeChangeGates(obligations)]
+}
+
 function extractStructuredEvidenceFromSteps(completedSteps: StepResult[]): Array<Record<string, unknown>> {
   return completedSteps
     .map((step) => step.output)
@@ -399,13 +405,19 @@ export function evaluateControl(ability: Ability, completedSteps: StepResult[]):
   }
 
   const obligations = evaluateObligationsFromDefinitions(definitions, completedSteps)
-  const gate = evaluateGate(obligations)
+  const baseGate = evaluateGate(obligations)
+  const gates = appendCodeChangeGates(
+    ability,
+    obligations,
+    [{ name: 'default_gate', ...baseGate }]
+  )
+  const gate = mergeGates(gates)
 
   return {
     taskType: ability.task_type ?? 'custom',
     obligations,
     gate,
-    gates: [{ name: 'default_gate', ...gate }],
+    gates,
   }
 }
 
@@ -429,7 +441,7 @@ export function evaluateControlFromEvents(
   }
 
   const obligations = evaluateObligationsFromEvents(definitions, events)
-  const gates = evaluateNamedGates(obligations, events)
+  const gates = appendCodeChangeGates(ability, obligations, evaluateNamedGates(obligations, events))
   const gate = mergeGates(gates)
   const modelAudit = evaluateModelDrift(events)
 
