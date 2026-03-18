@@ -77,8 +77,12 @@ steps:
         raise SystemExit(parsed["error"])
 
       text = ""
+      effective_length = 0
       if isinstance(parsed, dict):
-        for key in ("content", "text", "markdown", "body", "summary", "raw"):
+        reported_length = parsed.get("text_length")
+        if isinstance(reported_length, int) and reported_length > 0:
+          effective_length = reported_length
+        for key in ("content", "text", "markdown", "body", "text_preview", "summary", "raw"):
           value = parsed.get(key)
           if isinstance(value, str) and value.strip():
             text = value.strip()
@@ -91,6 +95,8 @@ steps:
       text = re.sub(r"\s+", " ", text).strip()
       if not text:
         raise SystemExit("Parsed full-text content is empty")
+      if effective_length <= 0:
+        effective_length = len(text)
 
       anchor_matches = re.findall(r"(section\s+\d+|table\s+\d+|figure\s+\d+|page\s+\d+|p\.\s*\d+)", text, flags=re.I)
       anchors_count = len(set(match.lower() for match in anchor_matches)) or 1
@@ -98,10 +104,10 @@ steps:
       sentence_parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
       key_findings = sentence_parts[:3] if sentence_parts else [summary]
 
-      if len(text) < 500:
+      if effective_length < 500:
         sufficiency_score = 0.45
         uncertainty_level = "high"
-      elif len(text) < 2000:
+      elif effective_length < 2000:
         sufficiency_score = 0.68
         uncertainty_level = "moderate"
       else:
@@ -116,6 +122,7 @@ steps:
         "anchors_count": anchors_count,
         "sufficiency_score": sufficiency_score,
         "uncertainty_level": uncertainty_level,
+        "source_text_length": effective_length,
         "source_excerpt": text[:1000],
         "source_stage": "review",
         "stage": "full-review",
