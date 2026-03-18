@@ -535,6 +535,24 @@ Acceptance criteria:
 1. Multi-file work can be represented and executed as subtasks.
 2. Dependency violations are blocked.
 
+Implementation mapping (2026-03-18):
+- Complex-path detection is implemented in the high-level ability via `inputs.path` and explicit `plan-complex-subtasks` stage in `.opencode/abilities/development/code-change/ability.yaml`.
+- Task/subtask artifact compatibility bridge is implemented at `packages/plugin-abilities/src/coding/task-breakdown-bridge.ts` via `writeTaskBreakdownArtifacts(...)`, generating:
+  - `.tmp/tasks/{feature}/task.json`
+  - `.tmp/tasks/{feature}/subtask_01.json`, `subtask_02.json`, ...
+- Subtask dependency enforcement is implemented through structured evidence + gate evaluation:
+  - evidence extraction includes `subtasks`, `dependency_graph`, `dependency_violations`
+  - `subtask_dependency_gate` blocks when `dependency_violations` is non-empty
+- Safe parallel execution support is represented via complex-path `execution_mode` (`serial` | `parallel_safe`) and per-subtask `parallel` metadata in ability output.
+
+Verification coverage (2026-03-18):
+- `packages/plugin-abilities/tests/development-code-change-ability.test.ts`
+  - validates complex-path execution and dependency-violation block scenario
+- `packages/plugin-abilities/tests/control.test.ts`
+  - validates `subtask_dependency_gate` blocks from structured evidence
+- `packages/plugin-abilities/tests/task-breakdown-bridge.test.ts`
+  - validates `.tmp/tasks` compatibility artifacts (`task.json` + ordered `subtask_XX.json`)
+
 ### WS6: Add Final User-Facing Completion Contract
 
 Objective:

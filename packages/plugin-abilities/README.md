@@ -241,6 +241,33 @@ Built-in bibliography task types:
 - `section_evidence_pack`
 - `citation_audit`
 
+Built-in coding workflow task type:
+
+- `code_change`
+
+For `code_change`, runtime control now evaluates structured evidence beyond tags:
+
+- required planning/scope evidence (`acceptance_criteria`, `affected_files`)
+- implementation evidence (`changed_files`)
+- validation evidence (`commands`, `results`, `exit_codes`)
+- review evidence (`verdict`, `blocking_findings`)
+
+Named gates for `code_change`:
+
+- `validation_gate` — blocks when validation evidence is missing or reports failure
+- `review_gate` — blocks when review evidence is missing, failed, or has blocking findings
+- `scope_gate` — warns when declared scope evidence is incomplete
+- `completion_claim_gate` — blocks completion claims without validation + review evidence
+- `subtask_dependency_gate` — blocks when complex-path dependency violations are present
+
+High-level development ability:
+
+```bash
+/ability run development/code-change --objective="..." --acceptance_criteria="..."
+```
+
+This ability provides deterministic stages for analyze, plan, context loading, execution (small/complex path), validation, review, and completion.
+
 Bibliography command bridge:
 
 ```ts

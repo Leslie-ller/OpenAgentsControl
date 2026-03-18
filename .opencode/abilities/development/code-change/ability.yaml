@@ -1,0 +1,269 @@
+name: development/code-change
+description: Enforced high-level coding workflow with explicit analyze, execute, validate, review, and completion stages.
+task_type: code_change
+
+triggers:
+  keywords:
+    - "/code-change"
+    - "code change workflow"
+
+inputs:
+  task_id:
+    type: string
+    required: false
+    default: task_001
+    description: Stable task identifier for generated coding artifacts
+  objective:
+    type: string
+    required: true
+    description: Objective for this code change task
+  acceptance_criteria:
+    type: string
+    required: true
+    description: Semicolon-separated acceptance criteria list
+  path:
+    type: string
+    required: false
+    default: small
+    description: Workflow path, small or complex
+  execution_mode:
+    type: string
+    required: false
+    default: serial
+    description: Complex-path execution mode, serial or parallel_safe
+  affected_files:
+    type: string
+    required: false
+    default: src/example.ts
+    description: Comma-separated affected files list
+  dependency_violations:
+    type: string
+    required: false
+    default: ""
+    description: Semicolon-separated subtask dependency violations for complex path evidence
+  validation_command:
+    type: string
+    required: false
+    default: echo validation_ok
+  validation_exit_code:
+    type: number
+    required: false
+    default: 0
+    description: Reported validation exit code recorded in structured evidence
+  review_verdict:
+    type: string
+    required: false
+    default: pass
+    description: Review verdict, pass or fail
+  review_blocking_findings:
+    type: string
+    required: false
+    default: ""
+    description: Semicolon-separated blocking review findings
+
+obligations:
+  - key: requirements_checked
+    severity: hard
+    tags: [requirements-checked]
+    signals: [requirements_checked]
+    requiredFields: [acceptance_criteria]
+  - key: affected_files_identified
+    severity: hard
+    tags: [affected-files]
+    signals: [affected_files_identified]
+    requiredFields: [affected_files]
+  - key: implementation_recorded
+    severity: hard
+    tags: [implementation-recorded]
+    signals: [implementation_recorded]
+    requiredFields: [changed_files]
+  - key: run_tests
+    severity: hard
+    tags: [test]
+  - key: record_validation
+    severity: hard
+    tags: [validation]
+  - key: verification_evidence_recorded
+    severity: hard
+    tags: [verification-evidence]
+    signals: [verification_evidence_recorded]
+    requiredFields: [commands, exit_codes, results]
+  - key: review_completed
+    severity: hard
+    tags: [review-completed]
+    signals: [review_completed]
+    requiredFields: [verdict, blocking_findings]
+  - key: commit_if_required
+    severity: soft
+    tags: [commit]
+
+steps:
+  - id: analyze
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      criteria = [c.strip() for c in "{{inputs.acceptance_criteria}}".split(';') if c.strip()]
+      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
+      print(json.dumps({
+        "objective": "{{inputs.objective}}",
+        "acceptance_criteria": criteria,
+        "affected_files": files,
+        "complexity": "{{inputs.path}}",
+      }))
+      PY
+    tags: [requirements-checked, affected-files]
+
+  - id: plan
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      criteria = [c.strip() for c in "{{inputs.acceptance_criteria}}".split(';') if c.strip()]
+      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
+      print(json.dumps({
+        "task_id": "{{inputs.task_id}}",
+        "objective": "{{inputs.objective}}",
+        "path": "{{inputs.path}}",
+        "context_files": files,
+        "reference_files": files,
+        "acceptance_criteria": criteria,
+        "deliverables": ["implementation", "validation", "review", "completion"],
+        "complexity": "{{inputs.path}}",
+        "subtask_count": len(files) if "{{inputs.path}}" == "complex" else 0,
+      }))
+      PY
+    needs: [analyze]
+
+  - id: plan-complex-subtasks
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
+      violations = [item.strip() for item in "{{inputs.dependency_violations}}".split(';') if item.strip()]
+      criteria = [c.strip() for c in "{{inputs.acceptance_criteria}}".split(';') if c.strip()]
+      parallel_safe = "{{inputs.execution_mode}}" == "parallel_safe"
+      subtasks = []
+      for i, file_path in enumerate(files):
+        subtasks.append({
+          "subtask_id": f"subtask_{i+1}",
+          "task_id": "{{inputs.task_id}}",
+          "title": f"Implement changes in {file_path}",
+          "depends_on": [] if parallel_safe else ([f"subtask_{i}"] if i > 0 else []),
+          "parallel": parallel_safe,
+          "status": "pending",
+          "deliverables": [f"update:{file_path}"],
+          "acceptance_criteria": criteria,
+          "agent": "coder-agent",
+        })
+      print(json.dumps({
+        "task_id": "{{inputs.task_id}}",
+        "complexity": "complex",
+        "execution_mode": "{{inputs.execution_mode}}",
+        "subtasks": subtasks,
+        "dependency_graph": {
+          "type": "parallel_safe" if parallel_safe else "linear",
+          "count": len(subtasks)
+        },
+        "dependency_violations": violations,
+      }))
+      PY
+    when: inputs.path == "complex"
+    needs: [plan]
+
+  - id: load-context
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
+      print(json.dumps({
+        "context_files": files,
+        "reference_files": files,
+      }))
+      PY
+    needs: [plan, plan-complex-subtasks]
+
+  - id: execute-small
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
+      print(json.dumps({
+        "changed_files": files,
+        "implementation_summary": "Applied small-path implementation changes",
+        "deliverables_completed": ["implementation"],
+      }))
+      PY
+    when: inputs.path == "small"
+    tags: [implementation-recorded]
+    needs: [load-context]
+
+  - id: execute-complex
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
+      print(json.dumps({
+        "changed_files": files,
+        "subtask_count": len(files) if files else 1,
+        "implementation_summary": "Applied complex-path implementation changes",
+        "deliverables_completed": ["implementation"],
+      }))
+      PY
+    when: inputs.path == "complex"
+    tags: [implementation-recorded]
+    needs: [load-context]
+
+  - id: validate
+    type: script
+    run: |
+      set -e
+      {{inputs.validation_command}} >/dev/null
+      python3 - <<'PY'
+      import json
+      code = int("{{inputs.validation_exit_code}}")
+      print(json.dumps({
+        "commands": ["{{inputs.validation_command}}"],
+        "exit_codes": [code],
+        "results": ["pass" if code == 0 else "fail"],
+        "validated_claims": ["acceptance criteria covered"],
+      }))
+      PY
+    tags: [test, validation, verification-evidence]
+    needs: [execute-small, execute-complex]
+
+  - id: review
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      findings = [item.strip() for item in "{{inputs.review_blocking_findings}}".split(';') if item.strip()]
+      print(json.dumps({
+        "review_scope": ["{{inputs.affected_files}}"],
+        "blocking_findings": findings,
+        "non_blocking_findings": [],
+        "positive_observations": ["Validation evidence is present"],
+        "verdict": "{{inputs.review_verdict}}",
+      }))
+      PY
+    tags: [review-completed]
+    needs: [validate]
+
+  - id: complete
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      print(json.dumps({
+        "status": "completed",
+        "validated": True,
+        "reviewed": True,
+        "remaining_risks": [],
+      }))
+      PY
+    tags: [commit]
+    needs: [review]

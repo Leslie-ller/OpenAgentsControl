@@ -132,6 +132,8 @@ export type {
   CompletionSummaryData,
 } from './coding/artifact-store.js'
 export { evaluateCodeChangeGates } from './coding/gates.js'
+export { writeTaskBreakdownArtifacts } from './coding/task-breakdown-bridge.js'
+export type { TaskBreakdownBridgeOptions } from './coding/task-breakdown-bridge.js'
 
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'

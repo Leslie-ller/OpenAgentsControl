@@ -104,6 +104,17 @@ export interface EvidenceStatsPayload {
   obligation_key?: string
   anchors_count?: number
   sufficiency_score?: number
+  acceptance_criteria?: unknown
+  affected_files?: unknown
+  changed_files?: unknown
+  verdict?: unknown
+  blocking_findings?: unknown
+  commands?: unknown
+  results?: unknown
+  exit_codes?: unknown
+  subtasks?: unknown
+  dependency_graph?: unknown
+  dependency_violations?: unknown
   required_fields_present?: string[]
   missing_fields?: string[]
   consistency_ok?: boolean

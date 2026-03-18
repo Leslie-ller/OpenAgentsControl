@@ -343,9 +343,14 @@ function mergeGates(gates: NamedGateResult[]): GateResult {
   return { verdict: 'allow', reasons: [], warnings: [] }
 }
 
-function appendCodeChangeGates(ability: Ability, obligations: ObligationResult[], existing: NamedGateResult[]): NamedGateResult[] {
+function appendCodeChangeGates(
+  ability: Ability,
+  obligations: ObligationResult[],
+  existing: NamedGateResult[],
+  evidencePayloads: Array<Record<string, unknown>> = []
+): NamedGateResult[] {
   if (ability.task_type !== 'code_change') return existing
-  return [...existing, ...evaluateCodeChangeGates(obligations)]
+  return [...existing, ...evaluateCodeChangeGates(obligations, evidencePayloads)]
 }
 
 function extractStructuredEvidenceFromSteps(completedSteps: StepResult[]): Array<Record<string, unknown>> {
@@ -405,11 +410,13 @@ export function evaluateControl(ability: Ability, completedSteps: StepResult[]):
   }
 
   const obligations = evaluateObligationsFromDefinitions(definitions, completedSteps)
+  const structuredEvidence = extractStructuredEvidenceFromSteps(completedSteps)
   const baseGate = evaluateGate(obligations)
   const gates = appendCodeChangeGates(
     ability,
     obligations,
-    [{ name: 'default_gate', ...baseGate }]
+    [{ name: 'default_gate', ...baseGate }],
+    structuredEvidence
   )
   const gate = mergeGates(gates)
 
@@ -441,7 +448,15 @@ export function evaluateControlFromEvents(
   }
 
   const obligations = evaluateObligationsFromEvents(definitions, events)
-  const gates = appendCodeChangeGates(ability, obligations, evaluateNamedGates(obligations, events))
+  const evidencePayloads = events
+    .filter((e) => e.event_type === 'evidence.stats')
+    .map((e) => e.payload as Record<string, unknown>)
+  const gates = appendCodeChangeGates(
+    ability,
+    obligations,
+    evaluateNamedGates(obligations, events),
+    evidencePayloads
+  )
   const gate = mergeGates(gates)
   const modelAudit = evaluateModelDrift(events)
 
