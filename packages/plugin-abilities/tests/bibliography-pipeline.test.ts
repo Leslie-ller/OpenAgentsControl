@@ -117,6 +117,32 @@ function makeDecisionAbility(): Ability {
   }
 }
 
+function makeScopedDecisionAbility(): Ability {
+  return {
+    name: 'research/literature-decision',
+    description: 'Scoped decision test',
+    task_type: 'literature_decision',
+    inputs: {
+      paper_key: { type: 'string', required: true },
+    },
+    steps: [
+      {
+        id: 'record-decision-card',
+        type: 'script',
+        run: [
+          "python3 - <<'PY'",
+          'import json, os',
+          'stage = json.loads(os.environ["ABILITY_STAGE_OUTPUTS_JSON"])',
+          'cards = stage.get("reading-card", [])',
+          'print(json.dumps({"paper_key":"{{inputs.paper_key}}","matched_count":len(cards),"matched_keys":[c.get("paper_key") for c in cards]}))',
+          'PY',
+        ].join('\n'),
+        tags: ['decision-card'],
+      },
+    ],
+  }
+}
+
 function makeEvidencePackAbility(): Ability {
   return {
     name: 'research/section-evidence-pack',
@@ -394,6 +420,33 @@ describe('BibliographyPipeline', () => {
 
       expect(result.execution.status).toBe('completed')
     })
+
+    it('decision stage receives only scoped reading-card artifacts', async () => {
+      await store.save('reading-card', 'p1', {
+        paper_key: 'p1',
+        title: 'Paper 1',
+        summary: 'Good paper',
+        key_findings: ['f1'],
+      })
+      await store.save('reading-card', 'p2', {
+        paper_key: 'p2',
+        title: 'Paper 2',
+        summary: 'Better paper',
+        key_findings: ['f2'],
+      })
+
+      const result = await pipeline.runStage(
+        'decision',
+        makeScopedDecisionAbility(),
+        { paper_key: 'p2' },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('completed')
+      expect(result.artifact).not.toBeNull()
+      expect((result.artifact!.data as any).matched_count).toBe(1)
+      expect((result.artifact!.data as any).matched_keys).toEqual(['p2'])
+    })
   })
 
   // ── Full pipeline sequence ────────────────────────────────
@@ -489,6 +542,46 @@ describe('BibliographyPipeline', () => {
       expect(result.artifact.meta).not.toBeNull()
       expect(result.artifact.data).not.toBeNull()
       expect(result.artifact.artifacts.length).toBe(1)
+    })
+  })
+
+  describe('failed execution persistence', () => {
+    it('does not persist artifacts for failed executions', async () => {
+      const ability: Ability = {
+        name: 'research/paper-fulltext-review',
+        description: 'Fail after a successful step',
+        task_type: 'paper_fulltext_review',
+        inputs: {
+          zotero_key: { type: 'string', required: true },
+        },
+        steps: [
+          {
+            id: 'extract',
+            type: 'script',
+            run: 'echo "{\\"paper_key\\":\\"p1\\",\\"source_stage\\":\\"review\\"}"',
+            tags: ['fulltext-extract'],
+          },
+          {
+            id: 'record-reading-card',
+            type: 'script',
+            run: 'exit 1',
+            tags: ['reading-card'],
+            needs: ['extract'],
+          },
+        ],
+      }
+
+      const result = await pipeline.runStage(
+        'review',
+        ability,
+        { zotero_key: 'p1' },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('failed')
+      expect(result.artifact).toBeNull()
+      expect(result.artifacts).toEqual([])
+      expect(await store.list('reading-card')).toEqual([])
     })
   })
 

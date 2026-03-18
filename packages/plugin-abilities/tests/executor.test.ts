@@ -89,6 +89,26 @@ describe('executeAbility', () => {
     expect(result.completedSteps[0].status).toBe('failed')
   })
 
+  it('should fail on non-zero exit code without explicit validation', async () => {
+    const ability: Ability = {
+      name: 'fail-default-exit-code',
+      description: 'Default exit-code handling test',
+      steps: [
+        {
+          id: 'fail',
+          type: 'script',
+          run: 'exit 7',
+        },
+      ],
+    }
+
+    const result = await executeAbility(ability, {}, createMockContext())
+
+    expect(result.status).toBe('failed')
+    expect(result.completedSteps[0].status).toBe('failed')
+    expect(result.completedSteps[0].error).toContain('Exit code 7')
+  })
+
   it('should validate inputs before execution', async () => {
     const ability: Ability = {
       name: 'with-inputs',
@@ -141,6 +161,43 @@ describe('executeAbility', () => {
 
     expect(result.status).toBe('completed')
     expect(result.completedSteps[0].output).toContain('Hello World')
+  })
+
+  it('should expose stage outputs and prior step outputs to script env', async () => {
+    const ability: Ability = {
+      name: 'context-env',
+      description: 'Context env test',
+      steps: [
+        {
+          id: 'generate',
+          type: 'script',
+          run: 'echo "{\\"value\\":42}"',
+        },
+        {
+          id: 'inspect',
+          type: 'script',
+          run: [
+            "python3 - <<'PY'",
+            'import json, os',
+            'print(json.dumps({',
+            '  "stage_outputs": json.loads(os.environ["ABILITY_STAGE_OUTPUTS_JSON"]),',
+            '  "step_outputs": json.loads(os.environ["ABILITY_STEP_OUTPUTS_JSON"]),',
+            '}))',
+            'PY',
+          ].join('\n'),
+          needs: ['generate'],
+        },
+      ],
+    }
+
+    const ctx = createMockContext()
+    ctx.stageOutputs = { 'reading-card': [{ paper_key: 'p1' }] }
+    const result = await executeAbility(ability, {}, ctx)
+
+    expect(result.status).toBe('completed')
+    const parsed = JSON.parse(result.completedSteps[1].output || '{}') as Record<string, any>
+    expect(parsed.stage_outputs['reading-card'][0].paper_key).toBe('p1')
+    expect(parsed.step_outputs.generate.output).toContain('"value":42')
   })
 
   it('should skip steps when condition is not met', async () => {

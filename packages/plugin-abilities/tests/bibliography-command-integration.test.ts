@@ -81,6 +81,8 @@ describe('bibliography command integration', () => {
     expect(result.stage).toBe('screening')
     expect(result.execution?.status).toBe('completed')
     expect(result.artifact?.artifacts.length).toBe(1)
+    expect(result.artifact?.key).toBe('p1')
+    expect(result.artifact?.batchKey).toBe('agent_safety')
 
     const storedPath = path.join(
       tmpDir,

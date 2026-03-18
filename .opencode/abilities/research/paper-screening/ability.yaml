@@ -44,45 +44,144 @@ inputs:
 steps:
   - id: search-academic
     type: script
-    run: /home/leslie/code/AgentOS/.venv/bin/agentos search --mode academic --query "{{inputs.query}}" --limit {{inputs.limit}}
+    run: |
+      timeout 30s /home/leslie/code/AgentOS/.venv/bin/agentos search --mode academic --query "{{inputs.query}}" --limit {{inputs.limit}} || \
+      python3 - <<'PY'
+      import json
+      print(json.dumps({
+        "query": "{{inputs.query}}",
+        "result_count": 0,
+        "results": [],
+        "warning": "academic search timed out or failed"
+      }))
+      PY
 
   - id: search-zotero
     type: script
-    run: /home/leslie/code/AgentOS/.venv/bin/agentos zotero-search --query "{{inputs.query}}" --limit {{inputs.limit}}
+    run: |
+      set -e
+      set -a
+      . /home/leslie/code/AgentOS/.env
+      set +a
+      /home/leslie/code/AgentOS/.venv/bin/agentos zotero-search --query "{{inputs.query}}" --limit {{inputs.limit}}
     needs: [search-academic]
 
   - id: record-screening-decision
     type: script
     run: |
       python3 - <<'PY'
+      import hashlib
       import json
+      import os
+
       query = "{{inputs.query}}"
+      limit = int("{{inputs.limit}}")
+      step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+
+      def load_step_output(step_id):
+        payload = step_outputs.get(step_id, {})
+        raw = payload.get("output") if isinstance(payload, dict) else None
+        if not isinstance(raw, str) or not raw.strip():
+          return {}
+        try:
+          parsed = json.loads(raw)
+          return parsed if isinstance(parsed, dict) else {"value": parsed}
+        except Exception:
+          return {"raw": raw}
+
+      def make_paper_key(prefix, candidate):
+        for source in (
+          candidate.get("paper_key"),
+          candidate.get("key"),
+          candidate.get("id"),
+          candidate.get("url"),
+          candidate.get("doi"),
+          candidate.get("title"),
+        ):
+          if isinstance(source, str) and source.strip():
+            safe = "".join(ch if ch.isalnum() else "_" for ch in source.strip().lower())
+            safe = "_".join(part for part in safe.split("_") if part)
+            if safe:
+              return f"{prefix}_{safe[:64]}"
+        digest = hashlib.sha1(json.dumps(candidate, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+        return f"{prefix}_{digest}"
+
+      academic = load_step_output("search-academic")
+      zotero = load_step_output("search-zotero")
+      items = []
+      seen = set()
+
+      for result in academic.get("results", [])[:limit]:
+        if not isinstance(result, dict):
+          continue
+        paper_key = make_paper_key("academic", result)
+        if paper_key in seen:
+          continue
+        seen.add(paper_key)
+        snippet = result.get("snippet") if isinstance(result.get("snippet"), str) else ""
+        provider = result.get("provider") if isinstance(result.get("provider"), str) else "academic"
+        title = result.get("title") if isinstance(result.get("title"), str) else paper_key
+        items.append({
+          "paper_key": paper_key,
+          "title": title,
+          "decision": "defer",
+          "reason": snippet or f"Matched {provider} academic search result for query '{query}'.",
+          "role": "candidate evidence",
+          "recommended_usage": "requires review",
+          "limitations": "Search-stage result only; full text not yet reviewed.",
+          "query": query,
+          "source": provider,
+          "source_url": result.get("url"),
+          "metadata": result.get("metadata", {}),
+        })
+
+      for result in zotero.get("items", [])[:limit]:
+        if not isinstance(result, dict):
+          continue
+        raw_zotero_key = result.get("key") if isinstance(result.get("key"), str) else ""
+        paper_key = raw_zotero_key.strip() or make_paper_key("zotero", result)
+        if paper_key in seen:
+          continue
+        seen.add(paper_key)
+        title = result.get("title") if isinstance(result.get("title"), str) else paper_key
+        items.append({
+          "paper_key": paper_key,
+          "zotero_key": raw_zotero_key.strip() or paper_key,
+          "title": title,
+          "decision": "keep",
+          "reason": "Existing Zotero item available for follow-up review.",
+          "role": "review-ready candidate",
+          "recommended_usage": "fulltext review",
+          "limitations": "Content trust still depends on downstream review.",
+          "query": query,
+          "source": "zotero",
+          "metadata": result,
+        })
+
+      result_count = len(items)
+      if result_count == 0:
+          sufficiency_score = 0.25
+          uncertainty_level = "high"
+      elif result_count == 1:
+          sufficiency_score = 0.62
+          uncertainty_level = "partial"
+      elif result_count == 2:
+          sufficiency_score = 0.72
+          uncertainty_level = "partial"
+      else:
+          sufficiency_score = 0.82
+          uncertainty_level = "moderate"
+
       print(json.dumps({
-        "items": [
-          {
-            "paper_key": "paper_001",
-            "title": f"{query} - core methods paper",
-            "decision": "keep",
-            "reason": "Directly supports core methodology",
-            "role": "core support",
-            "recommended_usage": "methods section",
-            "limitations": "abstract-only extraction",
-            "query": query,
-          },
-          {
-            "paper_key": "paper_002",
-            "title": f"{query} - related benchmark survey",
-            "decision": "defer",
-            "reason": "Useful as related work after full review",
-            "role": "related work",
-            "recommended_usage": "background section",
-            "limitations": "metadata incomplete",
-            "query": query,
-          }
-        ],
-        "sufficiency_score": 0.72,
-        "anchors_count": 2,
-        "uncertainty_level": "partial",
+        "items": items,
+        "sufficiency_score": sufficiency_score,
+        "anchors_count": result_count,
+        "uncertainty_level": uncertainty_level,
+        "search_summary": {
+          "academic_result_count": academic.get("result_count"),
+          "zotero_result_count": zotero.get("result_count"),
+          "academic_warning": academic.get("warning"),
+        },
         "source_stage": "screening",
       }))
       PY

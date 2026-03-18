@@ -90,6 +90,34 @@ function interpolateVariables(text: string, inputs: InputValues, completedSteps?
   return result
 }
 
+function truncateForContext(value: string, maxLength = 50000): string {
+  if (value.length <= maxLength) return value
+  return value.slice(0, maxLength)
+}
+
+function buildScriptContextEnv(
+  execution: AbilityExecution,
+  ctx: ExecutorContext
+): Record<string, string> {
+  const stepOutputs = Object.fromEntries(
+    execution.completedSteps.map((step) => [
+      step.stepId,
+      {
+        status: step.status,
+        output: typeof step.output === 'string' ? truncateForContext(step.output) : step.output,
+        error: step.error,
+        tags: step.tags,
+      },
+    ])
+  )
+
+  return {
+    ABILITY_INPUTS_JSON: JSON.stringify(execution.inputs),
+    ABILITY_STAGE_OUTPUTS_JSON: JSON.stringify(ctx.stageOutputs ?? {}),
+    ABILITY_STEP_OUTPUTS_JSON: JSON.stringify(stepOutputs),
+  }
+}
+
 async function runScript(
   command: string,
   options: { cwd?: string; env?: Record<string, string> }
@@ -135,7 +163,11 @@ async function executeScriptStep(
   try {
     const result = await runScript(command, {
       cwd: step.cwd || ctx.cwd,
-      env: { ...ctx.env, ...step.env },
+      env: {
+        ...ctx.env,
+        ...buildScriptContextEnv(execution, ctx),
+        ...step.env,
+      },
     })
 
     // Validate exit code if specified
@@ -145,6 +177,9 @@ async function executeScriptStep(
     if (step.validation?.exit_code !== undefined && result.exitCode !== step.validation.exit_code) {
       failed = true
       error = `Exit code ${result.exitCode}, expected ${step.validation.exit_code}`
+    } else if (result.exitCode !== 0) {
+      failed = true
+      error = result.stderr.trim() || result.stdout.trim() || `Exit code ${result.exitCode}`
     }
 
     return {

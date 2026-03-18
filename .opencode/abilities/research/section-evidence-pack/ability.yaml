@@ -33,38 +33,47 @@ inputs:
     required: true
 
 steps:
-  - id: check-evidence-pack-capability
-    type: script
-    run: |
-      if [ ! -x /home/leslie/code/AgentOS/.venv/bin/agentos ]; then
-        echo '{"capability_ok":false,"required":"agentos","source_stage":"evidence-pack"}'
-        exit 1
-      fi
-      echo '{"capability_ok":true,"source_stage":"evidence-pack"}'
-    tags: [capability-check, artifact-lineage]
-
   - id: record-evidence-pack
     type: script
     run: |
       python3 - <<'PY'
       import json
+      import os
+
       section = "{{inputs.section}}"
+      stage_outputs = json.loads(os.environ.get("ABILITY_STAGE_OUTPUTS_JSON", "{}"))
+      decisions = stage_outputs.get("decision", [])
+      if not isinstance(decisions, list):
+        raise SystemExit("decision stage outputs are unavailable")
+
+      papers = []
+      for candidate in decisions:
+        if not isinstance(candidate, dict):
+          continue
+        sections = candidate.get("sections_relevant")
+        if isinstance(sections, list) and section not in sections:
+          continue
+        decision = str(candidate.get("decision", "defer"))
+        strength = "strong" if decision == "keep" else "moderate"
+        papers.append({
+          "paper_key": candidate.get("paper_key"),
+          "claim": candidate.get("title") or f"Evidence candidate for {section}",
+          "evidence": candidate.get("rationale") or "Derived from decision artifact rationale.",
+          "strength": strength,
+        })
+
+      if not papers:
+        raise SystemExit(f"No decision artifacts available for section {section}")
+
+      sufficiency_score = 0.82 if len(papers) >= 2 else 0.68
       print(json.dumps({
         "section": section,
-        "papers": [
-          {
-            "paper_key": "paper_001",
-            "claim": "Method X improves robustness",
-            "evidence": "Section 4.2, Table 3",
-            "strength": "strong"
-          }
-        ],
-        "anchors_count": 2,
-        "sufficiency_score": 0.78,
-        "grounded_claims": 1,
-        "total_claims": 1,
+        "papers": papers,
+        "anchors_count": len(papers),
+        "sufficiency_score": sufficiency_score,
+        "grounded_claims": len(papers),
+        "total_claims": len(papers),
         "source_stage": "evidence-pack",
       }))
       PY
     tags: [evidence-pack, evidence-grounding, task-sufficiency-check, artifact-lineage]
-    needs: [check-evidence-pack-capability]

@@ -28,35 +28,48 @@ inputs:
     required: true
 
 steps:
-  - id: check-decision-capability
-    type: script
-    run: |
-      if [ ! -x /home/leslie/code/AgentOS/.venv/bin/agentos ]; then
-        echo '{"capability_ok":false,"required":"agentos","source_stage":"decision"}'
-        exit 1
-      fi
-      if [ ! -f /home/leslie/code/AgentOS/.env ]; then
-        echo '{"capability_ok":false,"required":"AgentOS .env for Zotero access","source_stage":"decision"}'
-        exit 1
-      fi
-      echo '{"capability_ok":true,"source_stage":"decision"}'
-    tags: [capability-check, artifact-lineage]
-
   - id: record-decision-card
     type: script
     run: |
       python3 - <<'PY'
       import json
+      import os
+
       paper_key = "{{inputs.paper_key}}"
+      stage_outputs = json.loads(os.environ.get("ABILITY_STAGE_OUTPUTS_JSON", "{}"))
+      reading_cards = stage_outputs.get("reading-card", [])
+      if not isinstance(reading_cards, list):
+        raise SystemExit("reading-card stage outputs are unavailable")
+
+      card = None
+      for candidate in reading_cards:
+        if isinstance(candidate, dict) and candidate.get("paper_key") == paper_key:
+          card = candidate
+          break
+
+      if card is None:
+        raise SystemExit(f"No reading card available for {paper_key}")
+
+      sufficiency = float(card.get("sufficiency_score", 0) or 0)
+      uncertainty = str(card.get("uncertainty_level", "unknown"))
+      rationale = str(card.get("summary", "")).strip() or "Decision derived from stored reading card evidence."
+
+      if sufficiency >= 0.75 and uncertainty != "high":
+        decision = "keep"
+      elif sufficiency >= 0.55:
+        decision = "defer"
+      else:
+        decision = "revisit"
+
       print(json.dumps({
         "paper_key": paper_key,
-        "title": f"Decision card for {paper_key}",
-        "decision": "keep",
-        "rationale": "Evidence strength and claim relevance are sufficient.",
+        "title": card.get("title", f"Decision card for {paper_key}"),
+        "decision": decision,
+        "rationale": rationale,
         "sections_relevant": ["methods", "discussion"],
         "consistency_ok": True,
+        "based_on_reading_card": card.get("paper_key"),
         "source_stage": "decision",
       }))
       PY
     tags: [decision-card, decision-rationale, consistency-check, artifact-lineage]
-    needs: [check-decision-capability]

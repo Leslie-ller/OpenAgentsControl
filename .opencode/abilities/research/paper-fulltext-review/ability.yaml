@@ -44,7 +44,12 @@ inputs:
 steps:
   - id: read-zotero-pdf
     type: script
-    run: /home/leslie/code/AgentOS/.venv/bin/agentos zotero-read --key "{{inputs.zotero_key}}"
+    run: |
+      set -e
+      set -a
+      . /home/leslie/code/AgentOS/.env
+      set +a
+      /home/leslie/code/AgentOS/.venv/bin/agentos zotero-read --key "{{inputs.zotero_key}}"
     tags: [fulltext-extract]
 
   - id: record-reading-card
@@ -52,18 +57,66 @@ steps:
     run: |
       python3 - <<'PY'
       import json
+      import os
+      import re
+
       paper_key = "{{inputs.zotero_key}}"
+      step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+      read_step = step_outputs.get("read-zotero-pdf", {})
+      raw_output = read_step.get("output") if isinstance(read_step, dict) else ""
+
+      if not isinstance(raw_output, str) or not raw_output.strip():
+        raise SystemExit("No full-text output available from read-zotero-pdf")
+
+      try:
+        parsed = json.loads(raw_output)
+      except Exception:
+        parsed = None
+
+      if isinstance(parsed, dict) and isinstance(parsed.get("error"), str) and parsed.get("error").strip():
+        raise SystemExit(parsed["error"])
+
+      text = ""
+      if isinstance(parsed, dict):
+        for key in ("content", "text", "markdown", "body", "summary", "raw"):
+          value = parsed.get(key)
+          if isinstance(value, str) and value.strip():
+            text = value.strip()
+            break
+        if not text:
+          text = json.dumps(parsed, ensure_ascii=False)
+      else:
+        text = raw_output.strip()
+
+      text = re.sub(r"\s+", " ", text).strip()
+      if not text:
+        raise SystemExit("Parsed full-text content is empty")
+
+      anchor_matches = re.findall(r"(section\s+\d+|table\s+\d+|figure\s+\d+|page\s+\d+|p\.\s*\d+)", text, flags=re.I)
+      anchors_count = len(set(match.lower() for match in anchor_matches)) or 1
+      summary = text[:400]
+      sentence_parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
+      key_findings = sentence_parts[:3] if sentence_parts else [summary]
+
+      if len(text) < 500:
+        sufficiency_score = 0.45
+        uncertainty_level = "high"
+      elif len(text) < 2000:
+        sufficiency_score = 0.68
+        uncertainty_level = "moderate"
+      else:
+        sufficiency_score = 0.82
+        uncertainty_level = "low"
+
       print(json.dumps({
         "paper_key": paper_key,
         "title": f"Reading card for {paper_key}",
-        "summary": "Full-text reviewed with traceable anchors.",
-        "key_findings": [
-          "Finding A with section anchor",
-          "Finding B with table anchor"
-        ],
-        "anchors_count": 3,
-        "sufficiency_score": 0.81,
-        "uncertainty_level": "moderate",
+        "summary": summary,
+        "key_findings": key_findings,
+        "anchors_count": anchors_count,
+        "sufficiency_score": sufficiency_score,
+        "uncertainty_level": uncertainty_level,
+        "source_excerpt": text[:1000],
         "source_stage": "review",
         "stage": "full-review",
       }))

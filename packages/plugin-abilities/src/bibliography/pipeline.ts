@@ -102,6 +102,7 @@ export interface StageCommandResult {
   }
   artifact: {
     key: string
+    batchKey?: string
     meta: Artifact['meta'] | null
     data: Artifact['data'] | null
     artifacts: Array<{
@@ -150,7 +151,8 @@ export class BibliographyPipeline {
     const stageOutputs: Record<string, unknown> = { ...ctx.stageOutputs }
     for (const depType of config.dependsOn) {
       const artifacts = await this.store.listAll(depType)
-      stageOutputs[depType] = artifacts.map(a => a.data)
+      stageOutputs[depType] = filterDependencyArtifacts(stage, depType, artifacts, inputs)
+        .map((artifact) => artifact.data)
     }
 
     // Build enriched context
@@ -170,7 +172,7 @@ export class BibliographyPipeline {
     // Persist artifact from the last successful step's output
     let artifact: Artifact | null = null
     let artifacts: Artifact[] = []
-    if (execution.status === 'completed' || execution.completedSteps.length > 0) {
+    if (execution.status === 'completed') {
       // Find the last completed (non-skipped, non-failed) step with output
       const successSteps = execution.completedSteps.filter(
         s => s.status === 'completed' && s.output
@@ -233,7 +235,10 @@ export class BibliographyPipeline {
         control: result.execution.control,
       },
       artifact: {
-        key: result.artifactKey,
+        key: result.artifact?.meta.key ?? result.artifactKey,
+        batchKey: result.artifact?.meta.key && result.artifact.meta.key !== result.artifactKey
+          ? result.artifactKey
+          : undefined,
         meta: result.artifact?.meta ?? null,
         data: result.artifact?.data ?? null,
         artifacts: result.artifacts.map((artifact) => ({
@@ -298,6 +303,67 @@ function extractScreeningItems(parsed: Record<string, unknown>): Array<Record<st
   return candidates.filter((item): item is Record<string, unknown> => {
     return Boolean(item) && typeof item === 'object' && !Array.isArray(item)
   })
+}
+
+function filterDependencyArtifacts(
+  stage: string,
+  depType: ArtifactType,
+  artifacts: Artifact[],
+  inputs: InputValues
+): Artifact[] {
+  switch (`${stage}:${depType}`) {
+    case 'screening:plan': {
+      const query = normalizeString(inputs.query)
+      if (!query) return []
+      return artifacts.filter((artifact) => {
+        const data = toRecord(artifact.data)
+        const topic = normalizeString(data.topic)
+        const queries = Array.isArray(data.queries)
+          ? data.queries.filter((value): value is string => typeof value === 'string').map(normalizeString)
+          : []
+        return topic === query || queries.includes(query)
+      })
+    }
+    case 'review:screening': {
+      const paperKey = normalizeString(inputs.zotero_key ?? inputs.paper_key)
+      if (!paperKey) return []
+      return artifacts.filter((artifact) => normalizeString(toRecord(artifact.data).paper_key) === paperKey)
+    }
+    case 'decision:reading-card': {
+      const paperKey = normalizeString(inputs.paper_key ?? inputs.zotero_key)
+      if (!paperKey) return []
+      return artifacts.filter((artifact) => normalizeString(toRecord(artifact.data).paper_key) === paperKey)
+    }
+    case 'evidence-pack:decision': {
+      const section = normalizeString(inputs.section)
+      if (!section) return []
+      return artifacts.filter((artifact) => {
+        const data = toRecord(artifact.data)
+        const sections = Array.isArray(data.sections_relevant)
+          ? data.sections_relevant.filter((value): value is string => typeof value === 'string').map(normalizeString)
+          : []
+        return sections.includes(section)
+      })
+    }
+    case 'audit:evidence-pack': {
+      const section = normalizeString(inputs.section)
+      if (!section) return []
+      return artifacts.filter((artifact) => normalizeString(toRecord(artifact.data).section) === section)
+    }
+    default:
+      return artifacts
+  }
+}
+
+function normalizeString(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return {}
 }
 
 export function createBibliographyPipeline(store: BibliographyStore): BibliographyPipeline {

@@ -28,36 +28,61 @@ inputs:
     required: true
 
 steps:
-  - id: check-audit-capability
-    type: script
-    run: |
-      if [ ! -x /home/leslie/code/AgentOS/.venv/bin/agentos ]; then
-        echo '{"capability_ok":false,"required":"agentos","source_stage":"audit"}'
-        exit 1
-      fi
-      if [ ! -f /home/leslie/code/AgentOS/.env ]; then
-        echo '{"capability_ok":false,"required":"AgentOS .env for Zotero access","source_stage":"audit"}'
-        exit 1
-      fi
-      echo '{"capability_ok":true,"source_stage":"audit"}'
-    tags: [capability-check, artifact-lineage]
-
   - id: record-citation-audit
     type: script
     run: |
       python3 - <<'PY'
       import json
+      import os
+
       section = "{{inputs.section}}"
+      stage_outputs = json.loads(os.environ.get("ABILITY_STAGE_OUTPUTS_JSON", "{}"))
+      evidence_packs = stage_outputs.get("evidence-pack", [])
+      if not isinstance(evidence_packs, list):
+        raise SystemExit("evidence-pack stage outputs are unavailable")
+
+      pack = None
+      for candidate in evidence_packs:
+        if isinstance(candidate, dict) and candidate.get("section") == section:
+          pack = candidate
+          break
+
+      if pack is None:
+        raise SystemExit(f"No evidence pack available for section {section}")
+
+      papers = pack.get("papers", [])
+      if not isinstance(papers, list):
+        papers = []
+
+      issues = []
+      for paper in papers:
+        if not isinstance(paper, dict):
+          continue
+        if not paper.get("evidence"):
+          issues.append({
+            "citation": paper.get("paper_key", "unknown"),
+            "problem": "Missing evidence field in section evidence pack.",
+            "severity": "error",
+          })
+
+      if issues:
+        status = "fail"
+      elif len(papers) == 0:
+        status = "revise"
+      else:
+        status = "pass"
+
+      grounded_claims = len([paper for paper in papers if isinstance(paper, dict) and paper.get("evidence")])
+      coverage_score = 0.0 if len(papers) == 0 else round(grounded_claims / len(papers), 2)
       print(json.dumps({
         "section": section,
-        "status": "pass",
-        "issues": [],
-        "coverage_score": 0.91,
-        "anchors_count": 2,
-        "grounded_claims": 4,
-        "total_claims": 4,
+        "status": status,
+        "issues": issues,
+        "coverage_score": coverage_score,
+        "anchors_count": len(papers),
+        "grounded_claims": grounded_claims,
+        "total_claims": len(papers),
         "source_stage": "audit",
       }))
       PY
     tags: [citation-audit, evidence-grounding, artifact-lineage]
-    needs: [check-audit-capability]

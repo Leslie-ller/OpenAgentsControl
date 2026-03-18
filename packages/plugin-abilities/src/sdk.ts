@@ -62,6 +62,7 @@ export interface CommandExecutionResult {
   }
   artifact?: {
     key: string
+    batchKey?: string
     meta: unknown
     data: unknown
     artifacts: Array<{
