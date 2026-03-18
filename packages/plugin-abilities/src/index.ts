@@ -23,7 +23,9 @@ export type {
   ValidationResult,
   ControlResult,
   GateResult,
+  NamedGateResult,
   GateVerdict,
+  GateName,
   ObligationResult,
   ObligationKey,
   ObligationSeverity,
@@ -80,6 +82,7 @@ export type {
   ToolCalledPayload,
   ValidationResultPayload,
   ObligationSignalPayload,
+  EvidenceStatsPayload,
   ModelObservedPayload,
 } from './control/events.js'
 
@@ -108,7 +111,11 @@ export type {
 
 // Bibliography Pipeline
 export { BibliographyPipeline, createBibliographyPipeline, STAGE_CONFIGS } from './bibliography/pipeline.js'
-export type { StageConfig, PipelineOptions, StageResult } from './bibliography/pipeline.js'
+export type { StageConfig, PipelineOptions, StageResult, StageCommandResult } from './bibliography/pipeline.js'
+
+// Bibliography Audit Scan
+export { scanBibliographyArtifacts } from './bibliography/audit-scan.js'
+export type { AuditFinding, AuditScanResult, AuditFindingSeverity } from './bibliography/audit-scan.js'
 
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'

@@ -703,7 +703,15 @@ export async function executeAbility(
     const maxRetries = step.max_retries ?? 0
     const failPolicy = step.on_failure
 
-    let result: StepResult
+    let result: StepResult = {
+      stepId: step.id,
+      status: 'failed',
+      tags: step.tags,
+      error: 'Step did not execute',
+      startedAt: Date.now(),
+      completedAt: Date.now(),
+      duration: 0,
+    }
     let attempts = 0
     const maxAttempts = failPolicy === 'retry' ? Math.max(maxRetries, 1) + 1 : 1
 
@@ -815,6 +823,15 @@ export async function executeAbility(
           ))
         }
       }
+
+      const evidenceStats = extractEvidenceStats(result.output)
+      if (evidenceStats) {
+        eventBus.emit(eventFactory.evidenceStats(
+          ability.name,
+          evidenceStats,
+          { step_id: step.id }
+        ))
+      }
     }
 
     if (result.status === 'failed') {
@@ -879,6 +896,36 @@ export async function executeAbility(
   }
 
   return execution
+}
+
+function extractEvidenceStats(output: string | undefined): Record<string, unknown> | null {
+  if (!output || !output.trim()) return null
+  try {
+    const parsed = JSON.parse(output.trim())
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    const payload = parsed as Record<string, unknown>
+    const keys = [
+      'obligation_key',
+      'anchors_count',
+      'sufficiency_score',
+      'required_fields_present',
+      'missing_fields',
+      'consistency_ok',
+      'capability_ok',
+      'claim_scope_ok',
+      'grounded_claims',
+      'total_claims',
+    ]
+    const stats: Record<string, unknown> = {}
+    for (const key of keys) {
+      if (payload[key] !== undefined) {
+        stats[key] = payload[key]
+      }
+    }
+    return Object.keys(stats).length > 0 ? stats : null
+  } catch {
+    return null
+  }
 }
 
 export function formatExecutionResult(execution: AbilityExecution): string {

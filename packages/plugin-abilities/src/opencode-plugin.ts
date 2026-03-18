@@ -7,6 +7,10 @@ import { formatExecutionResult } from './executor/index.js'
 import { ExecutionManager } from './executor/execution-manager.js'
 import { ControlEventBus } from './control/event-bus.js'
 import { EventLog } from './control/event-log.js'
+import { createBibliographyStore } from './bibliography/store.js'
+import { BibliographyPipeline } from './bibliography/pipeline.js'
+import { parseCommandInput, routeBibliographyCommand } from './bibliography/command-routing.js'
+import { scanBibliographyArtifacts } from './bibliography/audit-scan.js'
 import { join } from 'path'
 
 /**
@@ -39,6 +43,8 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
   const eventLog = new EventLog({ logDir: controlLogDir })
   const eventBus = new ControlEventBus({ log: eventLog })
   const executionManager = new ExecutionManager(eventBus)
+  const bibliographyStore = createBibliographyStore(ctx.directory)
+  const bibliographyPipeline = new BibliographyPipeline(bibliographyStore)
 
   const abilitiesDir = `${ctx.directory}/.opencode/abilities`
 
@@ -85,52 +91,6 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     return lines.join('\n')
   }
 
-  const parseCommandInput = (raw?: string): Record<string, unknown> => {
-    if (!raw || !raw.trim()) return {}
-    try {
-      const parsed = JSON.parse(raw)
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return parsed as Record<string, unknown>
-      }
-    } catch {
-      // fall through
-    }
-    return { value: raw.trim() }
-  }
-
-  const routeBibliographyCommand = (
-    commandName: string,
-    args: Record<string, unknown>
-  ): { abilityName: string; inputs: Record<string, unknown> } | null => {
-    const value = typeof args.value === 'string' ? args.value : ''
-
-    switch (commandName) {
-      case '/paper-screening':
-        return { abilityName: 'research/paper-screening', inputs: { query: String(args.query ?? value), limit: Number(args.limit ?? 10) } }
-      case '/paper-fulltext-review':
-        return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: String(args.zotero_key ?? args.paper_key ?? value) } }
-      case '/literature-decision':
-        return { abilityName: 'research/literature-decision', inputs: { paper_key: String(args.paper_key ?? value) } }
-      case '/section-evidence-pack':
-        return { abilityName: 'research/section-evidence-pack', inputs: { section: String(args.section ?? value) } }
-      case '/citation-audit':
-        return { abilityName: 'research/citation-audit', inputs: { section: String(args.section ?? value) } }
-      case '/bibliography': {
-        const stage = String(args.stage ?? '').trim() || value.split(/\s+/)[0] || 'plan'
-        const rest = String(args.payload ?? value.split(/\s+/).slice(1).join(' ')).trim()
-        if (stage === 'plan') return { abilityName: 'research/bibliography-plan', inputs: { topic: rest } }
-        if (stage === 'screening') return { abilityName: 'research/paper-screening', inputs: { query: rest, limit: Number(args.limit ?? 10) } }
-        if (stage === 'review') return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: rest } }
-        if (stage === 'decision') return { abilityName: 'research/literature-decision', inputs: { paper_key: rest } }
-        if (stage === 'evidence-pack') return { abilityName: 'research/section-evidence-pack', inputs: { section: rest } }
-        if (stage === 'audit') return { abilityName: 'research/citation-audit', inputs: { section: rest } }
-        return null
-      }
-      default:
-        return null
-    }
-  }
-
   const executeAbilityByName = async (name: string, inputs: Record<string, unknown> = {}) => {
     const loaded = abilities.get(name)
     if (!loaded) {
@@ -163,6 +123,71 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     } catch (error) {
       return JSON.stringify({
         status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  const executeBibliographyCommand = async (command: string, args: Record<string, unknown>) => {
+    const routed = routeBibliographyCommand(command, args)
+
+    if (!routed) {
+      return JSON.stringify({
+        status: 'error',
+        error: `No runtime ability mapping for command '${command}'`,
+      })
+    }
+
+    const loaded = abilities.get(routed.abilityName)
+    if (!loaded) {
+      return JSON.stringify({
+        status: 'error',
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        error: `Ability '${routed.abilityName}' not found`,
+      })
+    }
+
+    const ability = loaded.ability
+    const inputErrors = validateInputs(ability, routed.inputs)
+    if (inputErrors.length > 0) {
+      return JSON.stringify({
+        status: 'error',
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        inputs: routed.inputs,
+        error: 'Input validation failed',
+        details: inputErrors.map((e) => e.message),
+      })
+    }
+
+    try {
+      const stageResult = await bibliographyPipeline.runStageCommand(
+        routed.stage,
+        ability,
+        routed.inputs,
+        createExecutorContext(),
+        { executorOptions: { eventBus } }
+      )
+
+      return JSON.stringify({
+        status: 'ok',
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        inputs: routed.inputs,
+        execution: stageResult.execution,
+        artifact: stageResult.artifact,
+      })
+    } catch (error) {
+      return JSON.stringify({
+        status: 'error',
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        inputs: routed.inputs,
         error: error instanceof Error ? error.message : String(error),
       })
     }
@@ -259,23 +284,16 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
         async execute({ command, arguments: commandArguments }) {
           const parsedArgs = parseCommandInput(commandArguments)
-          const routed = routeBibliographyCommand(command, parsedArgs)
+          return executeBibliographyCommand(command, parsedArgs)
+        },
+      }),
 
-          if (!routed) {
-            return JSON.stringify({
-              status: 'error',
-              error: `No runtime ability mapping for command '${command}'`,
-            })
-          }
-
-          const result = await executeAbilityByName(routed.abilityName, routed.inputs)
-
-          return JSON.stringify({
-            command,
-            routedAbility: routed.abilityName,
-            inputs: routed.inputs,
-            result,
-          })
+      'ability.bibliography.scan': tool({
+        description: 'Scan bibliography artifacts for audit issues',
+        args: {},
+        async execute() {
+          const scan = await scanBibliographyArtifacts(bibliographyStore)
+          return JSON.stringify(scan)
         },
       }),
 

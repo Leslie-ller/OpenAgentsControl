@@ -1,8 +1,13 @@
-import type { Ability, AbilityExecution, ExecutorContext, LoadedAbility, InputValues } from './types/index.js'
+import type { Ability, AbilityExecution, ControlResult, ExecutorContext, LoadedAbility, InputValues } from './types/index.js'
 import { loadAbilities, listAbilities } from './loader/index.js'
 import { validateAbility, validateInputs } from './validator/index.js'
 import { executeAbility, formatExecutionResult } from './executor/index.js'
 import { ExecutionManager } from './executor/execution-manager.js'
+import { createBibliographyStore } from './bibliography/store.js'
+import { BibliographyPipeline } from './bibliography/pipeline.js'
+import { parseCommandInput, routeBibliographyCommand } from './bibliography/command-routing.js'
+import { scanBibliographyArtifacts, type AuditScanResult } from './bibliography/audit-scan.js'
+import * as path from 'path'
 
 export interface AbilitiesSDKOptions {
   projectDir?: string
@@ -37,10 +42,35 @@ export interface ExecutionResult {
 
 export interface CommandExecutionResult {
   command: string
+  stage?: string
   routedAbility?: string
   inputs?: Record<string, unknown>
   result?: ExecutionResult
+  execution?: {
+    id: string
+    status: 'running' | 'completed' | 'failed' | 'cancelled'
+    control?: ControlResult
+  }
+  artifact?: {
+    key: string
+    meta: unknown
+    data: unknown
+    artifacts: Array<{
+      key: string
+      meta: unknown
+      data: unknown
+    }>
+  }
   error?: string
+}
+
+function deriveProjectRoot(projectDir?: string): string {
+  if (!projectDir) return process.cwd()
+  const normalized = projectDir.split(path.sep).join('/')
+  if (normalized.endsWith('/.opencode/abilities')) {
+    return path.resolve(projectDir, '..', '..')
+  }
+  return projectDir
 }
 
 export class AbilitiesSDK {
@@ -48,10 +78,13 @@ export class AbilitiesSDK {
   private executionManager: ExecutionManager
   private initialized = false
   private options: AbilitiesSDKOptions
+  private bibliographyPipeline: BibliographyPipeline
 
   constructor(options: AbilitiesSDKOptions = {}) {
     this.options = options
     this.executionManager = new ExecutionManager()
+    const dataRoot = deriveProjectRoot(this.options.projectDir)
+    this.bibliographyPipeline = new BibliographyPipeline(createBibliographyStore(dataRoot))
   }
 
   async initialize(): Promise<void> {
@@ -188,61 +221,62 @@ export class AbilitiesSDK {
   }
 
   async executeCommand(command: string, rawArguments = ''): Promise<CommandExecutionResult> {
-    const parseArgs = (raw: string): Record<string, unknown> => {
-      if (!raw.trim()) return {}
-      try {
-        const parsed = JSON.parse(raw)
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          return parsed as Record<string, unknown>
-        }
-      } catch {
-        // fall through
-      }
-      return { value: raw.trim() }
-    }
-
-    const args = parseArgs(rawArguments)
-    const value = typeof args.value === 'string' ? args.value : ''
-
-    const route = (): { abilityName: string; inputs: Record<string, unknown> } | null => {
-      switch (command) {
-        case '/paper-screening':
-          return { abilityName: 'research/paper-screening', inputs: { query: String(args.query ?? value), limit: Number(args.limit ?? 10) } }
-        case '/paper-fulltext-review':
-          return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: String(args.zotero_key ?? args.paper_key ?? value) } }
-        case '/literature-decision':
-          return { abilityName: 'research/literature-decision', inputs: { paper_key: String(args.paper_key ?? value) } }
-        case '/section-evidence-pack':
-          return { abilityName: 'research/section-evidence-pack', inputs: { section: String(args.section ?? value) } }
-        case '/citation-audit':
-          return { abilityName: 'research/citation-audit', inputs: { section: String(args.section ?? value) } }
-        case '/bibliography': {
-          const stage = String(args.stage ?? '').trim() || value.split(/\s+/)[0] || 'plan'
-          const rest = String(args.payload ?? value.split(/\s+/).slice(1).join(' ')).trim()
-          if (stage === 'plan') return { abilityName: 'research/bibliography-plan', inputs: { topic: rest } }
-          if (stage === 'screening') return { abilityName: 'research/paper-screening', inputs: { query: rest, limit: Number(args.limit ?? 10) } }
-          if (stage === 'review') return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: rest } }
-          if (stage === 'decision') return { abilityName: 'research/literature-decision', inputs: { paper_key: rest } }
-          if (stage === 'evidence-pack') return { abilityName: 'research/section-evidence-pack', inputs: { section: rest } }
-          if (stage === 'audit') return { abilityName: 'research/citation-audit', inputs: { section: rest } }
-          return null
-        }
-        default:
-          return null
-      }
-    }
-
-    const routed = route()
+    const args = parseCommandInput(rawArguments)
+    const routed = routeBibliographyCommand(command, args)
     if (!routed) {
       return { command, error: `No runtime ability mapping for command '${command}'` }
     }
 
-    const result = await this.execute(routed.abilityName, routed.inputs)
-    return {
-      command,
-      routedAbility: routed.abilityName,
-      inputs: routed.inputs,
-      result,
+    await this.initialize()
+    const loaded = this.abilities.get(routed.abilityName)
+    if (!loaded) {
+      return {
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        inputs: routed.inputs,
+        error: `Ability '${routed.abilityName}' not found`,
+      }
+    }
+
+    const inputErrors = validateInputs(loaded.ability, routed.inputs)
+    if (inputErrors.length > 0) {
+      return {
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        inputs: routed.inputs,
+        error: `Input validation failed: ${inputErrors.map((e) => e.message).join(', ')}`,
+      }
+    }
+
+    try {
+      const stageResult = await this.bibliographyPipeline.runStageCommand(
+        routed.stage,
+        loaded.ability,
+        routed.inputs,
+        {
+          cwd: this.options.projectDir ?? process.cwd(),
+          env: {},
+        }
+      )
+
+      return {
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        inputs: routed.inputs,
+        execution: stageResult.execution,
+        artifact: stageResult.artifact,
+      }
+    } catch (error) {
+      return {
+        command,
+        stage: routed.stage,
+        routedAbility: routed.abilityName,
+        inputs: routed.inputs,
+        error: error instanceof Error ? error.message : String(error),
+      }
     }
   }
 
@@ -268,6 +302,10 @@ export class AbilitiesSDK {
       progress: `${execution.completedSteps.length}/${execution.ability.steps.length}`,
       status: execution.status,
     }
+  }
+
+  async scanBibliography(): Promise<AuditScanResult> {
+    return scanBibliographyArtifacts(this.bibliographyPipeline.getStore())
   }
 
   async cancel(executionId?: string): Promise<boolean> {

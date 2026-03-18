@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'bun:test'
+import { routeBibliographyCommand } from '../src/bibliography/command-routing.js'
 
 /**
  * Tests for the bibliography command dispatcher routing fixes.
@@ -9,40 +10,7 @@ import { describe, it, expect } from 'bun:test'
  * ability loading from YAML).
  */
 
-// ── Reproduce the routing logic from sdk.ts / opencode-plugin.ts ──
-
-function route(
-  command: string,
-  args: Record<string, unknown>
-): { abilityName: string; inputs: Record<string, unknown> } | null {
-  const value = typeof args.value === 'string' ? args.value : ''
-
-  switch (command) {
-    case '/paper-screening':
-      return { abilityName: 'research/paper-screening', inputs: { query: String(args.query ?? value), limit: Number(args.limit ?? 10) } }
-    case '/paper-fulltext-review':
-      return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: String(args.zotero_key ?? args.paper_key ?? value) } }
-    case '/literature-decision':
-      return { abilityName: 'research/literature-decision', inputs: { paper_key: String(args.paper_key ?? value) } }
-    case '/section-evidence-pack':
-      return { abilityName: 'research/section-evidence-pack', inputs: { section: String(args.section ?? value) } }
-    case '/citation-audit':
-      return { abilityName: 'research/citation-audit', inputs: { section: String(args.section ?? value) } }
-    case '/bibliography': {
-      const stage = String(args.stage ?? '').trim() || value.split(/\s+/)[0] || 'plan'
-      const rest = String(args.payload ?? value.split(/\s+/).slice(1).join(' ')).trim()
-      if (stage === 'plan') return { abilityName: 'research/bibliography-plan', inputs: { topic: rest } }
-      if (stage === 'screening') return { abilityName: 'research/paper-screening', inputs: { query: rest, limit: Number(args.limit ?? 10) } }
-      if (stage === 'review') return { abilityName: 'research/paper-fulltext-review', inputs: { zotero_key: rest } }
-      if (stage === 'decision') return { abilityName: 'research/literature-decision', inputs: { paper_key: rest } }
-      if (stage === 'evidence-pack') return { abilityName: 'research/section-evidence-pack', inputs: { section: rest } }
-      if (stage === 'audit') return { abilityName: 'research/citation-audit', inputs: { section: rest } }
-      return null
-    }
-    default:
-      return null
-  }
-}
+const route = routeBibliographyCommand
 
 // ── Tests ───────────────────────────────────────────────────
 

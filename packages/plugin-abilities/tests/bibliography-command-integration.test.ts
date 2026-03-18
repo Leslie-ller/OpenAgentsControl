@@ -1,0 +1,94 @@
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
+import { AbilitiesSDK } from '../src/sdk.js'
+import * as fs from 'fs/promises'
+import * as path from 'path'
+import * as os from 'os'
+
+describe('bibliography command integration', () => {
+  let tmpDir: string
+  let abilitiesDir: string
+  let sdk: AbilitiesSDK
+
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bib-command-int-'))
+    abilitiesDir = path.join(tmpDir, '.opencode', 'abilities', 'research')
+
+    await fs.mkdir(path.join(abilitiesDir, 'bibliography-plan'), { recursive: true })
+    await fs.mkdir(path.join(abilitiesDir, 'paper-screening'), { recursive: true })
+
+    await fs.writeFile(
+      path.join(abilitiesDir, 'bibliography-plan', 'ability.yaml'),
+      [
+        'name: research/bibliography-plan',
+        'description: test plan',
+        'task_type: bibliography_plan',
+        'inputs:',
+        '  topic:',
+        '    type: string',
+        '    required: true',
+        'steps:',
+        '  - id: generate-plan',
+        '    type: script',
+        '    run: echo "{\\"topic\\":\\"{{inputs.topic}}\\"}"',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    await fs.writeFile(
+      path.join(abilitiesDir, 'paper-screening', 'ability.yaml'),
+      [
+        'name: research/paper-screening',
+        'description: test screening',
+        'task_type: paper_screening',
+        'inputs:',
+        '  query:',
+        '    type: string',
+        '    required: true',
+        'steps:',
+        '  - id: record-screening-decision',
+        '    type: script',
+        '    run: echo "{\\"items\\":[{\\"paper_key\\":\\"p1\\",\\"title\\":\\"P1\\",\\"decision\\":\\"keep\\",\\"reason\\":\\"r\\"}],\\"sufficiency_score\\":0.8,\\"anchors_count\\":2,\\"uncertainty_level\\":\\"low\\",\\"source_stage\\":\\"screening\\"}"',
+        '    tags: [screening-decision, task-sufficiency-check, evidence-grounding, uncertainty-annotation, artifact-lineage]',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    sdk = new AbilitiesSDK({
+      projectDir: path.join(tmpDir, '.opencode', 'abilities'),
+      includeGlobal: false,
+    })
+  })
+
+  afterEach(async () => {
+    sdk.cleanup()
+    await fs.rm(tmpDir, { recursive: true, force: true })
+  })
+
+  it('executes /bibliography plan via pipeline and returns artifact fields', async () => {
+    const result = await sdk.executeCommand('/bibliography', '{"stage":"plan","payload":"agent safety"}')
+
+    expect(result.error).toBeUndefined()
+    expect(result.stage).toBe('plan')
+    expect(result.execution?.status).toBe('completed')
+    expect(result.artifact?.meta).not.toBeNull()
+    expect(result.artifact?.data).not.toBeNull()
+  })
+
+  it('executes /paper-screening and persists per-paper artifact', async () => {
+    const result = await sdk.executeCommand('/paper-screening', '{"query":"agent safety"}')
+
+    expect(result.error).toBeUndefined()
+    expect(result.stage).toBe('screening')
+    expect(result.execution?.status).toBe('completed')
+    expect(result.artifact?.artifacts.length).toBe(1)
+
+    const storedPath = path.join(
+      tmpDir,
+      '.opencode',
+      'bibliography-data',
+      'screening',
+      'p1.json'
+    )
+    await expect(fs.access(storedPath)).resolves.toBeNull()
+  })
+})

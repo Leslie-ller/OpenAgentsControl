@@ -209,6 +209,56 @@ describe('BibliographyStore', () => {
       expect(queue).toContain('p2')
       expect(queue).not.toContain('p1')
     })
+
+    it('saveScreeningBatch persists multiple per-paper artifacts', async () => {
+      const saved = await store.saveScreeningBatch([
+        {
+          paper_key: 'paper-A',
+          title: 'Paper A',
+          decision: 'keep',
+          reason: 'important',
+        },
+        {
+          paper_key: 'paper-B',
+          title: 'Paper B',
+          decision: 'defer',
+          reason: 'later',
+        },
+      ], {
+        executionId: 'exec_batch',
+        sourceStage: 'screening',
+      })
+
+      expect(saved.length).toBe(2)
+
+      const a = await store.load('screening', 'paper-A')
+      const b = await store.load('screening', 'paper-B')
+
+      expect(a).not.toBeNull()
+      expect(b).not.toBeNull()
+      expect(a!.meta.executionId).toBe('exec_batch')
+      expect(b!.meta.executionId).toBe('exec_batch')
+      expect(a!.data.decision).toBe('keep')
+      expect(b!.data.decision).toBe('defer')
+    })
+
+    it('review queue deduplicates by canonical paper key', async () => {
+      await store.save('screening', 'variant-1', {
+        paper_key: 'Paper One',
+        decision: 'keep',
+        title: 'P1',
+        reason: 'r',
+      } as ScreeningData)
+      await store.save('screening', 'variant-2', {
+        paper_key: 'paper_one',
+        decision: 'keep',
+        title: 'P1 duplicate',
+        reason: 'r',
+      } as ScreeningData)
+
+      const queue = await store.getReviewQueue()
+      expect(queue.length).toBe(1)
+    })
   })
 
   // ── Pipeline status ───────────────────────────────────────

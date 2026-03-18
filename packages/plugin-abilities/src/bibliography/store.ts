@@ -124,9 +124,12 @@ export class BibliographyStore {
   }
 
   private fileFor(type: ArtifactType, key: string): string {
-    // Sanitize key for safe filenames
-    const safe = key.replace(/[^a-zA-Z0-9_\-]/g, '_').toLowerCase()
+    const safe = this.sanitizeKey(key)
     return path.join(this.dirFor(type), `${safe}.json`)
+  }
+
+  private sanitizeKey(key: string): string {
+    return key.replace(/[^a-zA-Z0-9_\-]/g, '_').toLowerCase()
   }
 
   private async ensureDir(type: ArtifactType): Promise<void> {
@@ -172,6 +175,25 @@ export class BibliographyStore {
 
     await fs.writeFile(filePath, JSON.stringify(artifact, null, 2), 'utf-8')
     return artifact
+  }
+
+  /**
+   * Save one screening artifact per paper_key from a screening batch.
+   * Returns all persisted artifacts in input order (entries without paper_key are skipped).
+   */
+  async saveScreeningBatch(
+    screeningItems: Array<Record<string, unknown>>,
+    extra?: Partial<Pick<ArtifactMeta, 'executionId' | 'sourceStage'>>
+  ): Promise<Array<Artifact<Record<string, unknown>>>> {
+    const saved: Array<Artifact<Record<string, unknown>>> = []
+    for (const item of screeningItems) {
+      const paperKeyRaw = item.paper_key
+      if (typeof paperKeyRaw !== 'string' || !paperKeyRaw.trim()) continue
+      const paperKey = paperKeyRaw.trim()
+      const artifact = await this.save('screening', paperKey, item, extra)
+      saved.push(artifact)
+    }
+    return saved
   }
 
   /**
@@ -274,9 +296,19 @@ export class BibliographyStore {
    */
   async getReviewQueue(): Promise<string[]> {
     const kept = await this.getScreeningByDecision('keep')
-    const keptKeys = kept.map(a => a.data.paper_key)
+    const keptByCanonical = new Map<string, string>()
+    for (const artifact of kept) {
+      const paperKey = artifact.data.paper_key
+      const canonical = this.sanitizeKey(paperKey)
+      if (!keptByCanonical.has(canonical)) {
+        keptByCanonical.set(canonical, paperKey)
+      }
+    }
+
     const reviewed = await this.list('reading-card')
-    return keptKeys.filter(k => !reviewed.includes(k.replace(/[^a-zA-Z0-9_\-]/g, '_').toLowerCase()))
+    return [...keptByCanonical.entries()]
+      .filter(([canonicalKey]) => !reviewed.includes(canonicalKey))
+      .map(([, originalPaperKey]) => originalPaperKey)
   }
 
   /**
@@ -285,10 +317,19 @@ export class BibliographyStore {
    */
   async getDecisionQueue(): Promise<string[]> {
     const readingCards = await this.listAll<ReadingCardData>('reading-card')
-    const decidedKeys = await this.list('decision')
-    return readingCards
-      .map(a => a.data.paper_key)
-      .filter(k => !decidedKeys.includes(k.replace(/[^a-zA-Z0-9_\-]/g, '_').toLowerCase()))
+    const decidedKeys = new Set(await this.list('decision'))
+    const queuedByCanonical = new Map<string, string>()
+
+    for (const readingCard of readingCards) {
+      const paperKey = readingCard.data.paper_key
+      const canonical = this.sanitizeKey(paperKey)
+      if (decidedKeys.has(canonical)) continue
+      if (!queuedByCanonical.has(canonical)) {
+        queuedByCanonical.set(canonical, paperKey)
+      }
+    }
+
+    return [...queuedByCanonical.values()]
   }
 
   /**

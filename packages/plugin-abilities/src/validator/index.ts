@@ -106,6 +106,9 @@ const ObligationDefinitionSchema = z.object({
   key: z.string().min(1, 'Obligation key is required'),
   severity: z.enum(['hard', 'soft']),
   tags: z.array(z.string()).min(1, 'At least one tag is required'),
+  signals: z.array(z.string()).optional(),
+  requiredFields: z.array(z.string()).optional(),
+  minEvidenceCount: z.number().optional(),
   description: z.string().optional(),
 })
 

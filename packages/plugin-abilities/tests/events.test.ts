@@ -9,6 +9,7 @@ import type {
   ToolCalledPayload,
   ValidationResultPayload,
   ObligationSignalPayload,
+  EvidenceStatsPayload,
   ModelObservedPayload,
 } from '../src/control/events.js'
 import { ControlEventBus } from '../src/control/event-bus.js'
@@ -218,6 +219,23 @@ describe('ControlEventFactory', () => {
       expect(event.event_type).toBe('model.observed')
       const payload = event.payload as ModelObservedPayload
       expect(payload.drift).toBe(false)
+    })
+  })
+
+  describe('evidenceStats', () => {
+    it('creates evidence.stats event', () => {
+      const event = factory.evidenceStats('my-ability', {
+        obligation_key: 'evidence_grounding',
+        anchors_count: 3,
+        sufficiency_score: 0.82,
+      }, { step_id: 'step-2' })
+
+      expect(event.event_type).toBe('evidence.stats')
+      expect(event.context.step_id).toBe('step-2')
+      const payload = event.payload as EvidenceStatsPayload
+      expect(payload.obligation_key).toBe('evidence_grounding')
+      expect(payload.anchors_count).toBe(3)
+      expect(payload.sufficiency_score).toBe(0.82)
     })
   })
 })
@@ -825,6 +843,42 @@ describe('executor event emission', () => {
     expect(execution.control).toBeDefined()
     expect(execution.control!.gate.verdict).toBe('allow')
     expect(execution.control!.obligations.every(o => o.status === 'satisfied')).toBe(true)
+  })
+
+  it('emits evidence.stats when step output contains structured evidence fields', async () => {
+    const ability: Ability = {
+      name: 'evidence-stats-emitter',
+      description: 'Emits evidence stats payload',
+      task_type: 'paper_screening',
+      obligations: [
+        {
+          key: 'task_level_sufficiency_check',
+          severity: 'hard',
+          tags: ['task-sufficiency-check'],
+          signals: ['task_level_sufficiency_check'],
+          requiredFields: ['sufficiency_score'],
+        },
+      ],
+      steps: [
+        {
+          id: 'emit',
+          type: 'script',
+          run: 'echo \'{"sufficiency_score":0.8,"anchors_count":2,"source_stage":"screening"}\'',
+          tags: ['task-sufficiency-check'],
+        },
+      ],
+    }
+
+    const allEvents: ControlEvent[] = []
+    bus.onAll((e) => allEvents.push(e))
+
+    const execution = await executeAbility(ability, {}, createMockContext(), { eventBus: bus })
+    expect(execution.status).toBe('completed')
+
+    const evidenceStats = allEvents.filter((e) => e.event_type === 'evidence.stats')
+    expect(evidenceStats.length).toBeGreaterThan(0)
+    const payload = evidenceStats[0].payload as EvidenceStatsPayload
+    expect(payload.sufficiency_score).toBe(0.8)
   })
 
   it('all events share the same run_id', async () => {

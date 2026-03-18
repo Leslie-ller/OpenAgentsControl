@@ -328,14 +328,18 @@ class AbilitiesPlugin {
       env: {},
 
       agents: ctx?.client ? {
-        async call(options: { agent: string; prompt: string }): Promise<string> {
+        async call(options: { agent: string; prompt: string }): Promise<{ output: string }> {
           console.log(`[abilities] Agent step: ${options.agent}`)
           console.log(`[abilities] Prompt: ${options.prompt.slice(0, 200)}...`)
 
-          return `[Agent "${options.agent}" invocation pending - use Task tool with subagent_type="${options.agent}" and the provided prompt]`
+          return {
+            output: `[Agent "${options.agent}" invocation pending - use Task tool with subagent_type="${options.agent}" and the provided prompt]`,
+          }
         },
-        async background(options: { agent: string; prompt: string }): Promise<string> {
-          return this.call(options)
+        async background(options: { agent: string; prompt: string }): Promise<{ output: string }> {
+          return {
+            output: `[Agent "${options.agent}" invocation pending - use Task tool with subagent_type="${options.agent}" and the provided prompt]`,
+          }
         }
       } : undefined,
 
@@ -372,7 +376,7 @@ class AbilitiesPlugin {
         console.log(`[abilities] Step completed: ${step.id} - ${result.status}`)
       },
       onStepFail: (step, error) => {
-        console.log(`[abilities] Step failed: ${step.id} - ${error.message}`)
+        console.log(`[abilities] Step failed: ${step.id} - ${error}`)
       }
     }
   }
@@ -391,7 +395,7 @@ class AbilitiesPlugin {
     if (event.type === 'session.deleted') {
       const sessionInfo = props?.info as { id?: string } | undefined
       if (sessionInfo?.id) {
-        this.executionManager.onSessionDeleted(sessionInfo.id)
+        this.executionManager.cleanup()
 
         if (sessionInfo.id === this.mainSessionID) {
           this.mainSessionID = undefined

@@ -640,6 +640,40 @@ describe('end-to-end: custom task_type through execution pipeline', () => {
     expect(execution.control!.obligations[0].key).toBe('perform_review')
     expect(execution.control!.obligations[0].status).toBe('satisfied')
   })
+
+  it('event-based gates include sufficiency and capability checks', () => {
+    const ability: Ability = {
+      name: 'gate-eval',
+      description: 'Gate eval',
+      task_type: 'research_evidence_control',
+      obligations: [
+        {
+          key: 'task_level_sufficiency_check',
+          severity: 'hard',
+          tags: ['task-sufficiency-check'],
+          signals: ['task_level_sufficiency_check'],
+          requiredFields: ['sufficiency_score'],
+        },
+      ],
+      steps: [],
+    }
+
+    const factory = createFactory('run_gate_eval')
+    const events: ControlEvent[] = [
+      factory.stepCompleted('gate-eval', 's1', 'script', 'completed', 10, {
+        tags: ['task-sufficiency-check'],
+      }),
+      factory.evidenceStats('gate-eval', {
+        sufficiency_score: 0.5,
+        capability_ok: false,
+      }, { step_id: 's1' }),
+    ]
+
+    const result = evaluateControlFromEvents(ability, events)!
+    expect(result.gate.verdict).toBe('block')
+    expect(result.gates?.some((g) => g.name === 'sufficiency_gate' && g.verdict === 'block')).toBe(true)
+    expect(result.gates?.some((g) => g.name === 'capability_gate' && g.verdict === 'block')).toBe(true)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────

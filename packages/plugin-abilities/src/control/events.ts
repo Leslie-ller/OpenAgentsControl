@@ -22,6 +22,7 @@ export type ControlEventType =
   | 'tool.called'
   | 'validation.result'
   | 'obligation.signal'
+  | 'evidence.stats'
   | 'model.observed'
 
 // ─────────────────────────────────────────────────────────────
@@ -99,6 +100,19 @@ export interface ObligationSignalPayload {
   evidence: Record<string, unknown>
 }
 
+export interface EvidenceStatsPayload {
+  obligation_key?: string
+  anchors_count?: number
+  sufficiency_score?: number
+  required_fields_present?: string[]
+  missing_fields?: string[]
+  consistency_ok?: boolean
+  capability_ok?: boolean
+  claim_scope_ok?: boolean
+  grounded_claims?: number
+  total_claims?: number
+}
+
 export interface ModelObservedPayload {
   expected_model?: string
   actual_model?: string
@@ -116,6 +130,7 @@ export type ControlEventPayload =
   | ToolCalledPayload
   | ValidationResultPayload
   | ObligationSignalPayload
+  | EvidenceStatsPayload
   | ModelObservedPayload
 
 // ─────────────────────────────────────────────────────────────
@@ -297,6 +312,17 @@ export class ControlEventFactory {
       signal_type,
       evidence,
     })
+  }
+
+  evidenceStats(
+    ability: string,
+    payload: EvidenceStatsPayload,
+    extras?: { step_id?: string }
+  ): ControlEvent<EvidenceStatsPayload> {
+    return this.create('evidence.stats', { kind: 'system', id: 'evidence-tracker' }, {
+      ability,
+      step_id: extras?.step_id,
+    }, payload)
   }
 
   modelObserved(

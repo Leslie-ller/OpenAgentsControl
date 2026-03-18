@@ -49,6 +49,48 @@ const BUILTIN_OBLIGATIONS: Record<string, ObligationDefinition[]> = {
   citation_audit: [
     { key: 'record_citation_audit', severity: 'hard', tags: ['citation-audit'] },
   ],
+  research_evidence_control: [
+    {
+      key: 'task_level_sufficiency_check',
+      severity: 'hard',
+      tags: ['task-sufficiency-check'],
+      signals: ['task_level_sufficiency_check'],
+      requiredFields: ['sufficiency_score'],
+      description: 'Output includes task-level sufficiency evidence.',
+    },
+    {
+      key: 'evidence_grounding',
+      severity: 'hard',
+      tags: ['evidence-grounding'],
+      signals: ['evidence_grounding'],
+      requiredFields: ['anchors_count'],
+      description: 'Output includes grounding anchors metadata.',
+    },
+    {
+      key: 'uncertainty_annotation',
+      severity: 'hard',
+      tags: ['uncertainty-annotation'],
+      signals: ['uncertainty_annotation'],
+      requiredFields: ['uncertainty_level'],
+      description: 'Output includes uncertainty annotation.',
+    },
+    {
+      key: 'artifact_lineage_recorded',
+      severity: 'hard',
+      tags: ['artifact-lineage'],
+      signals: ['artifact_lineage_recorded'],
+      requiredFields: ['source_stage'],
+      description: 'Output includes artifact lineage metadata.',
+    },
+    {
+      key: 'decision_rationale_recorded',
+      severity: 'hard',
+      tags: ['decision-rationale'],
+      signals: ['decision_rationale_recorded'],
+      requiredFields: ['rationale'],
+      description: 'Decision output includes rationale.',
+    },
+  ],
 }
 
 // ─────────────────────────────────────────────────────────────

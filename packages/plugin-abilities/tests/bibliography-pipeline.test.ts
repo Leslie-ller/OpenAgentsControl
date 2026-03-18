@@ -53,6 +53,25 @@ function makeScreeningAbility(): Ability {
   }
 }
 
+function makeMultiScreeningAbility(): Ability {
+  return {
+    name: 'research/paper-screening',
+    description: 'Screen papers in batch',
+    task_type: 'paper_screening',
+    inputs: {
+      query: { type: 'string', required: true },
+    },
+    steps: [
+      {
+        id: 'record-screening-decision',
+        type: 'script',
+        run: `echo '{"items":[{"paper_key":"paper_001","title":"Paper 1","decision":"keep","reason":"r1"},{"paper_key":"paper_002","title":"Paper 2","decision":"defer","reason":"r2"}]}'`,
+        tags: ['screening-decision'],
+      },
+    ],
+  }
+}
+
 function makeReviewAbility(): Ability {
   return {
     name: 'research/paper-fulltext-review',
@@ -224,6 +243,26 @@ describe('BibliographyPipeline', () => {
       expect(result.artifact).not.toBeNull()
       expect(result.artifact!.data.paper_key).toBe('paper_001')
       expect(result.artifact!.data.decision).toBe('keep')
+      expect(result.artifacts.length).toBe(1)
+    })
+
+    it('screening stage persists multiple per-paper artifacts from one run', async () => {
+      const result = await pipeline.runStage(
+        'screening',
+        makeMultiScreeningAbility(),
+        { query: 'batch query' },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('completed')
+      expect(result.artifacts.length).toBe(2)
+
+      const p1 = await store.load('screening', 'paper_001')
+      const p2 = await store.load('screening', 'paper_002')
+      expect(p1).not.toBeNull()
+      expect(p2).not.toBeNull()
+      expect(p1!.data.decision).toBe('keep')
+      expect(p2!.data.decision).toBe('defer')
     })
 
     it('runs review stage and persists reading card', async () => {
@@ -436,6 +475,20 @@ describe('BibliographyPipeline', () => {
 
     it('getStore returns the store instance', () => {
       expect(pipeline.getStore()).toBe(store)
+    })
+
+    it('runStageCommand exposes execution and artifact metadata', async () => {
+      const result = await pipeline.runStageCommand(
+        'plan',
+        makePlanAbility(),
+        { topic: 'agent safety' },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('completed')
+      expect(result.artifact.meta).not.toBeNull()
+      expect(result.artifact.data).not.toBeNull()
+      expect(result.artifact.artifacts.length).toBe(1)
     })
   })
 

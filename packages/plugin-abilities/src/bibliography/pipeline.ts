@@ -89,7 +89,27 @@ export interface StageResult {
   stage: string
   execution: AbilityExecution
   artifact: Artifact | null
+  artifacts: Artifact[]
   artifactKey: string
+}
+
+export interface StageCommandResult {
+  stage: string
+  execution: {
+    id: string
+    status: AbilityExecution['status']
+    control?: AbilityExecution['control']
+  }
+  artifact: {
+    key: string
+    meta: Artifact['meta'] | null
+    data: Artifact['data'] | null
+    artifacts: Array<{
+      key: string
+      meta: Artifact['meta']
+      data: Artifact['data']
+    }>
+  }
 }
 
 export class BibliographyPipeline {
@@ -149,6 +169,7 @@ export class BibliographyPipeline {
 
     // Persist artifact from the last successful step's output
     let artifact: Artifact | null = null
+    let artifacts: Artifact[] = []
     if (execution.status === 'completed' || execution.completedSteps.length > 0) {
       // Find the last completed (non-skipped, non-failed) step with output
       const successSteps = execution.completedSteps.filter(
@@ -158,19 +179,70 @@ export class BibliographyPipeline {
 
       if (lastStep?.output) {
         const parsed = tryParseJSON(lastStep.output.trim())
-        artifact = await this.store.save(
-          config.artifactType,
-          artifactKey,
-          parsed,
-          {
-            executionId: execution.id,
-            sourceStage: stage,
+        if (config.artifactType === 'screening') {
+          const screeningItems = extractScreeningItems(parsed)
+          if (screeningItems.length > 0) {
+            artifacts = await this.store.saveScreeningBatch(screeningItems, {
+              executionId: execution.id,
+              sourceStage: stage,
+            })
+            artifact = artifacts[0] ?? null
+          } else {
+            artifact = await this.store.save(
+              config.artifactType,
+              artifactKey,
+              parsed,
+              {
+                executionId: execution.id,
+                sourceStage: stage,
+              }
+            )
+            artifacts = artifact ? [artifact] : []
           }
-        )
+        } else {
+          artifact = await this.store.save(
+            config.artifactType,
+            artifactKey,
+            parsed,
+            {
+              executionId: execution.id,
+              sourceStage: stage,
+            }
+          )
+          artifacts = artifact ? [artifact] : []
+        }
       }
     }
 
-    return { stage, execution, artifact, artifactKey }
+    return { stage, execution, artifact, artifacts, artifactKey }
+  }
+
+  async runStageCommand(
+    stage: string,
+    ability: Ability,
+    inputs: InputValues,
+    ctx: ExecutorContext,
+    options?: PipelineOptions
+  ): Promise<StageCommandResult> {
+    const result = await this.runStage(stage, ability, inputs, ctx, options)
+    return {
+      stage: result.stage,
+      execution: {
+        id: result.execution.id,
+        status: result.execution.status,
+        control: result.execution.control,
+      },
+      artifact: {
+        key: result.artifactKey,
+        meta: result.artifact?.meta ?? null,
+        data: result.artifact?.data ?? null,
+        artifacts: result.artifacts.map((artifact) => ({
+          key: artifact.meta.key,
+          meta: artifact.meta,
+          data: artifact.data,
+        })),
+      },
+    }
   }
 
   /**
@@ -209,6 +281,23 @@ function tryParseJSON(text: string): Record<string, unknown> {
     // Not JSON — store as raw text
     return { raw: text }
   }
+}
+
+function extractScreeningItems(parsed: Record<string, unknown>): Array<Record<string, unknown>> {
+  const candidates: unknown[] = []
+
+  if (Array.isArray(parsed.items)) candidates.push(...parsed.items)
+  if (Array.isArray(parsed.papers)) candidates.push(...parsed.papers)
+  if (Array.isArray(parsed.screening_items)) candidates.push(...parsed.screening_items)
+  if (Array.isArray(parsed.decisions)) candidates.push(...parsed.decisions)
+
+  if (candidates.length === 0 && typeof parsed.paper_key === 'string') {
+    return [parsed]
+  }
+
+  return candidates.filter((item): item is Record<string, unknown> => {
+    return Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+  })
 }
 
 export function createBibliographyPipeline(store: BibliographyStore): BibliographyPipeline {

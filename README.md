@@ -462,7 +462,7 @@ Interactive wizard generates orchestrators, subagents, context files, workflows,
 - And 7+ more productivity commands
 
 ### Research Workflow Stack
-OpenAgents Control now includes a full bibliography pipeline for research-heavy projects:
+OpenAgents Control includes a bibliography pipeline with trust controls for research-heavy projects:
 
 1. `literature pool` - Candidate paper collection
 2. `active reading queue` - Small bounded queue per topic or section
@@ -485,6 +485,12 @@ Tooling contract:
 - `decision` and `citation audit` expect Zotero access from `AgentOS/.env`
 
 If that AgentOS toolchain is not configured, the bibliography commands should stop and report the missing capability instead of faking the stage.
+
+Control enforcement profile:
+- generic controls enforce task-level sufficiency, evidence grounding, uncertainty annotation, artifact lineage, and decision rationale capture
+- generic gate set includes `sufficiency_gate`, `consistency_gate`, `capability_gate`, `claim_scope_gate`, and `grounding_completeness_gate`
+- bibliography policy remains workflow-configured via ability `obligations` and structured outputs
+- batch audit scan is advisory by default and available through plugin tool `ability.bibliography.scan`
 
 ### 📚 Context System (MVI Principle)
 Your coding standards automatically loaded by agents:

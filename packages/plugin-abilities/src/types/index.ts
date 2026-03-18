@@ -11,7 +11,7 @@
 // INPUT TYPES
 // ─────────────────────────────────────────────────────────────
 
-export type InputType = 'string' | 'number' | 'boolean'
+export type InputType = 'string' | 'number' | 'boolean' | 'array' | 'object'
 
 /**
  * Task type identifier.
@@ -30,6 +30,12 @@ export interface InputDefinition {
   required?: boolean
   default?: unknown
   description?: string
+  pattern?: string
+  enum?: string[]
+  minLength?: number
+  maxLength?: number
+  min?: number
+  max?: number
 }
 
 export type InputValues = Record<string, unknown>
@@ -111,8 +117,14 @@ export interface Ability {
    * without modifying the control layer source code.
    */
   obligations?: ObligationDefinition[]
+  triggers?: {
+    keywords?: string[]
+    patterns?: string[]
+  }
   inputs?: Record<string, InputDefinition>
   steps: Step[]
+  compatible_agents?: string[]
+  exclusive_agent?: string
   /** Hooks executed before and after the ability run */
   hooks?: {
     before?: string[]
@@ -129,6 +141,7 @@ export interface Ability {
   _meta?: {
     filePath: string
     directory: string
+    loadedAt?: number
   }
 }
 
@@ -136,7 +149,7 @@ export interface Ability {
 // EXECUTION TYPES
 // ─────────────────────────────────────────────────────────────
 
-export type ExecutionStatus = 'running' | 'completed' | 'failed'
+export type ExecutionStatus = 'running' | 'completed' | 'failed' | 'cancelled'
 export type StepStatus = 'completed' | 'failed' | 'skipped'
 
 export interface StepResult {
@@ -181,6 +194,12 @@ export interface ObligationDefinition {
   severity: ObligationSeverity
   /** Tags that satisfy this obligation when found on a completed step */
   tags: string[]
+  /** Optional explicit signal keys that also count as evidence for this obligation */
+  signals?: string[]
+  /** Optional required fields that must exist in at least one structured evidence object */
+  requiredFields?: string[]
+  /** Optional minimum evidence anchor count required for this obligation */
+  minEvidenceCount?: number
   /** Human-readable description (optional, for documentation/tooling) */
   description?: string
 }
@@ -194,10 +213,22 @@ export interface ObligationResult {
 
 export type GateVerdict = 'allow' | 'warn' | 'block'
 
+export type GateName =
+  | 'default_gate'
+  | 'sufficiency_gate'
+  | 'consistency_gate'
+  | 'capability_gate'
+  | 'claim_scope_gate'
+  | 'grounding_completeness_gate'
+
 export interface GateResult {
   verdict: GateVerdict
   reasons: string[]
   warnings: string[]
+}
+
+export interface NamedGateResult extends GateResult {
+  name: GateName | string
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -228,6 +259,7 @@ export interface ControlResult {
   taskType: TaskType
   obligations: ObligationResult[]
   gate: GateResult
+  gates?: NamedGateResult[]
   /** Model drift audit summary (v1.8). Audit-only: does not affect gate verdict. */
   modelAudit?: ModelAuditResult
 }
@@ -255,11 +287,13 @@ export interface AbilityExecution {
 export interface ValidationError {
   path: string
   message: string
+  code?: string
 }
 
 export interface ValidationResult {
   valid: boolean
   errors: ValidationError[]
+  ability?: Ability
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -268,6 +302,7 @@ export interface ValidationResult {
 
 export interface LoaderOptions {
   projectDir?: string
+  globalDir?: string
   includeGlobal?: boolean
 }
 
