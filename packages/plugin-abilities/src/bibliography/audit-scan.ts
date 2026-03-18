@@ -29,6 +29,8 @@ export async function scanBibliographyArtifacts(store: BibliographyStore): Promi
   const screenings = await store.listAll<ScreeningData>('screening')
   for (const screening of screenings) {
     const data = toRecord(screening.data)
+    const paperKey = typeof data.paper_key === 'string' ? data.paper_key.trim() : ''
+    const title = typeof data.title === 'string' ? data.title.trim() : ''
 
     const hasRole = typeof data.role === 'string' && data.role.trim().length > 0
     const hasUsage = typeof data.recommended_usage === 'string' && data.recommended_usage.trim().length > 0
@@ -45,11 +47,29 @@ export async function scanBibliographyArtifacts(store: BibliographyStore): Promi
         },
       })
     }
+
+    if (/^paper_\d+$/i.test(paperKey)) {
+      findings.push({
+        severity: 'warning',
+        code: 'SCREENING_PLACEHOLDER_ARTIFACT',
+        message: 'Screening artifact uses a generic placeholder paper key.',
+        artifactType: 'screening',
+        artifactKey: screening.meta.key,
+        evidence: {
+          paper_key: paperKey,
+          title,
+        },
+      })
+    }
   }
 
   const readingCards = await store.listAll<ReadingCardData>('reading-card')
   for (const card of readingCards) {
     const data = toRecord(card.data)
+    const summary = typeof data.summary === 'string' ? data.summary.trim() : ''
+    const keyFindings = Array.isArray(data.key_findings)
+      ? data.key_findings.filter((value): value is string => typeof value === 'string')
+      : []
 
     const impact = typeof data.claim_impact === 'string' ? data.claim_impact : ''
     const anchors = typeof data.anchors_count === 'number' ? data.anchors_count : undefined
@@ -79,6 +99,39 @@ export async function scanBibliographyArtifacts(store: BibliographyStore): Promi
         evidence: {
           stage,
           sufficiency_score: sufficiency,
+        },
+      })
+    }
+
+    if (summary === 'Full-text reviewed with traceable anchors.' || keyFindings.some((finding) => /^Finding [A-Z]\b/.test(finding))) {
+      findings.push({
+        severity: 'warning',
+        code: 'READING_CARD_TEMPLATE_PLACEHOLDER',
+        message: 'Reading card still contains template placeholder content.',
+        artifactType: 'reading-card',
+        artifactKey: card.meta.key,
+        evidence: {
+          summary,
+          key_findings: keyFindings,
+        },
+      })
+    }
+
+    const serializedSummary = parseSerializedObject(summary)
+    const looksSerializedPayload = Boolean(
+      (serializedSummary && typeof serializedSummary.item_key === 'string')
+      || (summary.startsWith('{"item_key"') && summary.includes('"attachment_key"'))
+    )
+    if (looksSerializedPayload) {
+      findings.push({
+        severity: 'warning',
+        code: 'READING_CARD_SERIALIZED_SOURCE_PAYLOAD',
+        message: 'Reading card summary contains serialized source metadata instead of extracted text.',
+        artifactType: 'reading-card',
+        artifactKey: card.meta.key,
+        evidence: {
+          summary_preview: summary.slice(0, 200),
+          parsed_keys: serializedSummary ? Object.keys(serializedSummary).slice(0, 8) : [],
         },
       })
     }
@@ -123,4 +176,16 @@ function toRecord(value: unknown): Record<string, unknown> {
     return value as Record<string, unknown>
   }
   return {}
+}
+
+function parseSerializedObject(value: string): Record<string, unknown> | null {
+  if (!value.startsWith('{') || !value.endsWith('}')) return null
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null
+  } catch {
+    return null
+  }
 }

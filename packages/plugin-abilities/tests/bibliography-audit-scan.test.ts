@@ -60,4 +60,43 @@ describe('scanBibliographyArtifacts', () => {
     expect(hasWarning).toBe(true)
     expect(hasInfo).toBe(true)
   })
+
+  it('flags legacy placeholder and serialized-payload artifacts', async () => {
+    await store.save('screening', 'paper_001', {
+      paper_key: 'paper_001',
+      title: 'agent safety - core methods paper',
+      decision: 'keep',
+      reason: 'template artifact',
+    })
+
+    await store.save('reading-card', 'paper_001', {
+      paper_key: 'paper_001',
+      title: 'Reading card for paper_001',
+      summary: 'Full-text reviewed with traceable anchors.',
+      key_findings: ['Finding A with section anchor'],
+      anchors_count: 3,
+      sufficiency_score: 0.81,
+      stage: 'full-review',
+    })
+
+    await store.save('reading-card', 'x47f6ikw', {
+      paper_key: 'X47F6IKW',
+      title: 'Reading card for X47F6IKW',
+      summary: JSON.stringify({
+        item_key: 'X47F6IKW',
+        attachment_key: 'JL2KGR6E',
+        text_preview: 'A Prescriptive Machine Learning Approach...',
+      }),
+      key_findings: ['raw payload'],
+      anchors_count: 1,
+      sufficiency_score: 0.82,
+      stage: 'full-review',
+    })
+
+    const result = await scanBibliographyArtifacts(store)
+
+    expect(result.findings.some((f) => f.code === 'SCREENING_PLACEHOLDER_ARTIFACT')).toBe(true)
+    expect(result.findings.some((f) => f.code === 'READING_CARD_TEMPLATE_PLACEHOLDER')).toBe(true)
+    expect(result.findings.some((f) => f.code === 'READING_CARD_SERIALIZED_SOURCE_PAYLOAD')).toBe(true)
+  })
 })
