@@ -29,3 +29,33 @@ export function selectDetailFields(capsule: DetailCapsule, useCase: DetailUseCas
       return {}
   }
 }
+
+export function renderDetailReinjectionBlock(
+  topic: string,
+  selected: Record<string, string[]>
+): string {
+  const lines: string[] = [
+    'Detail Reinjection:',
+    `topic: ${topic}`,
+  ]
+
+  const keys = Object.keys(selected)
+  if (keys.length === 0) {
+    lines.push('selected_fields: none')
+    return lines.join('\n')
+  }
+
+  for (const key of keys) {
+    lines.push(`${key}:`)
+    const values = selected[key]
+    if (!Array.isArray(values) || values.length === 0) {
+      lines.push('  - none')
+      continue
+    }
+    for (const value of values) {
+      lines.push(`  - ${value}`)
+    }
+  }
+
+  return lines.join('\n')
+}

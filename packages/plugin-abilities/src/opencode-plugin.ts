@@ -14,9 +14,11 @@ import { scanBibliographyArtifacts } from './bibliography/audit-scan.js'
 import { deriveCompletionSummary } from './coding/completion-summary.js'
 import { createCheckpointStore } from './runtime/context/checkpoint-store.js'
 import { createCompactionCheckpoint } from './runtime/context/compaction-checkpoint.js'
+import { renderDetailReinjectionBlock, selectDetailFields } from './runtime/context/detail-reinjector.js'
 import { renderFocusRefreshBlock } from './runtime/context/focus-refresh.js'
 import { PendingCheckpointSummaries } from './runtime/context/pending-checkpoint-summaries.js'
 import { resolveTopicFromExecution } from './runtime/context/topic-resolver.js'
+import type { DetailUseCase } from './runtime/context/types.js'
 import { join } from 'path'
 
 /**
@@ -35,6 +37,7 @@ import { join } from 'path'
 const ALWAYS_ALLOWED_TOOLS = [
   'ability.list',
   'ability.status',
+  'ability.context.detail',
   'ability.cancel',
   'read',
   'glob',
@@ -362,6 +365,44 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
             progress: `${execution.completedSteps.length}/${execution.ability.steps.length}`,
             topic,
             focus,
+          })
+        },
+      }),
+
+      'ability.context.detail': tool({
+        description: 'Get selective detail reinjection block for current ability topic',
+        args: {
+          use_case: tool.schema.enum([
+            'continue_implementation',
+            'explain_reasoning',
+            'recover_execution_context',
+            'resolve_pending_work',
+          ]).describe('Detail reinjection use case selector'),
+        },
+        async execute({ use_case }) {
+          const execution = executionManager.getActive()
+          if (!execution) {
+            return JSON.stringify({ status: 'none', message: 'No active ability' })
+          }
+
+          const topic = resolveTopicFromExecution(execution)
+          const detail = await checkpointStore.loadDetail(topic)
+          if (!detail) {
+            return JSON.stringify({
+              status: 'missing',
+              topic,
+              use_case,
+              message: 'No detail capsule found for current topic',
+            })
+          }
+
+          const selected = selectDetailFields(detail, use_case as DetailUseCase)
+          return JSON.stringify({
+            status: 'ok',
+            topic,
+            use_case,
+            selected,
+            reinjection: renderDetailReinjectionBlock(topic, selected),
           })
         },
       }),

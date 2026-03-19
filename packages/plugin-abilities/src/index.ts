@@ -142,6 +142,7 @@ export { CheckpointStore, createCheckpointStore } from './runtime/context/checkp
 export { renderFocusRefreshBlock } from './runtime/context/focus-refresh.js'
 export { createCompactionCheckpoint } from './runtime/context/compaction-checkpoint.js'
 export { selectDetailFields } from './runtime/context/detail-reinjector.js'
+export { renderDetailReinjectionBlock } from './runtime/context/detail-reinjector.js'
 export { PendingCheckpointSummaries } from './runtime/context/pending-checkpoint-summaries.js'
 export type {
   StateCapsule,

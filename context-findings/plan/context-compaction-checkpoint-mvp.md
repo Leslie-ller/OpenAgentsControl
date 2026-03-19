@@ -548,6 +548,9 @@ Break this plan into atomic implementation tasks. Prioritize real hook verificat
 - Added selective detail projection by use case:
   - `packages/plugin-abilities/src/runtime/context/detail-reinjector.ts`
   - exports `selectDetailFields(...)`
+- Added reinjection block renderer and plugin tool-level integration:
+  - `renderDetailReinjectionBlock(...)` renders selected fields for prompt injection
+  - `ability.context.detail` tool exposes topic-scoped conditional detail selection at runtime
 - Supported selectors:
   - `continue_implementation`
   - `explain_reasoning`
@@ -565,3 +568,4 @@ Break this plan into atomic implementation tasks. Prioritize real hook verificat
   4. selective detail reinjection by use case
 5. compaction checkpoint creation and store persistence
 6. pending checkpoint summary consume-once behavior with session/global fallback and clear semantics
+7. detail reinjection block rendering from selected detail fields

@@ -6,7 +6,7 @@ import type { AbilityExecution } from '../src/types/index.js'
 import { resolveTopicFromExecution } from '../src/runtime/context/topic-resolver.js'
 import { CheckpointStore } from '../src/runtime/context/checkpoint-store.js'
 import { renderFocusRefreshBlock } from '../src/runtime/context/focus-refresh.js'
-import { selectDetailFields } from '../src/runtime/context/detail-reinjector.js'
+import { renderDetailReinjectionBlock, selectDetailFields } from '../src/runtime/context/detail-reinjector.js'
 import { createCompactionCheckpoint } from '../src/runtime/context/compaction-checkpoint.js'
 import { PendingCheckpointSummaries } from '../src/runtime/context/pending-checkpoint-summaries.js'
 import { ControlEventBus } from '../src/control/event-bus.js'
@@ -194,6 +194,18 @@ describe('context checkpoint MVP runtime', () => {
 
     const recover = selectDetailFields(detail, 'recover_execution_context')
     expect(Object.keys(recover)).toEqual(['file_refs', 'commands_run'])
+  })
+
+  it('renders detail reinjection block from selected fields', () => {
+    const block = renderDetailReinjectionBlock('coding-workflow', {
+      decisions: ['review_verdict:pass'],
+      evidence: ['validation passed'],
+    })
+
+    expect(block).toContain('Detail Reinjection:')
+    expect(block).toContain('topic: coding-workflow')
+    expect(block).toContain('decisions:')
+    expect(block).toContain('  - review_verdict:pass')
   })
 
   it('creates compaction checkpoint and stores state/detail capsules', async () => {
