@@ -198,6 +198,26 @@ steps:
       if not isinstance(zotero_count, int):
         zotero_count = len(zotero_items)
 
+      warnings = []
+      if isinstance(academic.get("warning"), str) and academic.get("warning").strip():
+        warnings.append({
+          "code": "academic-search-warning",
+          "severity": "warning",
+          "message": academic.get("warning").strip(),
+        })
+      if academic_count == 0 and zotero_count == 0:
+        warnings.append({
+          "code": "no-search-coverage",
+          "severity": "warning",
+          "message": "No academic or Zotero matches were found for the current bibliography direction.",
+        })
+      elif academic_count < 3 and zotero_count == 0:
+        warnings.append({
+          "code": "sparse-search-coverage",
+          "severity": "info",
+          "message": "Search coverage is sparse; the generated direction may need broader or alternate queries.",
+        })
+
       target_count = 8
       if academic_count >= 10 or zotero_count >= 5:
         target_count = 20
@@ -219,9 +239,18 @@ steps:
       elif required_terms:
         direction_summary = f"Prioritize papers anchored on {' + '.join(required_terms)}."
 
+      plan_status = "ready"
+      if any(warning["code"] == "no-search-coverage" for warning in warnings):
+        plan_status = "degraded"
+      elif any(warning["code"] == "academic-search-warning" for warning in warnings):
+        plan_status = "degraded"
+      elif any(warning["code"] == "sparse-search-coverage" for warning in warnings):
+        plan_status = "partial"
+
       print(json.dumps({
         "topic": topic,
         "queries": queries,
+        "plan_status": plan_status,
         "inclusion_criteria": [
           f"Title or abstract clearly matches the planned focus: {primary_focus_query}",
           "Prefer peer-reviewed or strongly cited academic sources",
@@ -247,7 +276,9 @@ steps:
           "academic_result_count": academic_count,
           "zotero_result_count": zotero_count,
           "academic_warning": academic.get("warning"),
+          "warning_count": len(warnings),
         },
+        "warnings": warnings,
         "candidate_papers": {
           "academic": academic_preview,
           "zotero": zotero_preview,

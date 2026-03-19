@@ -99,4 +99,31 @@ describe('scanBibliographyArtifacts', () => {
     expect(result.findings.some((f) => f.code === 'READING_CARD_TEMPLATE_PLACEHOLDER')).toBe(true)
     expect(result.findings.some((f) => f.code === 'READING_CARD_SERIALIZED_SOURCE_PAYLOAD')).toBe(true)
   })
+
+  it('flags degraded plan-driven screening artifacts with empty results', async () => {
+    await store.save('screening', 'agent_safety_plan', {
+      items: [],
+      screening_status: 'degraded',
+      warnings: [
+        {
+          code: 'planned-search-no-results',
+          severity: 'warning',
+          message: 'Plan-driven search completed but produced no usable screening candidates.',
+        },
+      ],
+      search_summary: {
+        plan_applied: true,
+        academic_warning: 'search failed for query agent safety systematic review',
+        zotero_warning: null,
+        academic_queries_used: ['agent safety', 'agent safety optimization'],
+        required_terms: ['agent', 'safety'],
+        support_terms: ['optimization'],
+      },
+    })
+
+    const result = await scanBibliographyArtifacts(store)
+
+    expect(result.findings.some((f) => f.code === 'PLAN_DRIVEN_SCREENING_EMPTY')).toBe(true)
+    expect(result.findings.some((f) => f.code === 'SCREENING_SEARCH_WARNINGS_PRESENT')).toBe(true)
+  })
 })

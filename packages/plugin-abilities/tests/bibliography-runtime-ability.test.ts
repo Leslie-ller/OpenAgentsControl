@@ -103,8 +103,52 @@ describe('bibliography runtime abilities', () => {
     expect(output.search_profile.screening_hints.require_support_field_match).toBe(true)
     expect(output.search_summary.academic_result_count).toBe(2)
     expect(output.search_summary.zotero_result_count).toBe(1)
+    expect(output.plan_status).toBe('ready')
+    expect(output.warnings).toEqual([])
     expect(output.candidate_papers.academic[0].title).toBe('Agent safety benchmark')
     expect(output.candidate_papers.zotero[0].key).toBe('ABCD1234')
+  })
+
+  it('bibliography-plan surfaces warnings when coverage is empty or degraded', async () => {
+    const loaded = await loadAbility('research/bibliography-plan', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const ability = structuredClone(loaded!.ability)
+    ability.steps[0] = {
+      ...ability.steps[0],
+      run: shellEchoJson({
+        query: 'rare topic',
+        result_count: 0,
+        results: [],
+        warning: 'academic search timed out or failed',
+      }),
+    }
+    ability.steps[1] = {
+      ...ability.steps[1],
+      run: shellEchoJson({
+        query: 'rare topic',
+        result_count: 0,
+        items: [],
+      }),
+    }
+
+    const execution = await executeAbility(
+      ability,
+      { topic: 'rare topic' },
+      createContext()
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.plan_status).toBe('degraded')
+    expect(output.search_summary.warning_count).toBe(2)
+    expect(output.warnings.map((warning: Record<string, unknown>) => warning.code)).toEqual([
+      'academic-search-warning',
+      'no-search-coverage',
+    ])
   })
 
   it('paper-fulltext-review derives reading card content from text_preview', async () => {
@@ -205,6 +249,8 @@ describe('bibliography runtime abilities', () => {
     expect(output.search_summary.filtered_academic_result_count).toBe(1)
     expect(output.search_summary.plan_applied).toBe(false)
     expect(output.search_summary.academic_queries_used).toEqual(['agent safety', 'agent safety review'])
+    expect(output.screening_status).toBe('ready')
+    expect(output.warnings).toEqual([])
     expect(output.anchors_count).toBe(3)
     expect(output.uncertainty_level).toBe('moderate')
   })
@@ -259,6 +305,8 @@ describe('bibliography runtime abilities', () => {
     expect(output.search_summary.filtered_academic_result_count).toBe(2)
     expect(output.sufficiency_score).toBe(0.25)
     expect(output.uncertainty_level).toBe('high')
+    expect(output.screening_status).toBe('ready')
+    expect(output.warnings).toEqual([])
   })
 
   it('paper-screening uses bibliography plan search profile before searching', async () => {
@@ -350,6 +398,90 @@ PY`)
     expect(output.search_profile.support_terms).toEqual(['optimization'])
     expect(output.items).toHaveLength(1)
     expect(output.items[0].matched_query).toBe('agent safety optimization')
+    expect(output.screening_status).toBe('partial')
+    expect(output.warnings.map((warning: Record<string, unknown>) => warning.code)).toEqual([
+      'limited-screening-results',
+    ])
+  })
+
+  it('paper-screening surfaces warning when plan-driven search returns no usable results', async () => {
+    const loaded = await loadAbility('research/paper-screening', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const ability = structuredClone(loaded!.ability)
+    ability.steps[1] = {
+      ...ability.steps[1],
+      run: `python3 - <<'PY'
+import json
+import os
+
+step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+profile = json.loads(step_outputs["derive-search-profile"]["output"])
+print(json.dumps({
+  "query": "rare topic",
+  "result_count": 0,
+  "queries_used": profile["search_queries"],
+  "plan_applied": profile["plan_applied"],
+  "results": [],
+  "warning": "academic search timed out or failed",
+}))
+PY`,
+    }
+    ability.steps[2] = {
+      ...ability.steps[2],
+      run: `python3 - <<'PY'
+import json
+import os
+
+step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+profile = json.loads(step_outputs["derive-search-profile"]["output"])
+print(json.dumps({
+  "query": "rare topic",
+  "result_count": 0,
+  "queries_used": profile["search_queries"],
+  "plan_applied": profile["plan_applied"],
+  "items": [],
+}))
+PY`,
+    }
+
+    const execution = await executeAbility(
+      ability,
+      { query: 'rare topic', limit: 5 },
+      {
+        ...createContext(),
+        stageOutputs: {
+          plan: [
+            {
+              topic: 'rare topic',
+              search_profile: {
+                normalized_focus_query: 'rare topic',
+                search_queries: ['rare topic', 'rare topic survey'],
+                required_terms: ['rare', 'topic'],
+                support_terms: [],
+                excluded_terms: [],
+                screening_hints: {
+                  min_anchor_matches: 2,
+                  require_support_field_match: true,
+                },
+              },
+            },
+          ],
+        },
+      }
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.screening_status).toBe('degraded')
+    expect(output.search_summary.warning_count).toBe(2)
+    expect(output.warnings.map((warning: Record<string, unknown>) => warning.code)).toEqual([
+      'academic-search-warning',
+      'planned-search-no-results',
+    ])
   })
 
   it('paper-fulltext-review fails when zotero-read returns an error payload', async () => {

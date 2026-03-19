@@ -31,6 +31,14 @@ export async function scanBibliographyArtifacts(store: BibliographyStore): Promi
     const data = toRecord(screening.data)
     const paperKey = typeof data.paper_key === 'string' ? data.paper_key.trim() : ''
     const title = typeof data.title === 'string' ? data.title.trim() : ''
+    const searchSummary = toRecord(data.search_summary)
+    const warnings = Array.isArray(data.warnings)
+      ? data.warnings.filter((value): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value))
+      : []
+    const screeningItems = Array.isArray(data.items)
+      ? data.items.filter((value): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value))
+      : []
+    const screeningStatus = typeof data.screening_status === 'string' ? data.screening_status : ''
 
     const hasRole = typeof data.role === 'string' && data.role.trim().length > 0
     const hasUsage = typeof data.recommended_usage === 'string' && data.recommended_usage.trim().length > 0
@@ -44,6 +52,42 @@ export async function scanBibliographyArtifacts(store: BibliographyStore): Promi
         evidence: {
           role: data.role,
           recommended_usage: data.recommended_usage,
+        },
+      })
+    }
+
+    if (searchSummary.plan_applied === true && screeningItems.length === 0) {
+      findings.push({
+        severity: 'warning',
+        code: 'PLAN_DRIVEN_SCREENING_EMPTY',
+        message: 'Plan-driven screening artifact contains no usable papers.',
+        artifactType: 'screening',
+        artifactKey: screening.meta.key,
+        evidence: {
+          academic_queries_used: searchSummary.academic_queries_used,
+          required_terms: searchSummary.required_terms,
+          support_terms: searchSummary.support_terms,
+          screening_status: screeningStatus,
+        },
+      })
+    }
+
+    const providerWarning = typeof searchSummary.academic_warning === 'string' && searchSummary.academic_warning.trim().length > 0
+      || typeof searchSummary.zotero_warning === 'string' && searchSummary.zotero_warning.trim().length > 0
+      || warnings.length > 0
+      || screeningStatus === 'degraded'
+    if (providerWarning) {
+      findings.push({
+        severity: 'warning',
+        code: 'SCREENING_SEARCH_WARNINGS_PRESENT',
+        message: 'Screening artifact records provider warnings or degraded search coverage.',
+        artifactType: 'screening',
+        artifactKey: screening.meta.key,
+        evidence: {
+          screening_status: screeningStatus,
+          academic_warning: searchSummary.academic_warning,
+          zotero_warning: searchSummary.zotero_warning,
+          warnings,
         },
       })
     }

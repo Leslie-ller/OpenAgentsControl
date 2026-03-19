@@ -561,8 +561,45 @@ steps:
           sufficiency_score = 0.82
           uncertainty_level = "moderate"
 
+      warnings = []
+      academic_warning = academic.get("warning")
+      zotero_warning = zotero.get("warning")
+      if isinstance(academic_warning, str) and academic_warning.strip():
+        warnings.append({
+          "code": "academic-search-warning",
+          "severity": "warning",
+          "message": academic_warning.strip(),
+        })
+      if isinstance(zotero_warning, str) and zotero_warning.strip():
+        warnings.append({
+          "code": "zotero-search-warning",
+          "severity": "warning",
+          "message": zotero_warning.strip(),
+        })
+      if bool(search_profile.get("plan_applied")) and result_count == 0:
+        warnings.append({
+          "code": "planned-search-no-results",
+          "severity": "warning",
+          "message": "Plan-driven search completed but produced no usable screening candidates.",
+        })
+      elif result_count > 0 and result_count < min(limit, 3):
+        warnings.append({
+          "code": "limited-screening-results",
+          "severity": "info",
+          "message": "Only a small number of screening candidates were found for the current search direction.",
+        })
+
+      screening_status = "ready"
+      if any(warning["code"] == "planned-search-no-results" for warning in warnings):
+        screening_status = "degraded"
+      elif any(warning["severity"] == "warning" for warning in warnings):
+        screening_status = "degraded"
+      elif any(warning["code"] == "limited-screening-results" for warning in warnings):
+        screening_status = "partial"
+
       print(json.dumps({
         "items": items,
+        "screening_status": screening_status,
         "sufficiency_score": sufficiency_score,
         "anchors_count": result_count,
         "uncertainty_level": uncertainty_level,
@@ -578,6 +615,7 @@ steps:
           "zotero_queries_used": zotero.get("queries_used", search_queries),
           "required_terms": required_terms,
           "support_terms": support_terms,
+          "warning_count": len(warnings),
         },
         "search_profile": {
           "plan_applied": bool(search_profile.get("plan_applied")),
@@ -586,6 +624,7 @@ steps:
           "required_terms": required_terms,
           "support_terms": support_terms,
         },
+        "warnings": warnings,
         "source_stage": "screening",
       }))
       PY
