@@ -347,10 +347,11 @@ function appendCodeChangeGates(
   ability: Ability,
   obligations: ObligationResult[],
   existing: NamedGateResult[],
-  evidencePayloads: Array<Record<string, unknown>> = []
+  evidencePayloads: Array<Record<string, unknown>> = [],
+  options?: { force?: boolean }
 ): NamedGateResult[] {
   if (ability.task_type !== 'code_change') return existing
-  return [...existing, ...evaluateCodeChangeGates(obligations, evidencePayloads)]
+  return [...existing, ...evaluateCodeChangeGates(obligations, evidencePayloads, options)]
 }
 
 function extractStructuredEvidenceFromSteps(completedSteps: StepResult[]): Array<Record<string, unknown>> {
@@ -416,7 +417,8 @@ export function evaluateControl(ability: Ability, completedSteps: StepResult[]):
     ability,
     obligations,
     [{ name: 'default_gate', ...baseGate }],
-    structuredEvidence
+    structuredEvidence,
+    { force: ability.name === 'development/code-change' }
   )
   const gate = mergeGates(gates)
 
@@ -455,7 +457,8 @@ export function evaluateControlFromEvents(
     ability,
     obligations,
     evaluateNamedGates(obligations, events),
-    evidencePayloads
+    evidencePayloads,
+    { force: ability.name === 'development/code-change' }
   )
   const gate = mergeGates(gates)
   const modelAudit = evaluateModelDrift(events)

@@ -477,6 +477,18 @@ Acceptance criteria:
 1. `code_change` no longer passes solely because a test-tagged step exists.
 2. Review and verification evidence can be enforced.
 
+Implementation mapping (2026-03-19):
+- Extended code-change gate evaluator with explicit forced-evaluation option:
+  - `packages/plugin-abilities/src/coding/gates.ts`
+  - `evaluateCodeChangeGates(..., { force: true })` bypasses transitional new-workflow activation shortcut.
+- Wired forced gate activation for the high-level runtime ability only:
+  - `packages/plugin-abilities/src/control/index.ts`
+  - `evaluateControl(...)` and `evaluateControlFromEvents(...)` now force code-change gate evaluation when `ability.name === 'development/code-change'`.
+
+Verification coverage (2026-03-19):
+- `packages/plugin-abilities/tests/control.test.ts`
+  - adds regression test proving `development/code-change` is blocked when review/completion gate evidence is missing, even if transitional activation evidence is absent.
+
 ### WS3: Build the High-Level Coding Ability
 
 Objective:

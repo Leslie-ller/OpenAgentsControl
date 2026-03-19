@@ -215,4 +215,34 @@ describe('bibliography control integration', () => {
     expect(result!.gate.verdict).toBe('block')
     expect(result!.gates?.some((g) => g.name === 'subtask_dependency_gate' && g.verdict === 'block')).toBe(true)
   })
+
+  it('forces code_change gates for development/code-change even without new-workflow activation evidence', async () => {
+    const ability: Ability = {
+      name: 'development/code-change',
+      description: 'High-level code change workflow',
+      task_type: 'code_change',
+      steps: [
+        {
+          id: 'test',
+          type: 'script',
+          run: 'echo test',
+          tags: ['test'],
+        },
+        {
+          id: 'validate',
+          type: 'script',
+          run: 'echo validate',
+          tags: ['validation'],
+          needs: ['test'],
+        },
+      ],
+    }
+
+    const execution = await executeAbility(ability, {}, createMockContext())
+
+    expect(execution.status).toBe('failed')
+    expect(execution.control?.gate.verdict).toBe('block')
+    expect(execution.control?.gates?.some((g) => g.name === 'review_gate' && g.verdict === 'block')).toBe(true)
+    expect(execution.control?.gates?.some((g) => g.name === 'completion_claim_gate' && g.verdict === 'block')).toBe(true)
+  })
 })

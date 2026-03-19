@@ -1,5 +1,9 @@
 import type { NamedGateResult, ObligationResult } from '../types/index.js'
 
+export interface CodeChangeGateOptions {
+  force?: boolean
+}
+
 function isSatisfied(obligations: ObligationResult[], key: string): boolean {
   return obligations.some((ob) => ob.key === key && ob.status === 'satisfied')
 }
@@ -55,7 +59,8 @@ function hasNonEmptyArray(payloads: Array<Record<string, unknown>>, key: string)
 
 export function evaluateCodeChangeGates(
   obligations: ObligationResult[],
-  evidencePayloads: Array<Record<string, unknown>> = []
+  evidencePayloads: Array<Record<string, unknown>> = [],
+  options: CodeChangeGateOptions = {}
 ): NamedGateResult[] {
   const gates: NamedGateResult[] = []
 
@@ -65,7 +70,7 @@ export function evaluateCodeChangeGates(
     || isSatisfied(obligations, 'requirements_checked')
     || isSatisfied(obligations, 'affected_files_identified')
 
-  if (!newWorkflowActivated) {
+  if (!newWorkflowActivated && !options.force) {
     return [
       { name: 'validation_gate', verdict: 'allow', reasons: [], warnings: [] },
       { name: 'review_gate', verdict: 'allow', reasons: [], warnings: [] },
