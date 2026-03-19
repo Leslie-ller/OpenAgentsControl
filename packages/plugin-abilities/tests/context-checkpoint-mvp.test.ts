@@ -9,6 +9,9 @@ import { renderFocusRefreshBlock } from '../src/runtime/context/focus-refresh.js
 import { selectDetailFields } from '../src/runtime/context/detail-reinjector.js'
 import { createCompactionCheckpoint } from '../src/runtime/context/compaction-checkpoint.js'
 import { PendingCheckpointSummaries } from '../src/runtime/context/pending-checkpoint-summaries.js'
+import { ControlEventBus } from '../src/control/event-bus.js'
+import { EventLog } from '../src/control/event-log.js'
+import { ExecutionManager } from '../src/executor/execution-manager.js'
 
 function makeExecution(overrides?: Partial<AbilityExecution>): AbilityExecution {
   return {
@@ -61,6 +64,40 @@ function makeExecution(overrides?: Partial<AbilityExecution>): AbilityExecution 
     },
     ...overrides,
   }
+}
+
+async function runExecutionForCheckpoint(
+  tempDir: string,
+  inputs: Record<string, unknown>,
+): Promise<AbilityExecution> {
+  const eventLog = new EventLog({ logDir: path.join(tempDir, 'control-logs') })
+  const eventBus = new ControlEventBus({ log: eventLog })
+  const manager = new ExecutionManager(eventBus)
+
+  const ability = {
+    name: 'context-checkpoint-test',
+    description: 'checkpoint test ability',
+    task_type: 'code_change' as const,
+    steps: [
+      {
+        id: 'execute',
+        type: 'script' as const,
+        run: 'python3 - <<\'PY\'\nimport json\nprint(json.dumps({"implementation_summary":"done","changed_files":["src/runtime/context/checkpoint-store.ts"]}))\nPY',
+      },
+      {
+        id: 'validate',
+        type: 'script' as const,
+        run: 'python3 - <<\'PY\'\nimport json\nprint(json.dumps({"commands":["bun test"],"validated_claims":["ok"],"verdict":"pass"}))\nPY',
+      },
+    ],
+  }
+
+  const execution = await manager.execute(ability as any, inputs, {
+    cwd: tempDir,
+    env: {},
+  })
+
+  return execution
 }
 
 describe('context checkpoint MVP runtime', () => {
@@ -192,5 +229,24 @@ describe('context checkpoint MVP runtime', () => {
     summaries.put('session-clear', 'summary-clear')
     summaries.clear('session-clear')
     expect(summaries.consume('session-clear')).toBeUndefined()
+  })
+
+  it('generates checkpoint summary from executed runtime steps', async () => {
+    const execution = await runExecutionForCheckpoint(tempDir, {
+      objective: 'Implement context checkpoint flow',
+      topic: 'runtime checkpoint',
+    })
+
+    const store = new CheckpointStore({ rootDir: path.join(tempDir, 'checkpoints') })
+    const checkpoint = await createCompactionCheckpoint(execution, store)
+
+    expect(checkpoint.topic).toBe('runtime-checkpoint')
+    expect(checkpoint.summary).toContain('Checkpoint Context:')
+    expect(checkpoint.summary).toContain('Critical Details To Preserve:')
+
+    const detail = await store.loadDetail(checkpoint.topic)
+    expect(detail).not.toBeNull()
+    expect(detail!.commands_run).toContain('bun test')
+    expect(detail!.decisions).toContain('review_verdict:pass')
   })
 })
