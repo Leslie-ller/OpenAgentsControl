@@ -73,10 +73,21 @@ steps:
       import hashlib
       import json
       import os
+      import re
 
       query = "{{inputs.query}}"
       limit = int("{{inputs.limit}}")
       step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+
+      GENERIC_QUERY_TOKENS = {
+        "about", "after", "analysis", "approach", "approaches", "article", "articles",
+        "based", "between", "case", "comparison", "design", "effect", "effects",
+        "evaluation", "framework", "frameworks", "general", "impact", "implications",
+        "introduction", "method", "methods", "model", "models", "overview", "paper",
+        "papers", "query", "queries", "result", "results", "review", "reviews",
+        "study", "studies", "survey", "surveys", "system", "systems", "thesis",
+        "topic", "topics", "using", "with", "without",
+      }
 
       def load_step_output(step_id):
         payload = step_outputs.get(step_id, {})
@@ -88,6 +99,76 @@ steps:
           return parsed if isinstance(parsed, dict) else {"value": parsed}
         except Exception:
           return {"raw": raw}
+
+      def tokenize(text):
+        if not isinstance(text, str):
+          return []
+        return re.findall(r"[a-z0-9]+", text.lower())
+
+      def normalize_token(token):
+        if len(token) > 4 and token.endswith("ies"):
+          return token[:-3] + "y"
+        if len(token) > 5 and token.endswith("ing"):
+          return token[:-3]
+        if len(token) > 4 and token.endswith("s"):
+          return token[:-1]
+        return token
+
+      def extract_query_tokens(text):
+        tokens = []
+        seen = set()
+        for token in tokenize(text):
+          normalized = normalize_token(token)
+          if len(normalized) < 4 or normalized in GENERIC_QUERY_TOKENS or normalized in seen:
+            continue
+          seen.add(normalized)
+          tokens.append(normalized)
+        return tokens
+
+      def normalized_tokens_from_text(text):
+        return [normalize_token(token) for token in tokenize(text)]
+
+      def extract_result_fields(result):
+        title = result.get("title") if isinstance(result.get("title"), str) else ""
+        support_fields = []
+        for value in (
+          result.get("snippet"),
+          result.get("abstract"),
+          result.get("summary"),
+        ):
+          if isinstance(value, str) and value.strip():
+            support_fields.append(value)
+        metadata = result.get("metadata", {})
+        if isinstance(metadata, dict):
+          for key in ("keywords", "concepts", "topics"):
+            values = metadata.get(key)
+            if isinstance(values, list):
+              for item in values:
+                if isinstance(item, str) and item.strip():
+                  support_fields.append(item)
+                elif isinstance(item, dict):
+                  name = item.get("display_name") or item.get("name")
+                  if isinstance(name, str) and name.strip():
+                    support_fields.append(name)
+        title_tokens = set(normalized_tokens_from_text(title))
+        support_tokens = set(normalized_tokens_from_text(" ".join(support_fields)))
+        return title_tokens, support_tokens, bool(support_fields)
+
+      def is_relevant_academic_result(result, query_tokens):
+        if not query_tokens:
+          return True
+        title_tokens, support_tokens, has_support_fields = extract_result_fields(result)
+        overlap = [token for token in query_tokens if token in title_tokens or token in support_tokens]
+        if len(query_tokens) == 1:
+          return len(overlap) == 1
+        if len(overlap) < 2:
+          return False
+        support_overlap = [token for token in query_tokens if token in support_tokens]
+        if len(support_overlap) >= 1:
+          return True
+        if not has_support_fields:
+          return True
+        return False
 
       def make_paper_key(prefix, candidate):
         for source in (
@@ -110,9 +191,14 @@ steps:
       zotero = load_step_output("search-zotero")
       items = []
       seen = set()
+      query_tokens = extract_query_tokens(query)
+      filtered_academic_count = 0
 
       for result in academic.get("results", [])[:limit]:
         if not isinstance(result, dict):
+          continue
+        if not is_relevant_academic_result(result, query_tokens):
+          filtered_academic_count += 1
           continue
         paper_key = make_paper_key("academic", result)
         if paper_key in seen:
@@ -181,6 +267,7 @@ steps:
           "academic_result_count": academic.get("result_count"),
           "zotero_result_count": zotero.get("result_count"),
           "academic_warning": academic.get("warning"),
+          "filtered_academic_result_count": filtered_academic_count,
         },
         "source_stage": "screening",
       }))
