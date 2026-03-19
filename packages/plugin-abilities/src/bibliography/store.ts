@@ -84,6 +84,7 @@ export interface DecisionData {
 
 export interface EvidencePackData {
   section: string
+  selected_paper_keys?: string[]
   papers: Array<{
     paper_key: string
     claim: string
@@ -94,6 +95,7 @@ export interface EvidencePackData {
 
 export interface AuditData {
   section: string
+  selected_paper_keys?: string[]
   status: 'pass' | 'revise' | 'fail'
   issues: Array<{
     citation: string

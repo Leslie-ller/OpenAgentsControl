@@ -53,10 +53,20 @@ describe('bibliography command dispatch', () => {
       expect(r!.inputs.section).toBe('chapter-3')
     })
 
+    it('/section-evidence-pack forwards scoped paper keys', () => {
+      const r = route('/section-evidence-pack', { section: 'chapter-3', paper_keys: ['P1', 'P2'] })
+      expect(r!.inputs.paper_keys).toEqual(['P1', 'P2'])
+    })
+
     it('/citation-audit routes correctly', () => {
       const r = route('/citation-audit', { section: 'chapter-3' })
       expect(r!.abilityName).toBe('research/citation-audit')
       expect(r!.inputs.section).toBe('chapter-3')
+    })
+
+    it('/citation-audit forwards comma-delimited paper keys', () => {
+      const r = route('/citation-audit', { section: 'chapter-3', paper_keys: 'P1,P2' })
+      expect(r!.inputs.paper_keys).toEqual(['P1', 'P2'])
     })
   })
 
@@ -116,6 +126,11 @@ describe('bibliography command dispatch', () => {
       const r = route('/bibliography', { stage: 'audit', payload: 'chapter-3' })
       expect(r!.abilityName).toBe('research/citation-audit')
       expect(r!.inputs.section).toBe('chapter-3')
+    })
+
+    it('evidence-pack stage forwards scoped paper keys', () => {
+      const r = route('/bibliography', { stage: 'evidence-pack', payload: 'chapter-3', paper_keys: ['P1'] })
+      expect(r!.inputs.paper_keys).toEqual(['P1'])
     })
 
     it('unknown stage returns null', () => {

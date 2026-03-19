@@ -1,5 +1,25 @@
 import type { InputValues } from '../types/index.js'
 
+function normalizeStringArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    const normalized = value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean)
+    return normalized.length > 0 ? normalized : undefined
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+    return normalized.length > 0 ? normalized : undefined
+  }
+
+  return undefined
+}
+
 export interface BibliographyCommandRoute {
   stage: string
   abilityName: string
@@ -57,6 +77,7 @@ export function routeBibliographyCommand(
         abilityName: 'research/section-evidence-pack',
         inputs: {
           section: String(args.section ?? value),
+          paper_keys: normalizeStringArray(args.paper_keys),
         },
       }
     case '/citation-audit':
@@ -65,6 +86,7 @@ export function routeBibliographyCommand(
         abilityName: 'research/citation-audit',
         inputs: {
           section: String(args.section ?? value),
+          paper_keys: normalizeStringArray(args.paper_keys),
         },
       }
     case '/bibliography': {
@@ -102,14 +124,20 @@ export function routeBibliographyCommand(
         return {
           stage: 'evidence-pack',
           abilityName: 'research/section-evidence-pack',
-          inputs: { section: rest },
+          inputs: {
+            section: rest,
+            paper_keys: normalizeStringArray(args.paper_keys),
+          },
         }
       }
       if (stage === 'audit') {
         return {
           stage: 'audit',
           abilityName: 'research/citation-audit',
-          inputs: { section: rest },
+          inputs: {
+            section: rest,
+            paper_keys: normalizeStringArray(args.paper_keys),
+          },
         }
       }
       return null

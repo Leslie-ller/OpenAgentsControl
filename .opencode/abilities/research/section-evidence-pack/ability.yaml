@@ -31,6 +31,9 @@ inputs:
   section:
     type: string
     required: true
+  paper_keys:
+    type: array
+    required: false
 
 steps:
   - id: record-evidence-pack
@@ -65,9 +68,15 @@ steps:
       if not papers:
         raise SystemExit(f"No decision artifacts available for section {section}")
 
+      selected_paper_keys = [
+        candidate.get("paper_key")
+        for candidate in papers
+        if isinstance(candidate.get("paper_key"), str) and candidate.get("paper_key")
+      ]
       sufficiency_score = 0.82 if len(papers) >= 2 else 0.68
       print(json.dumps({
         "section": section,
+        "selected_paper_keys": selected_paper_keys,
         "papers": papers,
         "anchors_count": len(papers),
         "sufficiency_score": sufficiency_score,

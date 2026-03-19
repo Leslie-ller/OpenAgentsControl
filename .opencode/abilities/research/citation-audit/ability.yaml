@@ -26,6 +26,9 @@ inputs:
   section:
     type: string
     required: true
+  paper_keys:
+    type: array
+    required: false
 
 steps:
   - id: record-citation-audit
@@ -76,6 +79,7 @@ steps:
       coverage_score = 0.0 if len(papers) == 0 else round(grounded_claims / len(papers), 2)
       print(json.dumps({
         "section": section,
+        "selected_paper_keys": pack.get("selected_paper_keys", []),
         "status": status,
         "issues": issues,
         "coverage_score": coverage_score,

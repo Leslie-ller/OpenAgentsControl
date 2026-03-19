@@ -162,6 +162,61 @@ function makeEvidencePackAbility(): Ability {
   }
 }
 
+function makeScopedEvidencePackAbility(): Ability {
+  return {
+    name: 'research/section-evidence-pack',
+    description: 'Scoped evidence pack test',
+    task_type: 'section_evidence_pack',
+    inputs: {
+      section: { type: 'string', required: true },
+      paper_keys: { type: 'array', required: false },
+    },
+    steps: [
+      {
+        id: 'record-evidence-pack',
+        type: 'script',
+        run: [
+          "python3 - <<'PY'",
+          'import json, os',
+          'stage = json.loads(os.environ["ABILITY_STAGE_OUTPUTS_JSON"])',
+          'decisions = stage.get("decision", [])',
+          'print(json.dumps({"section":"{{inputs.section}}","matched_count":len(decisions),"matched_keys":[d.get("paper_key") for d in decisions],"selected_paper_keys":[d.get("paper_key") for d in decisions]}))',
+          'PY',
+        ].join('\n'),
+        tags: ['evidence-pack'],
+      },
+    ],
+  }
+}
+
+function makeScopedAuditAbility(): Ability {
+  return {
+    name: 'research/citation-audit',
+    description: 'Scoped audit test',
+    task_type: 'citation_audit',
+    inputs: {
+      section: { type: 'string', required: true },
+      paper_keys: { type: 'array', required: false },
+    },
+    steps: [
+      {
+        id: 'record-citation-audit',
+        type: 'script',
+        run: [
+          "python3 - <<'PY'",
+          'import json, os',
+          'stage = json.loads(os.environ["ABILITY_STAGE_OUTPUTS_JSON"])',
+          'packs = stage.get("evidence-pack", [])',
+          'selected = packs[0].get("selected_paper_keys", []) if packs else []',
+          'print(json.dumps({"section":"{{inputs.section}}","matched_pack_count":len(packs),"selected_paper_keys":selected,"status":"pass","issues":[],"coverage_score":1.0}))',
+          'PY',
+        ].join('\n'),
+        tags: ['citation-audit'],
+      },
+    ],
+  }
+}
+
 function makeAuditAbility(): Ability {
   return {
     name: 'research/citation-audit',
@@ -446,6 +501,59 @@ describe('BibliographyPipeline', () => {
       expect(result.artifact).not.toBeNull()
       expect((result.artifact!.data as any).matched_count).toBe(1)
       expect((result.artifact!.data as any).matched_keys).toEqual(['p2'])
+    })
+
+    it('evidence-pack stage can scope decisions to an explicit paper set', async () => {
+      await store.save('decision', 'p1', {
+        paper_key: 'p1',
+        title: 'Paper 1',
+        decision: 'keep',
+        rationale: 'r1',
+        sections_relevant: ['methods'],
+      })
+      await store.save('decision', 'p2', {
+        paper_key: 'p2',
+        title: 'Paper 2',
+        decision: 'keep',
+        rationale: 'r2',
+        sections_relevant: ['methods'],
+      })
+
+      const result = await pipeline.runStage(
+        'evidence-pack',
+        makeScopedEvidencePackAbility(),
+        { section: 'methods', paper_keys: ['p2'] },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('completed')
+      expect((result.artifact!.data as any).matched_count).toBe(1)
+      expect((result.artifact!.data as any).matched_keys).toEqual(['p2'])
+      expect((result.artifact!.data as any).selected_paper_keys).toEqual(['p2'])
+    })
+
+    it('audit stage can scope evidence packs to the matching paper set', async () => {
+      await store.save('evidence-pack', 'methods', {
+        section: 'methods',
+        selected_paper_keys: ['p2'],
+        papers: [{ paper_key: 'p2', claim: 'c2', evidence: 'e2', strength: 'strong' }],
+      })
+      await store.save('evidence-pack', 'methods-stale', {
+        section: 'methods',
+        selected_paper_keys: ['p1'],
+        papers: [{ paper_key: 'p1', claim: 'c1', evidence: 'e1', strength: 'strong' }],
+      })
+
+      const result = await pipeline.runStage(
+        'audit',
+        makeScopedAuditAbility(),
+        { section: 'methods', paper_keys: ['p2'] },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('completed')
+      expect((result.artifact!.data as any).matched_pack_count).toBe(1)
+      expect((result.artifact!.data as any).selected_paper_keys).toEqual(['p2'])
     })
   })
 

@@ -317,6 +317,7 @@ function filterDependencyArtifacts(
   artifacts: Artifact[],
   inputs: InputValues
 ): Artifact[] {
+  const scopedPaperKeys = normalizeStringArray(inputs.paper_keys)
   switch (`${stage}:${depType}`) {
     case 'screening:plan': {
       const query = normalizeString(inputs.query)
@@ -348,13 +349,23 @@ function filterDependencyArtifacts(
         const sections = Array.isArray(data.sections_relevant)
           ? data.sections_relevant.filter((value): value is string => typeof value === 'string').map(normalizeString)
           : []
-        return sections.includes(section)
+        if (!sections.includes(section)) return false
+        if (scopedPaperKeys.length === 0) return true
+        const paperKey = normalizeString(data.paper_key)
+        return scopedPaperKeys.includes(paperKey)
       })
     }
     case 'audit:evidence-pack': {
       const section = normalizeString(inputs.section)
       if (!section) return []
-      return artifacts.filter((artifact) => normalizeString(toRecord(artifact.data).section) === section)
+      return artifacts.filter((artifact) => {
+        const data = toRecord(artifact.data)
+        if (normalizeString(data.section) !== section) return false
+        if (scopedPaperKeys.length === 0) return true
+        const selectedKeys = normalizeStringArray(data.selected_paper_keys)
+        if (selectedKeys.length === 0) return false
+        return arraysMatch(selectedKeys, scopedPaperKeys)
+      })
     }
     default:
       return artifacts
@@ -363,6 +374,21 @@ function filterDependencyArtifacts(
 
 function normalizeString(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map(normalizeString)
+    .filter(Boolean)
+}
+
+function arraysMatch(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+  const leftSorted = [...left].sort()
+  const rightSorted = [...right].sort()
+  return leftSorted.every((value, index) => value === rightSorted[index])
 }
 
 function toRecord(value: unknown): Record<string, unknown> {
