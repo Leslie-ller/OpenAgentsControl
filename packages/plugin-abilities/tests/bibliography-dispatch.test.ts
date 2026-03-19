@@ -30,6 +30,11 @@ describe('bibliography command dispatch', () => {
       expect(r!.inputs.query).toBe('LLM safety')
     })
 
+    it('/paper-screening forwards collection key when provided', () => {
+      const r = route('/paper-screening', { query: 'agent safety', collection_key: 'NNV7TZ9J' })
+      expect(r!.inputs.collection_key).toBe('NNV7TZ9J')
+    })
+
     it('/paper-fulltext-review routes correctly', () => {
       const r = route('/paper-fulltext-review', { zotero_key: 'ABC123' })
       expect(r!.abilityName).toBe('research/paper-fulltext-review')
@@ -39,6 +44,11 @@ describe('bibliography command dispatch', () => {
     it('/paper-fulltext-review accepts paper_key alias', () => {
       const r = route('/paper-fulltext-review', { paper_key: 'DEF456' })
       expect(r!.inputs.zotero_key).toBe('DEF456')
+    })
+
+    it('/paper-fulltext-review forwards collection key when provided', () => {
+      const r = route('/paper-fulltext-review', { zotero_key: 'ABC123', collection_key: 'NNV7TZ9J' })
+      expect(r!.inputs.collection_key).toBe('NNV7TZ9J')
     })
 
     it('/literature-decision routes correctly', () => {
@@ -97,10 +107,20 @@ describe('bibliography command dispatch', () => {
       expect(r!.inputs.query).toBe('LLM safety')
     })
 
+    it('screening stage forwards collection key', () => {
+      const r = route('/bibliography', { stage: 'screening', payload: 'LLM safety', collection_key: 'NNV7TZ9J' })
+      expect(r!.inputs.collection_key).toBe('NNV7TZ9J')
+    })
+
     it('review stage routes correctly', () => {
       const r = route('/bibliography', { stage: 'review', payload: 'ABC123' })
       expect(r!.abilityName).toBe('research/paper-fulltext-review')
       expect(r!.inputs.zotero_key).toBe('ABC123')
+    })
+
+    it('review stage forwards collection key', () => {
+      const r = route('/bibliography', { stage: 'review', payload: 'ABC123', collection_key: 'NNV7TZ9J' })
+      expect(r!.inputs.collection_key).toBe('NNV7TZ9J')
     })
 
     it('decision stage routes correctly', () => {

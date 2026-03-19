@@ -53,6 +53,7 @@ export function routeBibliographyCommand(
         inputs: {
           query: String(args.query ?? value),
           limit: Number(args.limit ?? 10),
+          collection_key: typeof args.collection_key === 'string' ? args.collection_key.trim() : undefined,
         },
       }
     case '/paper-fulltext-review':
@@ -61,6 +62,7 @@ export function routeBibliographyCommand(
         abilityName: 'research/paper-fulltext-review',
         inputs: {
           zotero_key: String(args.zotero_key ?? args.paper_key ?? value),
+          collection_key: typeof args.collection_key === 'string' ? args.collection_key.trim() : undefined,
         },
       }
     case '/literature-decision':
@@ -103,14 +105,21 @@ export function routeBibliographyCommand(
         return {
           stage: 'screening',
           abilityName: 'research/paper-screening',
-          inputs: { query: rest, limit: Number(args.limit ?? 10) },
+          inputs: {
+            query: rest,
+            limit: Number(args.limit ?? 10),
+            collection_key: typeof args.collection_key === 'string' ? args.collection_key.trim() : undefined,
+          },
         }
       }
       if (stage === 'review') {
         return {
           stage: 'review',
           abilityName: 'research/paper-fulltext-review',
-          inputs: { zotero_key: rest },
+          inputs: {
+            zotero_key: rest,
+            collection_key: typeof args.collection_key === 'string' ? args.collection_key.trim() : undefined,
+          },
         }
       }
       if (stage === 'decision') {

@@ -40,16 +40,231 @@ inputs:
   zotero_key:
     type: string
     required: true
+  collection_key:
+    type: string
+    required: false
 
 steps:
   - id: read-zotero-pdf
     type: script
     run: |
-      set -e
-      set -a
-      . /home/leslie/code/AgentOS/.env
-      set +a
-      /home/leslie/code/AgentOS/.venv/bin/agentos zotero-read --key "{{inputs.zotero_key}}"
+      python3 - <<'PY'
+      import json
+      import os
+      import re
+      import sys
+      import tempfile
+      from pathlib import Path
+
+      sys.path.insert(0, "/home/leslie/code/AgentOS/src")
+
+      from agentos.config import load_env
+      from agentos.ingest import ingest_url
+      from agentos.mineru_adapter import MineruAdapter
+      from agentos.providers.http import fetch_bytes
+      from agentos.zotero_adapter import ZoteroAdapter
+
+      load_env("/home/leslie/code/AgentOS/.env")
+
+      def normalize_input(value):
+        if not isinstance(value, str):
+          return ""
+        normalized = value.strip()
+        if normalized.startswith("{{") and normalized.endswith("}}"):
+          return ""
+        return normalized
+
+      item_key = normalize_input("{{inputs.zotero_key}}")
+      requested_collection_key = normalize_input("{{inputs.collection_key}}")
+      default_collection_key = os.environ.get("BIBLIOGRAPHY_DEFAULT_COLLECTION_KEY", "").strip()
+      target_collection_key = requested_collection_key or default_collection_key
+
+      def make_slug(text):
+        value = re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
+        return value[:80] if value else "paper"
+
+      zotero = ZoteroAdapter.from_env()
+      item_result = zotero.get_item(item_key=item_key)
+      item = item_result.get("item") if isinstance(item_result, dict) else None
+      if not isinstance(item, dict):
+        print(json.dumps({
+          "error": "Zotero item not found",
+          "item_key": item_key,
+        }))
+        raise SystemExit(0)
+
+      item_data = item.get("data", {}) or {}
+      title = item_data.get("title", "") or item_key
+      source_url = item_data.get("url", "") or f"https://www.zotero.org/users/{zotero.cfg.user_id}/items/{item_key}"
+      collections = item_data.get("collections", [])
+      if not isinstance(collections, list):
+        collections = []
+
+      collection_update = None
+      if target_collection_key and target_collection_key not in collections:
+        collection_update = zotero.add_to_collection(item_key=item_key, collection_key=target_collection_key)
+        if isinstance(collection_update, dict) and not collection_update.get("error"):
+          collections = sorted({*collections, target_collection_key})
+
+      markdown_dir = Path("/home/leslie/code/AgentOS/kb/markdown")
+      markdown_dir.mkdir(parents=True, exist_ok=True)
+      output_stub = f"{make_slug(title)}-{item_key.lower()}"
+
+      def load_text(path_str):
+        if not path_str:
+          return ""
+        path = Path(path_str)
+        if not path.exists():
+          return ""
+        try:
+          return path.read_text(encoding="utf-8")
+        except Exception:
+          return ""
+
+      remote_web = {}
+      if isinstance(item_data.get("url"), str) and item_data.get("url", "").startswith(("http://", "https://")):
+        remote_web = ingest_url(
+          item_data["url"],
+          tags=["thesis-bibliography", "remote-fulltext", f"zotero:{item_key}"],
+        )
+
+      remote_pdf = {}
+      attachment = zotero._best_pdf_attachment(item_key=item_key)
+      if attachment:
+        attachment_key = attachment.get("key", "")
+        attachment_data = attachment.get("data", {}) or {}
+        markdown_path = markdown_dir / f"{output_stub}.md"
+        markdown_text = load_text(str(markdown_path))
+        if markdown_text:
+          remote_pdf = {
+            "source": "mineru-cache",
+            "attachment_key": attachment_key,
+            "markdown_path": str(markdown_path),
+            "markdown": markdown_text,
+          }
+        else:
+          raw = fetch_bytes(
+            f"{zotero.cfg.api_base}/users/{zotero.cfg.user_id}/items/{attachment_key}/file",
+            headers={"Zotero-API-Key": zotero.cfg.api_key},
+            timeout=60,
+          )
+          source = "zotero-api-file"
+          if not raw:
+            attachment_url = attachment_data.get("url", "")
+            if isinstance(attachment_url, str) and attachment_url:
+              raw = fetch_bytes(attachment_url, timeout=60)
+              if raw:
+                source = "attachment-url"
+          if not raw:
+            local_pdf = zotero._resolve_local_attachment_path(attachment)
+            if local_pdf:
+              try:
+                raw = Path(local_pdf).read_bytes()
+                source = "zotero-local-storage"
+              except Exception:
+                raw = b""
+          if raw:
+            tmp_path = ""
+            try:
+              with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+                handle.write(raw)
+                tmp_path = handle.name
+              mineru = MineruAdapter.from_env()
+              extraction = mineru.extract_file(
+                file_path=tmp_path,
+                timeout=600,
+                poll_interval=8,
+                save_markdown_path=str(markdown_path),
+              )
+              if isinstance(extraction, dict) and not extraction.get("error"):
+                remote_pdf = {
+                  "source": source,
+                  "attachment_key": attachment_key,
+                  "markdown_path": extraction.get("saved_to") or str(markdown_path),
+                  "markdown": extraction.get("markdown") or load_text(str(markdown_path)),
+                }
+              else:
+                remote_pdf = {
+                  "error": extraction.get("error") if isinstance(extraction, dict) else "MinerU extraction failed",
+                  "attachment_key": attachment_key,
+                }
+            finally:
+              if tmp_path:
+                try:
+                  Path(tmp_path).unlink(missing_ok=True)
+                except Exception:
+                  pass
+
+      fallback_pdf = zotero.read_pdf(item_key=item_key)
+      candidate_sources = []
+      if isinstance(remote_pdf, dict) and isinstance(remote_pdf.get("markdown"), str) and remote_pdf.get("markdown", "").strip():
+        candidate_sources.append({
+          "label": "mineru-markdown",
+          "text": remote_pdf["markdown"],
+          "path": remote_pdf.get("markdown_path", ""),
+        })
+      if isinstance(remote_web, dict) and isinstance(remote_web.get("path"), str):
+        remote_web_text = load_text(remote_web["path"])
+        if remote_web_text.strip():
+          candidate_sources.append({
+            "label": "remote-web-ingest",
+            "text": remote_web_text,
+            "path": remote_web.get("path", ""),
+          })
+      if isinstance(fallback_pdf, dict) and isinstance(fallback_pdf.get("text_preview"), str) and fallback_pdf.get("text_preview", "").strip():
+        candidate_sources.append({
+          "label": "zotero-read",
+          "text": fallback_pdf["text_preview"],
+          "path": fallback_pdf.get("local_pdf_path", ""),
+        })
+
+      if not candidate_sources:
+        error_message = None
+        for payload in (remote_pdf, remote_web, fallback_pdf):
+          if isinstance(payload, dict) and isinstance(payload.get("error"), str) and payload.get("error", "").strip():
+            error_message = payload["error"].strip()
+            break
+        print(json.dumps({
+          "error": error_message or "No usable full-text content found",
+          "item_key": item_key,
+          "title": title,
+          "source_url": source_url,
+          "collection_key": target_collection_key,
+        }))
+        raise SystemExit(0)
+
+      selected = candidate_sources[0]
+      clean_text = re.sub(r"\s+", " ", selected["text"]).strip()
+      print(json.dumps({
+        "paper_key": item_key,
+        "item_key": item_key,
+        "title": title,
+        "source_url": source_url,
+        "collection_key": target_collection_key,
+        "collections": collections,
+        "collection_update": collection_update,
+        "selected_source": selected["label"],
+        "source_markdown_path": selected.get("path", ""),
+        "content": clean_text[:12000],
+        "text_length": len(clean_text),
+        "source_excerpt": clean_text[:4000],
+        "remote_web": {
+          "path": remote_web.get("path"),
+          "provider": remote_web.get("provider"),
+          "char_count": remote_web.get("char_count"),
+        } if isinstance(remote_web, dict) and not remote_web.get("error") else {"error": remote_web.get("error")} if isinstance(remote_web, dict) and remote_web else {},
+        "remote_pdf": {
+          "source": remote_pdf.get("source"),
+          "markdown_path": remote_pdf.get("markdown_path"),
+          "attachment_key": remote_pdf.get("attachment_key"),
+        } if isinstance(remote_pdf, dict) and remote_pdf.get("markdown") else {"error": remote_pdf.get("error")} if isinstance(remote_pdf, dict) and remote_pdf else {},
+        "fallback_pdf": {
+          "source": fallback_pdf.get("source"),
+          "attachment_key": fallback_pdf.get("attachment_key"),
+          "extraction_status": fallback_pdf.get("extraction_status"),
+        } if isinstance(fallback_pdf, dict) else {},
+      }))
+      PY
     tags: [fulltext-extract]
 
   - id: prepare-reading-input
