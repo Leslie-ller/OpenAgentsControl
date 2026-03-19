@@ -236,6 +236,89 @@ describe('executeAbility', () => {
     expect(result.completedSteps[1].status).toBe('skipped')
   })
 
+  it('should evaluate numeric when conditions', async () => {
+    const ability: Ability = {
+      name: 'numeric-when',
+      description: 'Numeric condition test',
+      inputs: {
+        count: {
+          type: 'number',
+          required: true,
+        },
+      },
+      steps: [
+        {
+          id: 'always',
+          type: 'script',
+          run: 'echo always',
+        },
+        {
+          id: 'many',
+          type: 'script',
+          run: 'echo many',
+          when: 'inputs.count > 3',
+        },
+      ],
+    }
+
+    const result = await executeAbility(ability, { count: 2 }, createMockContext())
+    expect(result.completedSteps.find((s) => s.stepId === 'many')?.status).toBe('skipped')
+
+    const result2 = await executeAbility(ability, { count: 5 }, createMockContext())
+    expect(result2.completedSteps.find((s) => s.stepId === 'many')?.status).toBe('completed')
+  })
+
+  it('should evaluate step status when conditions', async () => {
+    const ability: Ability = {
+      name: 'step-status-when',
+      description: 'Step status condition test',
+      steps: [
+        {
+          id: 'first',
+          type: 'script',
+          run: 'echo first',
+        },
+        {
+          id: 'second',
+          type: 'script',
+          run: 'echo second',
+          when: 'steps.first.status == "completed"',
+        },
+      ],
+    }
+
+    const result = await executeAbility(ability, {}, createMockContext())
+    expect(result.status).toBe('completed')
+    expect(result.completedSteps.find((s) => s.stepId === 'second')?.status).toBe('completed')
+  })
+
+  it('should throw on circular step dependencies', async () => {
+    const ability: Ability = {
+      name: 'circular',
+      description: 'Circular dependency test',
+      steps: [
+        { id: 'a', type: 'script', run: 'echo a', needs: ['b'] },
+        { id: 'b', type: 'script', run: 'echo b', needs: ['a'] },
+      ],
+    }
+
+    await expect(executeAbility(ability, {}, createMockContext()))
+      .rejects.toThrow('Circular or unresolvable step dependency')
+  })
+
+  it('should throw on missing dependency reference', async () => {
+    const ability: Ability = {
+      name: 'missing-dep',
+      description: 'Missing dependency test',
+      steps: [
+        { id: 'a', type: 'script', run: 'echo a', needs: ['nonexistent'] },
+      ],
+    }
+
+    await expect(executeAbility(ability, {}, createMockContext()))
+      .rejects.toThrow('Circular or unresolvable step dependency')
+  })
+
   it('should continue on failure when configured', async () => {
     const ability: Ability = {
       name: 'continue',

@@ -483,16 +483,42 @@ async function executeWorkflowStep(
   }
 }
 
-function evaluateCondition(condition: string, inputs: InputValues): boolean {
-  // Simple condition evaluator for expressions like: inputs.env == "production"
-  const match = condition.match(/^inputs\.(\w+)\s*(==|!=)\s*"([^"]*)"$/)
-  if (match) {
-    const [, name, op, value] = match
+function evaluateCondition(
+  condition: string,
+  inputs: InputValues,
+  completedSteps?: StepResult[]
+): boolean {
+  const stringMatch = condition.match(/^inputs\.(\w+)\s*(==|!=)\s*"([^"]*)"$/)
+  if (stringMatch) {
+    const [, name, op, value] = stringMatch
     const actual = String(inputs[name] ?? '')
     if (op === '==') return actual === value
     if (op === '!=') return actual !== value
   }
-  // Fallback: treat truthy/falsy
+
+  const numMatch = condition.match(/^inputs\.(\w+)\s*(>=|<=|>|<|==|!=)\s*(\d+(?:\.\d+)?)$/)
+  if (numMatch) {
+    const [, name, op, numStr] = numMatch
+    const actual = Number(inputs[name])
+    const expected = Number(numStr)
+    if (Number.isNaN(actual)) return false
+    if (op === '>') return actual > expected
+    if (op === '>=') return actual >= expected
+    if (op === '<') return actual < expected
+    if (op === '<=') return actual <= expected
+    if (op === '==') return actual === expected
+    if (op === '!=') return actual !== expected
+  }
+
+  const stepMatch = condition.match(/^steps\.([\w-]+)\.status\s*(==|!=)\s*"([^"]*)"$/)
+  if (stepMatch && completedSteps) {
+    const [, stepId, op, value] = stepMatch
+    const step = completedSteps.find((s) => s.stepId === stepId)
+    const actual = step?.status ?? 'pending'
+    if (op === '==') return actual === value
+    if (op === '!=') return actual !== value
+  }
+
   return Boolean(condition)
 }
 
@@ -508,8 +534,13 @@ function buildExecutionOrder(steps: Step[]): Step[] {
     })
 
     if (!next) {
-      console.error('[abilities] Unable to resolve step order - circular dependency?')
-      break
+      const stuckIds = remaining.map((s) => s.id).join(', ')
+      const completedIds = [...completed].join(', ') || 'none'
+      throw new Error(
+        `[abilities] Circular or unresolvable step dependency detected. ` +
+        `Stuck steps: ${stuckIds}. ` +
+        `Completed: ${completedIds}`
+      )
     }
 
     result.push(next)
@@ -649,7 +680,7 @@ export async function executeAbility(
 
     // Evaluate `when` condition — skip step if condition is false
     if ('when' in step && step.when) {
-      const conditionMet = evaluateCondition(step.when, resolvedInputs)
+      const conditionMet = evaluateCondition(step.when, resolvedInputs, execution.completedSteps)
       if (!conditionMet) {
         const skippedResult: StepResult = {
           stepId: step.id,

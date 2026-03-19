@@ -12,6 +12,8 @@ import { BibliographyPipeline } from './bibliography/pipeline.js'
 import { parseCommandInput, routeBibliographyCommand } from './bibliography/command-routing.js'
 import { scanBibliographyArtifacts } from './bibliography/audit-scan.js'
 import { deriveCompletionSummary } from './coding/completion-summary.js'
+import { createCodingArtifactStore } from './coding/artifact-store.js'
+import type { CodingArtifactType } from './coding/artifact-store.js'
 import { createCheckpointStore } from './runtime/context/checkpoint-store.js'
 import { createCompactionCheckpoint } from './runtime/context/compaction-checkpoint.js'
 import { renderDetailReinjectionBlock, selectDetailFields } from './runtime/context/detail-reinjector.js'
@@ -19,6 +21,7 @@ import { renderFocusRefreshBlock } from './runtime/context/focus-refresh.js'
 import { PendingCheckpointSummaries } from './runtime/context/pending-checkpoint-summaries.js'
 import { resolveTopicFromExecution } from './runtime/context/topic-resolver.js'
 import type { DetailUseCase } from './runtime/context/types.js'
+import type { FocusTrigger } from './runtime/context/focus-refresh.js'
 import { join } from 'path'
 
 /**
@@ -47,6 +50,8 @@ const ALWAYS_ALLOWED_TOOLS = [
 export const AbilitiesPlugin: Plugin = async (ctx) => {
   const abilities = new Map<string, LoadedAbility>()
   const pendingCheckpointSummaries = new PendingCheckpointSummaries()
+  const pendingFocusTriggers = new Map<string, FocusTrigger>()
+  const lastActiveStepBySession = new Map<string, string>()
 
   // Initialize control event infrastructure
   const controlLogDir = join(ctx.directory, '.opencode', 'control-logs')
@@ -56,8 +61,76 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
   const bibliographyStore = createBibliographyStore(ctx.directory)
   const bibliographyPipeline = new BibliographyPipeline(bibliographyStore)
   const checkpointStore = createCheckpointStore(ctx.directory)
+  const codingArtifactStore = createCodingArtifactStore(ctx.directory)
 
   const abilitiesDir = `${ctx.directory}/.opencode/abilities`
+  const LARGE_TOOL_OUTPUT_THRESHOLD = 4000
+  const CODING_ARTIFACT_TYPES: CodingArtifactType[] = [
+    'task-plan',
+    'subtask-record',
+    'implementation-result',
+    'validation-report',
+    'review-report',
+    'completion-summary',
+  ]
+
+  const normalizeSessionKey = (sessionID: unknown): string => {
+    return typeof sessionID === 'string' && sessionID.trim().length > 0
+      ? sessionID
+      : '__global__'
+  }
+
+  const extractSessionID = (value: unknown): string | undefined => {
+    const direct = (value as any)?.sessionID
+    if (typeof direct === 'string' && direct.trim().length > 0) return direct
+
+    const fromMessage = (value as any)?.message?.sessionID
+    if (typeof fromMessage === 'string' && fromMessage.trim().length > 0) return fromMessage
+
+    const fromProperties = (value as any)?.properties?.info?.id
+    if (typeof fromProperties === 'string' && fromProperties.trim().length > 0) return fromProperties
+
+    return undefined
+  }
+
+  const queueFocusTrigger = (sessionID: string | undefined, trigger: FocusTrigger): void => {
+    pendingFocusTriggers.set(normalizeSessionKey(sessionID), trigger)
+  }
+
+  const consumeQueuedFocusTrigger = (sessionID: string | undefined): FocusTrigger | undefined => {
+    const key = normalizeSessionKey(sessionID)
+    const trigger = pendingFocusTriggers.get(key)
+    if (trigger) pendingFocusTriggers.delete(key)
+    return trigger
+  }
+
+  const consumeStageTransitionTrigger = (
+    sessionID: string | undefined,
+    activeStepID: string | undefined
+  ): FocusTrigger | undefined => {
+    const key = normalizeSessionKey(sessionID)
+    if (!activeStepID) {
+      lastActiveStepBySession.delete(key)
+      return undefined
+    }
+
+    const previous = lastActiveStepBySession.get(key)
+    lastActiveStepBySession.set(key, activeStepID)
+    if (previous && previous !== activeStepID) {
+      return 'workflow_stage_transition'
+    }
+    return undefined
+  }
+
+  const estimateOutputSize = (payload: unknown): number => {
+    if (payload === undefined || payload === null) return 0
+    if (typeof payload === 'string') return payload.length
+    try {
+      return JSON.stringify(payload).length
+    } catch {
+      return 0
+    }
+  }
 
   // Load abilities on startup
   try {
@@ -123,6 +196,41 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         inputs,
         createExecutorContext()
       )
+
+      if (ability.task_type === 'code_change' && execution.control) {
+        const taskId = typeof inputs.task_id === 'string' && inputs.task_id.trim().length > 0
+          ? inputs.task_id
+          : `task_${Date.now()}`
+
+        try {
+          const summary = deriveCompletionSummary(execution)
+          if (summary) {
+            await codingArtifactStore.save('completion-summary', taskId, taskId, summary)
+          }
+
+          const validateStep = execution.completedSteps.find((s) => s.stepId === 'validate')
+          if (validateStep?.output) {
+            try {
+              const validationData = JSON.parse(validateStep.output.trim()) as Record<string, unknown>
+              await codingArtifactStore.save('validation-report', taskId, taskId, validationData)
+            } catch {
+              // ignore non-JSON validation output
+            }
+          }
+
+          const reviewStep = execution.completedSteps.find((s) => s.stepId === 'review')
+          if (reviewStep?.output) {
+            try {
+              const reviewData = JSON.parse(reviewStep.output.trim()) as Record<string, unknown>
+              await codingArtifactStore.save('review-report', taskId, taskId, reviewData)
+            } catch {
+              // ignore non-JSON review output
+            }
+          }
+        } catch (err) {
+          console.error('[abilities] Failed to persist coding artifacts:', err)
+        }
+      }
 
       return JSON.stringify({
         status: execution.status,
@@ -212,7 +320,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     // Hook: Inject ability context into every chat message
     async 'chat.message'(input, output) {
       try {
-        const sessionID = (input as any)?.message?.sessionID
+        const sessionID = extractSessionID(input)
         const injections: string[] = []
         const pendingSummary = pendingCheckpointSummaries.consume(
           typeof sessionID === 'string' ? sessionID : undefined
@@ -227,10 +335,15 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
           const topic = resolveTopicFromExecution(activeExecution)
           const state = await checkpointStore.loadState(topic)
           if (state) {
-            injections.push(renderFocusRefreshBlock(state, 'pre_high_impact_decision'))
+            const trigger = consumeQueuedFocusTrigger(sessionID)
+              ?? consumeStageTransitionTrigger(sessionID, activeExecution.currentStep?.id)
+              ?? 'pre_high_impact_decision'
+            injections.push(renderFocusRefreshBlock(state, trigger))
           }
 
           injections.push(buildAbilityContextInjection(activeExecution))
+        } else {
+          lastActiveStepBySession.delete(normalizeSessionKey(sessionID))
         }
 
         for (let i = injections.length - 1; i >= 0; i -= 1) {
@@ -271,6 +384,27 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
       }
     },
 
+    // Hook: Capture signals for richer focus refresh triggers
+    async 'tool.execute.after'(input, output) {
+      try {
+        const execution = executionManager.getActive()
+        if (!execution || execution.status !== 'running') return
+
+        const sessionID = extractSessionID(input)
+        const toolName = (input as any)?.tool
+        if (toolName === 'task') {
+          queueFocusTrigger(sessionID, 'subagent_return')
+        }
+
+        const outputSize = estimateOutputSize((output as any)?.output ?? output)
+        if (outputSize >= LARGE_TOOL_OUTPUT_THRESHOLD) {
+          queueFocusTrigger(sessionID, 'large_tool_output')
+        }
+      } catch (err) {
+        console.error('[abilities] tool.execute.after error:', err)
+      }
+    },
+
     // Hook: Cleanup on session deletion
     async event({ event }) {
       try {
@@ -287,6 +421,8 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         if (event.type === 'session.deleted') {
           const sessionID = (event as any)?.properties?.info?.id
           pendingCheckpointSummaries.clear(typeof sessionID === 'string' ? sessionID : undefined)
+          pendingFocusTriggers.delete(normalizeSessionKey(sessionID))
+          lastActiveStepBySession.delete(normalizeSessionKey(sessionID))
           executionManager.cleanup()
           eventBus.reset()
         }
@@ -404,6 +540,49 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
             selected,
             reinjection: renderDetailReinjectionBlock(topic, selected),
           })
+        },
+      }),
+
+      'ability.coding.artifacts': tool({
+        description: 'List or load coding workflow artifacts (task plans, validation reports, etc.)',
+        args: {
+          action: tool.schema.enum(['list', 'load']).describe('Action: list all or load specific'),
+          type: tool.schema.optional(tool.schema.string()).describe('Artifact type filter'),
+          key: tool.schema.optional(tool.schema.string()).describe('Artifact key for load'),
+        },
+        async execute({ action, type, key }) {
+          const isValidType = (value: string): value is CodingArtifactType => {
+            return CODING_ARTIFACT_TYPES.includes(value as CodingArtifactType)
+          }
+
+          if (action === 'list') {
+            if (type) {
+              if (!isValidType(type)) {
+                return JSON.stringify({ status: 'error', message: `Unknown artifact type '${type}'` })
+              }
+              const items = await codingArtifactStore.list(type)
+              return JSON.stringify({ status: 'ok', count: items.length, items })
+            }
+
+            const allByType = await Promise.all(
+              CODING_ARTIFACT_TYPES.map(async (artifactType) => ({
+                type: artifactType,
+                keys: await codingArtifactStore.list(artifactType),
+              }))
+            )
+            const count = allByType.reduce((acc, item) => acc + item.keys.length, 0)
+            return JSON.stringify({ status: 'ok', count, items: allByType })
+          }
+
+          if (action === 'load' && type && key) {
+            if (!isValidType(type)) {
+              return JSON.stringify({ status: 'error', message: `Unknown artifact type '${type}'` })
+            }
+            const data = await codingArtifactStore.load(type, key)
+            return JSON.stringify({ status: data ? 'ok' : 'not_found', data })
+          }
+
+          return JSON.stringify({ status: 'error', message: 'Invalid action or missing params' })
         },
       }),
 

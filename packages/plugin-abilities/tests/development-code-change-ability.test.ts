@@ -93,8 +93,7 @@ describe('development/code-change ability', () => {
         acceptance_criteria: 'handler returns 200;adds validation',
         path: 'small',
         affected_files: 'src/api/handler.ts,src/api/types.ts',
-        validation_command: 'echo validation_ok',
-        validation_exit_code: 1,
+        validation_command: 'exit 1',
       },
       createContext(),
       { eventBus: bus }
