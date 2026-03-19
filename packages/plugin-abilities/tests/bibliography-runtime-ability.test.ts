@@ -92,7 +92,7 @@ describe('bibliography runtime abilities', () => {
       'agent safety systematic review',
       'agent safety survey',
     ])
-    expect(output.direction_summary).toContain('agent + safety')
+    expect(output.direction_summary).toContain('explicitly stay within agent safety')
     expect(output.search_profile.normalized_focus_query).toBe('agent safety')
     expect(output.search_profile.search_queries).toEqual([
       'agent safety',
@@ -100,6 +100,7 @@ describe('bibliography runtime abilities', () => {
       'agent safety survey',
     ])
     expect(output.search_profile.required_terms).toEqual(['agent', 'safety'])
+    expect(output.search_profile.required_phrases).toEqual(['agent safety'])
     expect(output.search_profile.screening_hints.require_support_field_match).toBe(true)
     expect(output.search_summary.academic_result_count).toBe(2)
     expect(output.search_summary.zotero_result_count).toBe(1)
@@ -148,6 +149,55 @@ describe('bibliography runtime abilities', () => {
     expect(output.warnings.map((warning: Record<string, unknown>) => warning.code)).toEqual([
       'academic-search-warning',
       'no-search-coverage',
+    ])
+  })
+
+  it('bibliography-plan preserves supply-chain anchors for thesis-style topics', async () => {
+    const loaded = await loadAbility('research/bibliography-plan', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const ability = structuredClone(loaded!.ability)
+    overrideStepRunById(ability as any, 'search-academic-landscape', shellEchoJson({
+      query: 'integrated supply chain optimization with milp baseline and learning-assisted extensions',
+      result_count: 1,
+      results: [
+        {
+          title: 'Supply chain optimization with mixed-integer programming',
+          provider: 'openalex',
+          url: 'https://openalex.org/W99',
+          metadata: {
+            year: 2024,
+            type: 'article',
+          },
+        },
+      ],
+    }))
+    overrideStepRunById(ability as any, 'search-zotero-coverage', shellEchoJson({
+      query: 'integrated supply chain optimization with milp baseline and learning-assisted extensions',
+      result_count: 0,
+      items: [],
+    }))
+
+    const execution = await executeAbility(
+      ability,
+      { topic: 'integrated supply chain optimization with milp baseline and learning-assisted extensions' },
+      createContext()
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.search_profile.normalized_focus_query).toBe('supply chain optimization')
+    expect(output.search_profile.required_terms).toEqual(['supply', 'chain', 'optimization'])
+    expect(output.search_profile.required_phrases).toEqual(['supply chain'])
+    expect(output.search_profile.support_terms[0]).toBe('milp')
+    expect(output.search_profile.search_queries).toEqual([
+      'supply chain optimization',
+      'supply chain optimization milp',
+      'supply chain optimization systematic review',
+      'supply chain optimization survey',
     ])
   })
 
@@ -375,6 +425,7 @@ PY`)
                 ],
                 required_terms: ['agent', 'safety'],
                 support_terms: ['optimization'],
+                required_phrases: ['agent safety'],
                 excluded_terms: [],
                 screening_hints: {
                   min_anchor_matches: 2,
@@ -396,6 +447,7 @@ PY`)
     ])
     expect(output.search_profile.normalized_focus_query).toBe('agent safety optimization')
     expect(output.search_profile.support_terms).toEqual(['optimization'])
+    expect(output.search_profile.required_phrases).toEqual(['agent safety'])
     expect(output.items).toHaveLength(1)
     expect(output.items[0].matched_query).toBe('agent safety optimization')
     expect(output.screening_status).toBe('partial')
@@ -462,6 +514,7 @@ PY`,
                 search_queries: ['rare topic', 'rare topic survey'],
                 required_terms: ['rare', 'topic'],
                 support_terms: [],
+                required_phrases: ['rare topic'],
                 excluded_terms: [],
                 screening_hints: {
                   min_anchor_matches: 2,
@@ -482,6 +535,85 @@ PY`,
       'academic-search-warning',
       'planned-search-no-results',
     ])
+  })
+
+  it('paper-screening keeps thesis-style domain anchors and filters off-domain papers', async () => {
+    const loaded = await loadAbility('research/paper-screening', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const ability = structuredClone(loaded!.ability)
+    overrideStepRunById(ability as any, 'search-academic', shellEchoJson({
+      query: 'integrated supply chain optimization with milp baseline and learning-assisted extensions',
+      result_count: 2,
+      results: [
+        {
+          title: 'Efficacy and Safety of Trastuzumab as a Single Agent in First-Line Treatment',
+          provider: 'openalex',
+          url: 'https://openalex.org/W2115759102',
+          snippet: 'Single-agent trastuzumab is active and well tolerated in metastatic breast cancer.',
+          metadata: { year: 2002 },
+        },
+        {
+          title: 'Mixed-integer supply chain optimization with integrated production and inventory planning',
+          provider: 'openalex',
+          url: 'https://openalex.org/W3141592653',
+          snippet: 'This supply chain optimization study coordinates production, inventory, and transportation decisions.',
+          metadata: { year: 2024 },
+        },
+      ],
+      queries_used: ['supply chain optimization', 'supply chain optimization milp'],
+      plan_applied: true,
+    }))
+    overrideStepRunById(ability as any, 'search-zotero', shellEchoJson({
+      query: 'integrated supply chain optimization with milp baseline and learning-assisted extensions',
+      result_count: 0,
+      items: [],
+      queries_used: ['supply chain optimization', 'supply chain optimization milp'],
+      plan_applied: true,
+    }))
+
+    const execution = await executeAbility(
+      ability,
+      {
+        query: 'integrated supply chain optimization with milp baseline and learning-assisted extensions',
+        limit: 10,
+      },
+      {
+        ...createContext(),
+        stageOutputs: {
+          plan: [
+            {
+              topic: 'integrated supply chain optimization with milp baseline and learning-assisted extensions',
+              search_profile: {
+                normalized_focus_query: 'supply chain optimization',
+                search_queries: [
+                  'supply chain optimization',
+                  'supply chain optimization milp',
+                ],
+                required_terms: ['supply', 'chain', 'optimization'],
+                support_terms: ['milp', 'production', 'inventory', 'transportation'],
+                required_phrases: ['supply chain'],
+                excluded_terms: [],
+                screening_hints: {
+                  min_anchor_matches: 2,
+                  require_support_field_match: true,
+                },
+              },
+            },
+          ],
+        },
+      }
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.items).toHaveLength(1)
+    expect(output.items[0].title).toContain('supply chain optimization')
+    expect(output.search_summary.filtered_academic_result_count).toBe(1)
+    expect(output.search_profile.required_phrases).toEqual(['supply chain'])
   })
 
   it('paper-fulltext-review fails when zotero-read returns an error payload', async () => {

@@ -59,6 +59,7 @@ steps:
         "mapping", "master", "overview", "paper", "papers", "related", "research",
         "review", "reviews", "section", "sections", "state", "study", "studies",
         "survey", "surveys", "systematic", "thesis", "work", "works",
+        "baseline", "extension", "extensions",
       }
 
       def tokenize(text):
@@ -103,6 +104,25 @@ steps:
           terms.append(normalized)
         return terms
 
+      def normalize_phrases(values):
+        if not isinstance(values, list):
+          return []
+        phrases = []
+        seen = set()
+        for value in values:
+          if not isinstance(value, str):
+            continue
+          tokens = [normalize_token(token) for token in tokenize(value)]
+          tokens = [token for token in tokens if len(token) >= 4]
+          if len(tokens) < 2:
+            continue
+          phrase = " ".join(tokens)
+          if phrase in seen:
+            continue
+          seen.add(phrase)
+          phrases.append(phrase)
+        return phrases
+
       def derive_focus_terms(text):
         terms = []
         seen = set()
@@ -130,12 +150,15 @@ steps:
 
       required_terms = normalize_terms(search_profile.get("required_terms"))
       support_terms = normalize_terms(search_profile.get("support_terms"))
+      required_phrases = normalize_phrases(search_profile.get("required_phrases"))
       excluded_terms = normalize_terms(search_profile.get("excluded_terms"))
 
       if not required_terms:
         fallback_terms = derive_focus_terms(normalized_focus_query or query)
         required_terms = fallback_terms[:2] if len(fallback_terms) >= 2 else fallback_terms[:1]
         support_terms = [term for term in fallback_terms if term not in required_terms][:3]
+      if not required_phrases and isinstance(normalized_focus_query, str) and len(normalized_focus_query.split()) >= 2:
+        required_phrases = normalize_phrases([normalized_focus_query])
 
       screening_hints = search_profile.get("screening_hints") if isinstance(search_profile.get("screening_hints"), dict) else {}
 
@@ -146,6 +169,7 @@ steps:
         "search_queries": search_queries,
         "required_terms": required_terms,
         "support_terms": support_terms,
+        "required_phrases": required_phrases,
         "excluded_terms": excluded_terms,
         "screening_hints": screening_hints,
       }))
@@ -395,6 +419,9 @@ steps:
       def normalized_tokens_from_text(text):
         return [normalize_token(token) for token in tokenize(text)]
 
+      def normalized_text(text):
+        return " ".join(normalized_tokens_from_text(text))
+
       def extract_result_fields(result):
         title = result.get("title") if isinstance(result.get("title"), str) else ""
         support_fields = []
@@ -418,8 +445,9 @@ steps:
                   if isinstance(name, str) and name.strip():
                     support_fields.append(name)
         title_tokens = set(normalized_tokens_from_text(title))
-        support_tokens = set(normalized_tokens_from_text(" ".join(support_fields)))
-        return title_tokens, support_tokens, bool(support_fields)
+        support_text = " ".join(support_fields)
+        support_tokens = set(normalized_tokens_from_text(support_text))
+        return title_tokens, support_tokens, bool(support_fields), normalized_text(title), normalized_text(support_text)
 
       def normalize_terms(values):
         if not isinstance(values, list):
@@ -436,11 +464,35 @@ steps:
           terms.append(normalized)
         return terms
 
-      def is_relevant_academic_result(result, required_terms, support_terms):
+      def normalize_phrases(values):
+        if not isinstance(values, list):
+          return []
+        phrases = []
+        seen = set()
+        for value in values:
+          if not isinstance(value, str):
+            continue
+          tokens = [normalize_token(token) for token in tokenize(value)]
+          tokens = [token for token in tokens if len(token) >= 4]
+          if len(tokens) < 2:
+            continue
+          phrase = " ".join(tokens)
+          if phrase in seen:
+            continue
+          seen.add(phrase)
+          phrases.append(phrase)
+        return phrases
+
+      def phrase_matches(phrase, title_text, support_text):
+        return phrase in title_text or phrase in support_text
+
+      def is_relevant_academic_result(result, required_terms, support_terms, required_phrases):
         anchor_terms = required_terms or support_terms
         if not anchor_terms:
           return True
-        title_tokens, support_tokens, has_support_fields = extract_result_fields(result)
+        title_tokens, support_tokens, has_support_fields, title_text, support_text = extract_result_fields(result)
+        if required_phrases and not any(phrase_matches(phrase, title_text, support_text) for phrase in required_phrases):
+          return False
         overlap = [token for token in anchor_terms if token in title_tokens or token in support_tokens]
         min_anchor_matches = 2 if len(anchor_terms) >= 2 else 1
         if len(overlap) < min_anchor_matches:
@@ -478,12 +530,15 @@ steps:
       seen = set()
       required_terms = normalize_terms(search_profile.get("required_terms"))
       support_terms = normalize_terms(search_profile.get("support_terms"))
+      required_phrases = normalize_phrases(search_profile.get("required_phrases"))
       search_queries = search_profile.get("search_queries") if isinstance(search_profile.get("search_queries"), list) else []
       normalized_focus_query = search_profile.get("normalized_focus_query") if isinstance(search_profile.get("normalized_focus_query"), str) else query
       if not required_terms and not support_terms:
         fallback_terms = extract_query_tokens(normalized_focus_query or query)
         required_terms = fallback_terms[:2] if len(fallback_terms) >= 2 else fallback_terms[:1]
         support_terms = [token for token in fallback_terms if token not in required_terms][:3]
+      if not required_phrases and isinstance(normalized_focus_query, str) and len(normalized_focus_query.split()) >= 2:
+        required_phrases = normalize_phrases([normalized_focus_query])
       filtered_academic_count = 0
       academic_candidates = academic.get("results", [])
       zotero_candidates = zotero.get("items", [])
@@ -492,7 +547,7 @@ steps:
       for result in academic_candidates[:candidate_pool_limit]:
         if not isinstance(result, dict):
           continue
-        if not is_relevant_academic_result(result, required_terms, support_terms):
+        if not is_relevant_academic_result(result, required_terms, support_terms, required_phrases):
           filtered_academic_count += 1
           continue
         paper_key = make_paper_key("academic", result)
@@ -615,6 +670,7 @@ steps:
           "zotero_queries_used": zotero.get("queries_used", search_queries),
           "required_terms": required_terms,
           "support_terms": support_terms,
+          "required_phrases": required_phrases,
           "warning_count": len(warnings),
         },
         "search_profile": {
@@ -623,6 +679,7 @@ steps:
           "search_queries": search_queries,
           "required_terms": required_terms,
           "support_terms": support_terms,
+          "required_phrases": required_phrases,
         },
         "warnings": warnings,
         "source_stage": "screening",

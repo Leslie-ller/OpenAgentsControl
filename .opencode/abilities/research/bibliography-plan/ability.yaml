@@ -56,6 +56,36 @@ steps:
         "mapping", "master", "overview", "paper", "papers", "related", "research",
         "review", "reviews", "section", "sections", "state", "study", "studies",
         "survey", "surveys", "systematic", "thesis", "work", "works",
+        "baseline", "extension", "extensions", "with", "without", "using", "based",
+      }
+      PHRASE_PATTERNS = [
+        ("integrated", "supply", "chain", "optimization"),
+        ("supply", "chain", "optimization"),
+        ("supply", "chain"),
+        ("mixed", "integer", "linear", "programming"),
+        ("prediction", "and", "optimization"),
+        ("learning", "assisted", "optimization"),
+        ("machine", "learning"),
+        ("combinatorial", "optimization"),
+        ("operations", "research"),
+        ("inventory", "management"),
+        ("inventory", "control"),
+        ("transportation", "routing"),
+        ("production", "planning"),
+      ]
+      SUPPORT_TERM_PRIORITY = {
+        "milp": 0,
+        "inventory": 1,
+        "transportation": 2,
+        "production": 3,
+        "routing": 4,
+        "planning": 5,
+        "prediction": 6,
+        "learning": 7,
+        "assisted": 8,
+        "machine": 9,
+        "combinatorial": 10,
+        "integrated": 11,
       }
 
       def load_step_output(step_id):
@@ -83,6 +113,13 @@ steps:
           return token[:-1]
         return token
 
+      def append_unique(items, value):
+        if not isinstance(value, str):
+          return
+        normalized = value.strip()
+        if normalized and normalized not in items:
+          items.append(normalized)
+
       def unique(items):
         seen = set()
         ordered = []
@@ -96,6 +133,18 @@ steps:
           ordered.append(value)
         return ordered
 
+      def normalized_tokens(text):
+        return [normalize_token(token) for token in tokenize(text)]
+
+      def contains_pattern(tokens, pattern):
+        size = len(pattern)
+        if size == 0 or len(tokens) < size:
+          return False
+        for index in range(len(tokens) - size + 1):
+          if tuple(tokens[index:index + size]) == pattern:
+            return True
+        return False
+
       def derive_focus_terms(text):
         terms = []
         seen = set()
@@ -107,9 +156,32 @@ steps:
           terms.append(normalized)
         return terms
 
+      def detect_domain_phrases(text):
+        tokens = normalized_tokens(text)
+        token_set = set(tokens)
+        phrases = []
+        if {"integrated", "supply", "chain", "optimization"}.issubset(token_set):
+          append_unique(phrases, "integrated supply chain optimization")
+        if {"supply", "chain", "optimization"}.issubset(token_set):
+          append_unique(phrases, "supply chain optimization")
+        if {"supply", "chain"}.issubset(token_set):
+          append_unique(phrases, "supply chain")
+        if "milp" in token_set or {"mixed", "integer", "linear", "programming"}.issubset(token_set):
+          append_unique(phrases, "mixed integer linear programming")
+        for pattern in PHRASE_PATTERNS:
+          if contains_pattern(tokens, pattern):
+            append_unique(phrases, " ".join(pattern))
+        if {"prediction", "optimization"}.issubset(token_set):
+          append_unique(phrases, "prediction and optimization")
+        if {"learning", "assisted", "optimization"}.issubset(token_set):
+          append_unique(phrases, "learning assisted optimization")
+        if {"machine", "learning"}.issubset(token_set):
+          append_unique(phrases, "machine learning")
+        return phrases
+
       def derive_focus_phrases(text, focus_terms):
         focus_set = set(focus_terms)
-        tokens = [normalize_token(token) for token in tokenize(text)]
+        tokens = normalized_tokens(text)
         phrases = []
         current = []
         for token in tokens:
@@ -126,6 +198,54 @@ steps:
           phrases.append(" ".join(focus_terms[:3]))
         return unique(phrases)
 
+      def prioritize_primary_focus(domain_phrases, focus_phrases):
+        preferred = [
+          "supply chain optimization",
+          "integrated supply chain optimization",
+          "prediction and optimization",
+          "mixed integer linear programming",
+          "operations research",
+          "combinatorial optimization",
+          "learning assisted optimization",
+          "machine learning",
+          "supply chain",
+        ]
+        domain_set = set(domain_phrases)
+        for phrase in preferred:
+          if phrase in domain_set:
+            return phrase
+        optimization_phrases = [phrase for phrase in domain_phrases if "optimization" in phrase]
+        if optimization_phrases:
+          return max(optimization_phrases, key=lambda phrase: (len(phrase.split()), len(phrase)))
+        if domain_phrases:
+          return domain_phrases[0]
+        return focus_phrases[0] if focus_phrases else topic
+
+      def derive_required_phrases(primary_focus_query, focus_phrases, domain_phrases):
+        required = []
+        domain_set = set(domain_phrases)
+        if any(
+          phrase in domain_set
+          for phrase in ("integrated supply chain optimization", "supply chain optimization", "supply chain")
+        ):
+          append_unique(required, "supply chain")
+        if "operations research" in domain_set:
+          append_unique(required, "operations research")
+        if not required:
+          for phrase in [primary_focus_query] + focus_phrases + domain_phrases:
+            if isinstance(phrase, str) and len(phrase.split()) >= 2:
+              append_unique(required, phrase)
+              break
+        return required
+
+      def rank_support_terms(terms):
+        ordered = unique(terms)
+        original_order = {term: index for index, term in enumerate(ordered)}
+        return sorted(
+          ordered,
+          key=lambda term: (SUPPORT_TERM_PRIORITY.get(term, 100), original_order.get(term, 100)),
+        )
+
       academic = load_step_output("search-academic-landscape")
       zotero = load_step_output("search-zotero-coverage")
 
@@ -138,18 +258,38 @@ steps:
 
       focus_terms = derive_focus_terms(topic)
       focus_phrases = derive_focus_phrases(topic, focus_terms)
-      primary_focus_query = focus_phrases[0] if focus_phrases else topic
+      domain_phrases = detect_domain_phrases(topic)
+      primary_focus_query = prioritize_primary_focus(domain_phrases, focus_phrases)
+      required_phrases = derive_required_phrases(primary_focus_query, focus_phrases, domain_phrases)
 
-      required_terms = focus_terms[:2] if len(focus_terms) >= 2 else focus_terms[:1]
-      support_terms = [term for term in focus_terms if term not in required_terms][:3]
+      required_terms = unique(derive_focus_terms(primary_focus_query))
+      for phrase in required_phrases:
+        for term in derive_focus_terms(phrase):
+          append_unique(required_terms, term)
+      if not required_terms:
+        required_terms = focus_terms[:2] if len(focus_terms) >= 2 else focus_terms[:1]
+      required_terms = required_terms[:3]
+      support_terms = rank_support_terms([term for term in focus_terms if term not in required_terms])[:4]
 
       query_candidates = [primary_focus_query]
-      if support_terms:
-        query_candidates.append(" ".join(required_terms + support_terms[:1]).strip())
-      query_candidates.append(f"{primary_focus_query} systematic review")
-      query_candidates.append(f"{primary_focus_query} survey")
-      if support_terms:
+      if "milp" in focus_terms:
+        query_candidates.append(f"{primary_focus_query} milp")
+      operational_terms = [term for term in ("production", "inventory", "transportation") if term in focus_terms]
+      if len(operational_terms) >= 2:
+        query_candidates.append(f"{primary_focus_query} {' '.join(operational_terms)}")
+      elif support_terms:
         query_candidates.append(f"{primary_focus_query} {support_terms[0]}")
+      query_candidates.append(f"{primary_focus_query} systematic review")
+      if "prediction and optimization" in domain_phrases:
+        query_candidates.append(f"{primary_focus_query} prediction and optimization")
+      else:
+        query_candidates.append(f"{primary_focus_query} survey")
+      if (
+        "mixed integer linear programming" in domain_phrases
+        and all("milp" not in candidate for candidate in query_candidates)
+        and all("mixed integer linear programming" not in candidate for candidate in query_candidates)
+      ):
+        query_candidates.append(f"{primary_focus_query} mixed integer linear programming")
 
       queries = unique(query for query in query_candidates if query.strip())
 
@@ -231,7 +371,14 @@ steps:
       }
 
       direction_summary = primary_focus_query
-      if support_terms:
+      if required_phrases and support_terms:
+        direction_summary = (
+          f"Prioritize papers that explicitly stay within {required_phrases[0]} "
+          f"and connect to {' + '.join(support_terms[:2])}."
+        )
+      elif required_phrases:
+        direction_summary = f"Prioritize papers that explicitly stay within {required_phrases[0]}."
+      elif support_terms:
         direction_summary = (
           f"Prioritize papers anchored on {' + '.join(required_terms)} "
           f"and prefer ones that also connect to {' + '.join(support_terms)}."
@@ -253,6 +400,7 @@ steps:
         "plan_status": plan_status,
         "inclusion_criteria": [
           f"Title or abstract clearly matches the planned focus: {primary_focus_query}",
+          f"Preserve the domain anchor phrase(s): {', '.join(required_phrases)}" if required_phrases else "Preserve the planned domain anchors from the topic phrasing",
           "Prefer peer-reviewed or strongly cited academic sources",
           f"Prioritize results from {year_floor}-{current_year}",
         ],
@@ -269,6 +417,8 @@ steps:
           "search_queries": queries,
           "required_terms": required_terms,
           "support_terms": support_terms,
+          "required_phrases": required_phrases,
+          "detected_domain_phrases": domain_phrases,
           "excluded_terms": [],
           "screening_hints": screening_hints,
         },
@@ -276,6 +426,7 @@ steps:
           "academic_result_count": academic_count,
           "zotero_result_count": zotero_count,
           "academic_warning": academic.get("warning"),
+          "required_phrases": required_phrases,
           "warning_count": len(warnings),
         },
         "warnings": warnings,
