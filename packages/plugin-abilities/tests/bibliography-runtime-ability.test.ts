@@ -4,10 +4,74 @@ import { loadAbility } from '../src/loader/index.js'
 import { executeAbility } from '../src/executor/index.js'
 import type { ExecutorContext } from '../src/types/index.js'
 
-function createContext(): ExecutorContext {
+function createContext(overrides: Partial<ExecutorContext> = {}): ExecutorContext {
   return {
     cwd: process.cwd(),
     env: {},
+    ...overrides,
+  }
+}
+
+function createResearchAgentMock(): NonNullable<ExecutorContext['agents']> {
+  return {
+    async call(options) {
+      const prompt = options.prompt
+      const paperKeys = [...prompt.matchAll(/"paper_key"\s*:\s*"([^"]+)"/g)].map((match) => match[1])
+      const uniquePaperKeys = [...new Set(paperKeys)]
+      const primaryPaperKey = uniquePaperKeys[0] ?? 'UNKNOWN'
+
+      switch (options.step?.id) {
+        case 'record-reading-card':
+          return JSON.stringify({
+            paper_key: primaryPaperKey,
+            title: `Structured reading card for ${primaryPaperKey}`,
+            summary: `Structured summary for ${primaryPaperKey} focused on optimization method and thesis relevance.`,
+            key_findings: [
+              `${primaryPaperKey} addresses an optimization problem.`,
+              `${primaryPaperKey} provides a methodologically relevant approach.`,
+              `${primaryPaperKey} is useful for thesis positioning.`,
+            ],
+            methodology: 'Structured method extraction',
+            relevance_notes: 'Useful for the graduation thesis literature review.',
+            anchors_count: 3,
+            sufficiency_score: 0.78,
+            uncertainty_level: 'moderate',
+            source_text_length: 2048,
+            source_excerpt: 'Method-focused excerpt.',
+            source_stage: 'review',
+            stage: 'full-review',
+          })
+        case 'record-decision-card':
+          return JSON.stringify({
+            paper_key: primaryPaperKey,
+            title: `Decision card for ${primaryPaperKey}`,
+            decision: 'keep',
+            rationale: `Keep ${primaryPaperKey} because it is directly relevant to the thesis.`,
+            sections_relevant: ['methods', 'advanced-methods'],
+            consistency_ok: true,
+            based_on_reading_card: primaryPaperKey,
+            source_stage: 'decision',
+          })
+        case 'record-evidence-pack':
+          return JSON.stringify({
+            section: 'methods',
+            selected_paper_keys: uniquePaperKeys,
+            papers: uniquePaperKeys.map((paperKey) => ({
+              paper_key: paperKey,
+              claim: `${paperKey} contributes a method comparison point.`,
+              evidence: `${paperKey} provides evidence from the structured decision artifact.`,
+              strength: 'strong',
+            })),
+            anchors_count: uniquePaperKeys.length,
+            sufficiency_score: 0.86,
+            grounded_claims: uniquePaperKeys.length,
+            total_claims: uniquePaperKeys.length,
+            source_stage: 'evidence-pack',
+          })
+        default:
+          return JSON.stringify({ ok: true })
+      }
+    },
   }
 }
 
@@ -219,15 +283,91 @@ describe('bibliography runtime abilities', () => {
     const execution = await executeAbility(
       ability,
       { zotero_key: 'TEST1234' },
-      createContext()
+      createContext({
+        agents: createResearchAgentMock(),
+      })
     )
 
     expect(execution.status).toBe('completed')
     const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, unknown>
-    expect(output.summary).toBe('Preview sentence one. Preview sentence two.')
-    expect(output.sufficiency_score).toBe(0.82)
-    expect(output.uncertainty_level).toBe('low')
+    expect(output.summary).toContain('Structured summary for TEST1234')
+    expect(output.methodology).toBe('Structured method extraction')
+    expect(output.relevance_notes).toContain('graduation thesis')
+    expect(output.sufficiency_score).toBe(0.78)
+    expect(output.uncertainty_level).toBe('moderate')
     expect(output.source_text_length).toBe(2048)
+  })
+
+  it('literature-decision uses stage artifacts to produce a structured decision', async () => {
+    const loaded = await loadAbility('research/literature-decision', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const execution = await executeAbility(
+      structuredClone(loaded!.ability),
+      { paper_key: 'TEST1234' },
+      createContext({
+        agents: createResearchAgentMock(),
+        stageOutputs: {
+          'reading-card': [
+            {
+              paper_key: 'TEST1234',
+              title: 'Structured reading card for TEST1234',
+              summary: 'Structured summary',
+              methodology: 'MILP with hybrid extension',
+              relevance_notes: 'Useful for the thesis',
+              sufficiency_score: 0.8,
+              uncertainty_level: 'moderate',
+            },
+          ],
+        },
+      })
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.paper_key).toBe('TEST1234')
+    expect(output.decision).toBe('keep')
+    expect(output.sections_relevant).toEqual(['methods', 'advanced-methods'])
+  })
+
+  it('section-evidence-pack uses scoped decision artifacts in agent synthesis', async () => {
+    const loaded = await loadAbility('research/section-evidence-pack', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const execution = await executeAbility(
+      structuredClone(loaded!.ability),
+      { section: 'methods', paper_keys: ['P1', 'P2'] },
+      createContext({
+        agents: createResearchAgentMock(),
+        stageOutputs: {
+          decision: [
+            {
+              paper_key: 'P1',
+              decision: 'keep',
+              rationale: 'r1',
+              sections_relevant: ['methods'],
+            },
+            {
+              paper_key: 'P2',
+              decision: 'keep',
+              rationale: 'r2',
+              sections_relevant: ['methods'],
+            },
+          ],
+        },
+      })
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.selected_paper_keys).toEqual(['P1', 'P2'])
+    expect(output.anchors_count).toBe(2)
   })
 
   it('paper-screening filters weak academic matches and keeps stronger evidence', async () => {

@@ -36,7 +36,7 @@ inputs:
     required: false
 
 steps:
-  - id: record-evidence-pack
+  - id: prepare-evidence-pack-input
     type: script
     run: |
       python3 - <<'PY'
@@ -49,40 +49,62 @@ steps:
       if not isinstance(decisions, list):
         raise SystemExit("decision stage outputs are unavailable")
 
-      papers = []
+      selected = []
       for candidate in decisions:
         if not isinstance(candidate, dict):
           continue
         sections = candidate.get("sections_relevant")
         if isinstance(sections, list) and section not in sections:
           continue
-        decision = str(candidate.get("decision", "defer"))
-        strength = "strong" if decision == "keep" else "moderate"
-        papers.append({
-          "paper_key": candidate.get("paper_key"),
-          "claim": candidate.get("title") or f"Evidence candidate for {section}",
-          "evidence": candidate.get("rationale") or "Derived from decision artifact rationale.",
-          "strength": strength,
-        })
+        selected.append(candidate)
 
-      if not papers:
+      if not selected:
         raise SystemExit(f"No decision artifacts available for section {section}")
 
-      selected_paper_keys = [
-        candidate.get("paper_key")
-        for candidate in papers
-        if isinstance(candidate.get("paper_key"), str) and candidate.get("paper_key")
-      ]
-      sufficiency_score = 0.82 if len(papers) >= 2 else 0.68
       print(json.dumps({
         "section": section,
-        "selected_paper_keys": selected_paper_keys,
-        "papers": papers,
-        "anchors_count": len(papers),
-        "sufficiency_score": sufficiency_score,
-        "grounded_claims": len(papers),
-        "total_claims": len(papers),
-        "source_stage": "evidence-pack",
+        "selected_paper_keys": [
+          candidate.get("paper_key")
+          for candidate in selected
+          if isinstance(candidate.get("paper_key"), str) and candidate.get("paper_key")
+        ],
+        "decisions": selected,
       }))
       PY
+
+  - id: record-evidence-pack
+    type: agent
+    agent: research-synthesizer
+    prompt: |
+      You are assembling a section-level evidence pack for a graduation-thesis literature review.
+
+      Section: {{inputs.section}}
+
+      Use only the provided decision artifacts and preserve the current scoped paper set.
+      Return strict JSON only with this schema:
+      {
+        "section": string,
+        "selected_paper_keys": [string],
+        "papers": [
+          {
+            "paper_key": string,
+            "claim": string,
+            "evidence": string,
+            "strength": "strong" | "moderate" | "weak"
+          }
+        ],
+        "anchors_count": number,
+        "sufficiency_score": number,
+        "grounded_claims": number,
+        "total_claims": number,
+        "source_stage": "evidence-pack"
+      }
+
+      Requirements:
+      - Include only papers relevant to the requested section.
+      - `claim` should be a thesis-usable contribution statement, not the paper title.
+      - `evidence` should be a short evidence-grounded rationale from the available artifacts.
+      - `selected_paper_keys` must match exactly the papers included in `papers`.
+      - `sufficiency_score` must be between 0 and 1.
+    needs: [prepare-evidence-pack-input]
     tags: [evidence-pack, evidence-grounding, task-sufficiency-check, artifact-lineage]

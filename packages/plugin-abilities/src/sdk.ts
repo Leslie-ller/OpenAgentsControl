@@ -1,4 +1,14 @@
-import type { Ability, AbilityExecution, ControlResult, ExecutorContext, LoadedAbility, InputValues } from './types/index.js'
+import type {
+  Ability,
+  AbilityExecution,
+  ControlResult,
+  ExecutorContext,
+  LoadedAbility,
+  InputValues,
+  AgentContext,
+  SkillContext,
+  ApprovalContext,
+} from './types/index.js'
 import { loadAbilities, listAbilities } from './loader/index.js'
 import { validateAbility, validateInputs } from './validator/index.js'
 import { executeAbility, formatExecutionResult } from './executor/index.js'
@@ -14,6 +24,9 @@ export interface AbilitiesSDKOptions {
   projectDir?: string
   globalDir?: string
   includeGlobal?: boolean
+  agents?: AgentContext
+  skills?: SkillContext
+  approval?: ApprovalContext
 }
 
 export interface AbilityInfo {
@@ -187,9 +200,9 @@ export class AbilitiesSDK {
     const executorContext: ExecutorContext = {
       cwd: context?.cwd || process.cwd(),
       env: context?.env || {},
-      agents: context?.agents,
-      skills: context?.skills,
-      approval: context?.approval,
+      agents: context?.agents ?? this.options.agents,
+      skills: context?.skills ?? this.options.skills,
+      approval: context?.approval ?? this.options.approval,
       abilities: {
         get: (n: string) => self.abilities.get(n)?.ability,
         execute: async (a: Ability, i: InputValues) => {
@@ -271,6 +284,9 @@ export class AbilitiesSDK {
         {
           cwd: this.options.projectDir ?? process.cwd(),
           env: {},
+          agents: this.options.agents,
+          skills: this.options.skills,
+          approval: this.options.approval,
         }
       )
 

@@ -52,7 +52,7 @@ steps:
       /home/leslie/code/AgentOS/.venv/bin/agentos zotero-read --key "{{inputs.zotero_key}}"
     tags: [fulltext-extract]
 
-  - id: record-reading-card
+  - id: prepare-reading-input
     type: script
     run: |
       python3 - <<'PY'
@@ -98,40 +98,55 @@ steps:
       if effective_length <= 0:
         effective_length = len(text)
 
-      anchor_matches = re.findall(r"(section\s+\d+|table\s+\d+|figure\s+\d+|page\s+\d+|p\.\s*\d+)", text, flags=re.I)
-      anchors_count = len(set(match.lower() for match in anchor_matches)) or 1
-      summary = text[:400]
-      sentence_parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
-      key_findings = sentence_parts[:3] if sentence_parts else [summary]
-
-      if effective_length < 500:
-        sufficiency_score = 0.45
-        uncertainty_level = "high"
-      elif effective_length < 2000:
-        sufficiency_score = 0.68
-        uncertainty_level = "moderate"
-      else:
-        sufficiency_score = 0.82
-        uncertainty_level = "low"
-
       print(json.dumps({
         "paper_key": paper_key,
-        "title": f"Reading card for {paper_key}",
-        "summary": summary,
-        "key_findings": key_findings,
-        "anchors_count": anchors_count,
-        "sufficiency_score": sufficiency_score,
-        "uncertainty_level": uncertainty_level,
         "source_text_length": effective_length,
-        "source_excerpt": text[:1000],
-        "source_stage": "review",
-        "stage": "full-review",
+        "clean_text": text,
+        "source_excerpt": text[:4000],
+        "anchor_candidates": re.findall(r"(section\s+\d+|table\s+\d+|figure\s+\d+|page\s+\d+|p\.\s*\d+)", text, flags=re.I),
       }))
       PY
+    needs: [read-zotero-pdf]
+
+  - id: record-reading-card
+    type: agent
+    agent: research-synthesizer
+    prompt: |
+      You are preparing a literature-review reading card for a graduation thesis on integrated supply chain optimization with a MILP baseline and screened advanced extensions.
+
+      Use only the provided prior-step JSON and text.
+      Focus on problem setting, optimization method, decision scope, evidence usefulness, and relevance to the thesis.
+      Ignore author affiliations, copyright lines, journal boilerplate, and front-matter unless they are directly needed.
+
+      Return strict JSON only with this schema:
+      {
+        "paper_key": string,
+        "title": string,
+        "summary": string,
+        "key_findings": [string, string, string],
+        "methodology": string,
+        "relevance_notes": string,
+        "anchors_count": number,
+        "sufficiency_score": number,
+        "uncertainty_level": "low" | "moderate" | "high",
+        "source_text_length": number,
+        "source_excerpt": string,
+        "source_stage": "review",
+        "stage": "full-review"
+      }
+
+      Requirements:
+      - `summary` should be a concise synthesis, not a raw excerpt.
+      - `key_findings` should capture problem, method, and why it matters.
+      - `methodology` should explicitly name the optimization or learning approach when visible.
+      - `relevance_notes` should explain why this paper matters for the thesis literature review.
+      - `anchors_count` should reflect visible evidence anchors from the provided text; use at least 1 when the text is usable.
+      - `sufficiency_score` must be between 0 and 1.
+      - `source_excerpt` should be a short evidentiary excerpt, not the whole front matter.
     tags:
       - reading-card
       - task-sufficiency-check
       - evidence-grounding
       - uncertainty-annotation
       - artifact-lineage
-    needs: [read-zotero-pdf]
+    needs: [prepare-reading-input]

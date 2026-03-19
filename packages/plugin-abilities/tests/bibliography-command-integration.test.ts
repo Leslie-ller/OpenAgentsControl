@@ -15,6 +15,7 @@ describe('bibliography command integration', () => {
 
     await fs.mkdir(path.join(abilitiesDir, 'bibliography-plan'), { recursive: true })
     await fs.mkdir(path.join(abilitiesDir, 'paper-screening'), { recursive: true })
+    await fs.mkdir(path.join(abilitiesDir, 'paper-fulltext-review'), { recursive: true })
     await fs.mkdir(path.join(abilitiesDir, 'section-evidence-pack'), { recursive: true })
 
     await fs.writeFile(
@@ -55,6 +56,31 @@ describe('bibliography command integration', () => {
     )
 
     await fs.writeFile(
+      path.join(abilitiesDir, 'paper-fulltext-review', 'ability.yaml'),
+      [
+        'name: research/paper-fulltext-review',
+        'description: test review',
+        'task_type: paper_fulltext_review',
+        'inputs:',
+        '  zotero_key:',
+        '    type: string',
+        '    required: true',
+        'steps:',
+        '  - id: read-zotero-pdf',
+        '    type: script',
+        '    run: echo "{\\"paper_key\\":\\"{{inputs.zotero_key}}\\",\\"clean_text\\":\\"A method-focused paper\\",\\"source_text_length\\":1200}"',
+        '    tags: [fulltext-extract]',
+        '  - id: record-reading-card',
+        '    type: agent',
+        '    agent: research-synthesizer',
+        '    prompt: "Return a structured reading card"',
+        '    needs: [read-zotero-pdf]',
+        '    tags: [reading-card, task-sufficiency-check, evidence-grounding, uncertainty-annotation, artifact-lineage]',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    await fs.writeFile(
       path.join(abilitiesDir, 'section-evidence-pack', 'ability.yaml'),
       [
         'name: research/section-evidence-pack',
@@ -78,6 +104,25 @@ describe('bibliography command integration', () => {
     sdk = new AbilitiesSDK({
       projectDir: path.join(tmpDir, '.opencode', 'abilities'),
       includeGlobal: false,
+      agents: {
+        async call() {
+          return JSON.stringify({
+            paper_key: 'PAPER1',
+            title: 'Agent reading card',
+            summary: 'Agent synthesized summary',
+            key_findings: ['f1', 'f2', 'f3'],
+            methodology: 'MILP',
+            relevance_notes: 'Relevant to thesis',
+            anchors_count: 2,
+            sufficiency_score: 0.8,
+            uncertainty_level: 'moderate',
+            source_text_length: 1200,
+            source_excerpt: 'excerpt',
+            source_stage: 'review',
+            stage: 'full-review',
+          })
+        },
+      },
     })
   })
 
@@ -125,5 +170,15 @@ describe('bibliography command integration', () => {
     expect(result.execution?.error).toContain('No decision artifacts available for section methods')
     expect(result.error).toContain('No decision artifacts available for section methods')
     expect(result.artifact?.meta).toBeNull()
+  })
+
+  it('threads agent context into command execution for review abilities', async () => {
+    const result = await sdk.executeCommand('/paper-fulltext-review', '{"zotero_key":"PAPER1"}')
+
+    expect(result.error).toBeUndefined()
+    expect(result.stage).toBe('review')
+    expect(result.execution?.status).toBe('completed')
+    expect((result.artifact?.data as any).summary).toBe('Agent synthesized summary')
+    expect((result.artifact?.data as any).methodology).toBe('MILP')
   })
 })

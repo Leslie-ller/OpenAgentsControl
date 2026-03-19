@@ -275,6 +275,14 @@ async function executeAgentStep(
     }
   }
 
+  const stageOutputs = ctx.stageOutputs ?? {}
+  if (Object.keys(stageOutputs).length > 0) {
+    const serializedStageOutputs = truncateForContext(
+      JSON.stringify(stageOutputs, null, 2)
+    )
+    prompt = `${prompt}\n\nStage artifacts:\n${serializedStageOutputs}`
+  }
+
   console.log(`[abilities] Agent step: ${step.agent} — ${prompt.slice(0, 80)}`)
 
   try {

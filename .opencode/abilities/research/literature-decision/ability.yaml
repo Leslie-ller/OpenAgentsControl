@@ -28,7 +28,7 @@ inputs:
     required: true
 
 steps:
-  - id: record-decision-card
+  - id: prepare-decision-input
     type: script
     run: |
       python3 - <<'PY'
@@ -50,26 +50,44 @@ steps:
       if card is None:
         raise SystemExit(f"No reading card available for {paper_key}")
 
-      sufficiency = float(card.get("sufficiency_score", 0) or 0)
-      uncertainty = str(card.get("uncertainty_level", "unknown"))
-      rationale = str(card.get("summary", "")).strip() or "Decision derived from stored reading card evidence."
-
-      if sufficiency >= 0.75 and uncertainty != "high":
-        decision = "keep"
-      elif sufficiency >= 0.55:
-        decision = "defer"
-      else:
-        decision = "revisit"
-
-      print(json.dumps({
-        "paper_key": paper_key,
-        "title": card.get("title", f"Decision card for {paper_key}"),
-        "decision": decision,
-        "rationale": rationale,
-        "sections_relevant": ["methods", "discussion"],
-        "consistency_ok": True,
-        "based_on_reading_card": card.get("paper_key"),
-        "source_stage": "decision",
-      }))
+      print(json.dumps(card))
       PY
+
+  - id: record-decision-card
+    type: agent
+    agent: research-synthesizer
+    prompt: |
+      You are deciding how a reviewed paper should be used in a graduation-thesis literature review on integrated supply chain optimization.
+
+      The thesis currently centers on:
+      - integrated supply chain optimization
+      - coordinated production, inventory, and distribution decisions
+      - MILP as the main methodological baseline
+      - advanced methods as screened extensions, especially prediction-and-optimization, matheuristics, and learning-assisted optimization
+
+      Use the current `paper_key` and the provided stage artifacts.
+      Return strict JSON only with this schema:
+      {
+        "paper_key": string,
+        "title": string,
+        "decision": "keep" | "defer" | "revisit",
+        "rationale": string,
+        "sections_relevant": [string],
+        "consistency_ok": boolean,
+        "based_on_reading_card": string,
+        "source_stage": "decision"
+      }
+
+      Decision policy:
+      - `keep` when the paper is clearly useful for the current thesis literature review.
+      - `defer` when the paper is relevant but more peripheral or future-facing.
+      - `revisit` when the paper is weakly aligned or too indirect.
+
+      `sections_relevant` should use thesis-oriented labels such as:
+      - "integrated-optimization"
+      - "methods"
+      - "advanced-methods"
+      - "discussion"
+      - "thesis-positioning"
+    needs: [prepare-decision-input]
     tags: [decision-card, decision-rationale, consistency-check, artifact-lineage]
