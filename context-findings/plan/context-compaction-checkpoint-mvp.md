@@ -519,6 +519,7 @@ Break this plan into atomic implementation tasks. Prioritize real hook verificat
 - Added `TopicResolver`:
   - `packages/plugin-abilities/src/runtime/context/topic-resolver.ts`
   - exports `resolveTopicFromExecution(...)`
+  - objective fallback improved to prefer meaningful keywords and avoid generic verbs (`fix`, `add`, `update`, etc.)
 - Added `CheckpointStore` with isolated state/detail namespaces and overwrite semantics:
   - `packages/plugin-abilities/src/runtime/context/checkpoint-store.ts`
   - storage roots: `state/<topic>.json`, `detail/<topic>.json`
@@ -569,3 +570,4 @@ Break this plan into atomic implementation tasks. Prioritize real hook verificat
 5. compaction checkpoint creation and store persistence
 6. pending checkpoint summary consume-once behavior with session/global fallback and clear semantics
 7. detail reinjection block rendering from selected detail fields
+8. objective-based topic derivation avoids generic-verb collisions (e.g. `fix` → `css-bug`)

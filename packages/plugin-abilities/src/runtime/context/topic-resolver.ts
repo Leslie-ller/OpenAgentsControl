@@ -1,5 +1,39 @@
 import type { AbilityExecution } from '../../types/index.js'
 
+const OBJECTIVE_STOPWORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'are',
+  'as',
+  'at',
+  'be',
+  'by',
+  'for',
+  'from',
+  'in',
+  'into',
+  'is',
+  'it',
+  'of',
+  'on',
+  'or',
+  'that',
+  'the',
+  'to',
+  'with',
+  'fix',
+  'add',
+  'update',
+  'implement',
+  'improve',
+  'change',
+  'create',
+  'build',
+  'refactor',
+  'make',
+])
+
 function sanitizeTopic(value: string): string {
   return value
     .toLowerCase()
@@ -9,13 +43,20 @@ function sanitizeTopic(value: string): string {
     .replace(/-+$/, '')
 }
 
-function firstKeyword(text: string): string | null {
+function objectiveTopic(text: string): string | null {
   const words = text
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
+    .map((item) => item.trim())
     .filter((item) => item.length >= 3)
-  return words[0] ?? null
+
+  const meaningful = words.filter((item) => !OBJECTIVE_STOPWORDS.has(item))
+  const source = meaningful.length > 0 ? meaningful : words
+  const unique = [...new Set(source)]
+  const selected = unique.slice(0, 2)
+  if (selected.length === 0) return null
+  return selected.join('-')
 }
 
 export function resolveTopicFromExecution(execution: AbilityExecution): string {
@@ -32,7 +73,7 @@ export function resolveTopicFromExecution(execution: AbilityExecution): string {
 
   const objective = execution.inputs.objective
   if (typeof objective === 'string') {
-    const keyword = firstKeyword(objective)
+    const keyword = objectiveTopic(objective)
     if (keyword) return sanitizeTopic(keyword)
   }
 

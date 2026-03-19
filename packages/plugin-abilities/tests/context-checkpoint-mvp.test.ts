@@ -119,6 +119,21 @@ describe('context checkpoint MVP runtime', () => {
     expect(resolveTopicFromExecution(fallback)).toBe('code-change')
   })
 
+  it('derives objective topic from meaningful keywords instead of generic verbs', () => {
+    const execution = makeExecution({
+      ability: {
+        name: 'development/general-task',
+        description: 'test',
+        steps: [],
+      },
+      inputs: {
+        objective: 'Fix the CSS bug in checkout flow',
+      },
+    })
+
+    expect(resolveTopicFromExecution(execution)).toBe('css-bug')
+  })
+
   it('stores state/detail capsules by topic with overwrite semantics', async () => {
     const store = new CheckpointStore({ rootDir: path.join(tempDir, 'checkpoints') })
 
