@@ -42,29 +42,296 @@ inputs:
     default: 10
 
 steps:
-  - id: search-academic
+  - id: derive-search-profile
     type: script
     run: |
-      timeout 30s /home/leslie/code/AgentOS/.venv/bin/agentos search --mode academic --query "{{inputs.query}}" --limit {{inputs.limit}} || \
       python3 - <<'PY'
       import json
+      import os
+      import re
+
+      query = "{{inputs.query}}".strip()
+      stage_outputs = json.loads(os.environ.get("ABILITY_STAGE_OUTPUTS_JSON", "{}"))
+
+      GENERIC_QUERY_TOKENS = {
+        "analysis", "approach", "approaches", "background", "chapter", "chapters",
+        "dissertation", "graduate", "graduation", "introduction", "literature",
+        "mapping", "master", "overview", "paper", "papers", "related", "research",
+        "review", "reviews", "section", "sections", "state", "study", "studies",
+        "survey", "surveys", "systematic", "thesis", "work", "works",
+      }
+
+      def tokenize(text):
+        if not isinstance(text, str):
+          return []
+        return re.findall(r"[a-z0-9]+", text.lower())
+
+      def normalize_token(token):
+        if len(token) > 4 and token.endswith("ies"):
+          return token[:-3] + "y"
+        if len(token) > 5 and token.endswith("ing"):
+          return token[:-3]
+        if len(token) > 4 and token.endswith("s") and not token.endswith("sis"):
+          return token[:-1]
+        return token
+
+      def unique(items):
+        seen = set()
+        ordered = []
+        for item in items:
+          if not isinstance(item, str):
+            continue
+          value = item.strip()
+          if not value or value in seen:
+            continue
+          seen.add(value)
+          ordered.append(value)
+        return ordered
+
+      def normalize_terms(values):
+        if not isinstance(values, list):
+          return []
+        terms = []
+        seen = set()
+        for value in values:
+          if not isinstance(value, str):
+            continue
+          normalized = normalize_token(value.strip().lower())
+          if len(normalized) < 4 or normalized in seen:
+            continue
+          seen.add(normalized)
+          terms.append(normalized)
+        return terms
+
+      def derive_focus_terms(text):
+        terms = []
+        seen = set()
+        for token in tokenize(text):
+          normalized = normalize_token(token)
+          if len(normalized) < 4 or normalized in GENERIC_QUERY_TOKENS or normalized in seen:
+            continue
+          seen.add(normalized)
+          terms.append(normalized)
+        return terms
+
+      plans = stage_outputs.get("plan", [])
+      selected_plan = plans[0] if isinstance(plans, list) and plans and isinstance(plans[0], dict) else {}
+      search_profile = selected_plan.get("search_profile") if isinstance(selected_plan, dict) and isinstance(selected_plan.get("search_profile"), dict) else {}
+
+      normalized_focus_query = (
+        search_profile.get("normalized_focus_query")
+        if isinstance(search_profile.get("normalized_focus_query"), str)
+        else query
+      )
+      search_queries = unique(search_profile.get("search_queries") if isinstance(search_profile.get("search_queries"), list) else [])
+      if not search_queries:
+        search_queries = [normalized_focus_query or query]
+      search_queries = search_queries[:4]
+
+      required_terms = normalize_terms(search_profile.get("required_terms"))
+      support_terms = normalize_terms(search_profile.get("support_terms"))
+      excluded_terms = normalize_terms(search_profile.get("excluded_terms"))
+
+      if not required_terms:
+        fallback_terms = derive_focus_terms(normalized_focus_query or query)
+        required_terms = fallback_terms[:2] if len(fallback_terms) >= 2 else fallback_terms[:1]
+        support_terms = [term for term in fallback_terms if term not in required_terms][:3]
+
+      screening_hints = search_profile.get("screening_hints") if isinstance(search_profile.get("screening_hints"), dict) else {}
+
+      print(json.dumps({
+        "plan_applied": bool(search_profile),
+        "topic": selected_plan.get("topic") if isinstance(selected_plan, dict) else query,
+        "normalized_focus_query": normalized_focus_query or query,
+        "search_queries": search_queries,
+        "required_terms": required_terms,
+        "support_terms": support_terms,
+        "excluded_terms": excluded_terms,
+        "screening_hints": screening_hints,
+      }))
+      PY
+
+  - id: search-academic
+    type: script
+    needs: [derive-search-profile]
+    timeout: 90s
+    run: |
+      python3 - <<'PY'
+      import json
+      import os
+      import subprocess
+
+      limit = int("{{inputs.limit}}")
+      step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+      agentos_bin = "/home/leslie/code/AgentOS/.venv/bin/agentos"
+
+      def load_step_output(step_id):
+        payload = step_outputs.get(step_id, {})
+        raw = payload.get("output") if isinstance(payload, dict) else None
+        if not isinstance(raw, str) or not raw.strip():
+          return {}
+        try:
+          parsed = json.loads(raw)
+          return parsed if isinstance(parsed, dict) else {"value": parsed}
+        except Exception:
+          return {"raw": raw}
+
+      search_profile = load_step_output("derive-search-profile")
+      search_queries = search_profile.get("search_queries", [])
+      if not isinstance(search_queries, list) or not search_queries:
+        search_queries = ["{{inputs.query}}"]
+
+      per_query_limit = min(max(limit, 4), 8)
+      candidate_cap = max(limit * 3, 12)
+      results = []
+      warnings = []
+      seen = set()
+
+      for search_query in search_queries:
+        if not isinstance(search_query, str) or not search_query.strip():
+          continue
+        completed = subprocess.run(
+          [
+            "timeout", "15s", agentos_bin, "search",
+            "--mode", "academic",
+            "--query", search_query,
+            "--limit", str(per_query_limit),
+          ],
+          capture_output=True,
+          text=True,
+        )
+        if completed.returncode != 0:
+          warning = completed.stderr.strip() or completed.stdout.strip() or f"search failed for query '{search_query}'"
+          warnings.append(warning)
+          continue
+        try:
+          parsed = json.loads(completed.stdout)
+        except Exception:
+          warnings.append(f"invalid academic search payload for query '{search_query}'")
+          continue
+        if not isinstance(parsed, dict):
+          continue
+        for result in parsed.get("results", []):
+          if not isinstance(result, dict):
+            continue
+          key = (
+            result.get("doi")
+            or result.get("id")
+            or result.get("url")
+            or result.get("title")
+          )
+          if not isinstance(key, str) or not key.strip():
+            key = json.dumps(result, sort_keys=True)
+          if key in seen:
+            continue
+          seen.add(key)
+          enriched = dict(result)
+          enriched["_matched_query"] = search_query
+          results.append(enriched)
+          if len(results) >= candidate_cap:
+            break
+        if len(results) >= candidate_cap:
+          break
+
+      warning_text = "; ".join(warnings) if warnings else None
       print(json.dumps({
         "query": "{{inputs.query}}",
-        "result_count": 0,
-        "results": [],
-        "warning": "academic search timed out or failed"
+        "result_count": len(results),
+        "results": results,
+        "queries_used": search_queries,
+        "warning": warning_text,
+        "plan_applied": bool(search_profile.get("plan_applied")),
       }))
       PY
 
   - id: search-zotero
     type: script
-    run: |
-      set -e
-      set -a
-      . /home/leslie/code/AgentOS/.env
-      set +a
-      /home/leslie/code/AgentOS/.venv/bin/agentos zotero-search --query "{{inputs.query}}" --limit {{inputs.limit}}
     needs: [search-academic]
+    timeout: 90s
+    run: |
+      python3 - <<'PY'
+      import json
+      import os
+      import shlex
+      import subprocess
+
+      limit = int("{{inputs.limit}}")
+      step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+      agentos_bin = "/home/leslie/code/AgentOS/.venv/bin/agentos"
+      env_file = "/home/leslie/code/AgentOS/.env"
+
+      def load_step_output(step_id):
+        payload = step_outputs.get(step_id, {})
+        raw = payload.get("output") if isinstance(payload, dict) else None
+        if not isinstance(raw, str) or not raw.strip():
+          return {}
+        try:
+          parsed = json.loads(raw)
+          return parsed if isinstance(parsed, dict) else {"value": parsed}
+        except Exception:
+          return {"raw": raw}
+
+      search_profile = load_step_output("derive-search-profile")
+      search_queries = search_profile.get("search_queries", [])
+      if not isinstance(search_queries, list) or not search_queries:
+        search_queries = ["{{inputs.query}}"]
+
+      per_query_limit = min(max(limit, 4), 8)
+      candidate_cap = max(limit * 2, 10)
+      items = []
+      warnings = []
+      seen = set()
+
+      for search_query in search_queries:
+        if not isinstance(search_query, str) or not search_query.strip():
+          continue
+        command = (
+          f"set -e; set -a; . {shlex.quote(env_file)}; set +a; "
+          f"{shlex.quote(agentos_bin)} zotero-search --query {shlex.quote(search_query)} --limit {per_query_limit}"
+        )
+        completed = subprocess.run(
+          ["bash", "-lc", command],
+          capture_output=True,
+          text=True,
+        )
+        if completed.returncode != 0:
+          warning = completed.stderr.strip() or completed.stdout.strip() or f"zotero search failed for query '{search_query}'"
+          warnings.append(warning)
+          continue
+        try:
+          parsed = json.loads(completed.stdout)
+        except Exception:
+          warnings.append(f"invalid zotero search payload for query '{search_query}'")
+          continue
+        if not isinstance(parsed, dict):
+          continue
+        for item in parsed.get("items", []):
+          if not isinstance(item, dict):
+            continue
+          key = item.get("key") or item.get("url") or item.get("title")
+          if not isinstance(key, str) or not key.strip():
+            key = json.dumps(item, sort_keys=True)
+          if key in seen:
+            continue
+          seen.add(key)
+          enriched = dict(item)
+          enriched["_matched_query"] = search_query
+          items.append(enriched)
+          if len(items) >= candidate_cap:
+            break
+        if len(items) >= candidate_cap:
+          break
+
+      warning_text = "; ".join(warnings) if warnings else None
+      print(json.dumps({
+        "query": "{{inputs.query}}",
+        "result_count": len(items),
+        "items": items,
+        "queries_used": search_queries,
+        "warning": warning_text,
+        "plan_applied": bool(search_profile.get("plan_applied")),
+      }))
+      PY
 
   - id: record-screening-decision
     type: script
@@ -75,7 +342,7 @@ steps:
       import os
       import re
 
-      query = "{{inputs.query}}"
+      query = "{{inputs.query}}".strip()
       limit = int("{{inputs.limit}}")
       step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
 
@@ -110,7 +377,7 @@ steps:
           return token[:-3] + "y"
         if len(token) > 5 and token.endswith("ing"):
           return token[:-3]
-        if len(token) > 4 and token.endswith("s"):
+        if len(token) > 4 and token.endswith("s") and not token.endswith("sis"):
           return token[:-1]
         return token
 
@@ -154,16 +421,33 @@ steps:
         support_tokens = set(normalized_tokens_from_text(" ".join(support_fields)))
         return title_tokens, support_tokens, bool(support_fields)
 
-      def is_relevant_academic_result(result, query_tokens):
-        if not query_tokens:
+      def normalize_terms(values):
+        if not isinstance(values, list):
+          return []
+        terms = []
+        seen = set()
+        for value in values:
+          if not isinstance(value, str):
+            continue
+          normalized = normalize_token(value.strip().lower())
+          if len(normalized) < 4 or normalized in seen:
+            continue
+          seen.add(normalized)
+          terms.append(normalized)
+        return terms
+
+      def is_relevant_academic_result(result, required_terms, support_terms):
+        anchor_terms = required_terms or support_terms
+        if not anchor_terms:
           return True
         title_tokens, support_tokens, has_support_fields = extract_result_fields(result)
-        overlap = [token for token in query_tokens if token in title_tokens or token in support_tokens]
-        if len(query_tokens) == 1:
-          return len(overlap) == 1
-        if len(overlap) < 2:
+        overlap = [token for token in anchor_terms if token in title_tokens or token in support_tokens]
+        min_anchor_matches = 2 if len(anchor_terms) >= 2 else 1
+        if len(overlap) < min_anchor_matches:
           return False
-        support_overlap = [token for token in query_tokens if token in support_tokens]
+        support_overlap = [token for token in anchor_terms if token in support_tokens]
+        if len(anchor_terms) == 1:
+          return True
         if len(support_overlap) >= 1:
           return True
         if not has_support_fields:
@@ -187,17 +471,28 @@ steps:
         digest = hashlib.sha1(json.dumps(candidate, sort_keys=True).encode("utf-8")).hexdigest()[:12]
         return f"{prefix}_{digest}"
 
+      search_profile = load_step_output("derive-search-profile")
       academic = load_step_output("search-academic")
       zotero = load_step_output("search-zotero")
       items = []
       seen = set()
-      query_tokens = extract_query_tokens(query)
+      required_terms = normalize_terms(search_profile.get("required_terms"))
+      support_terms = normalize_terms(search_profile.get("support_terms"))
+      search_queries = search_profile.get("search_queries") if isinstance(search_profile.get("search_queries"), list) else []
+      normalized_focus_query = search_profile.get("normalized_focus_query") if isinstance(search_profile.get("normalized_focus_query"), str) else query
+      if not required_terms and not support_terms:
+        fallback_terms = extract_query_tokens(normalized_focus_query or query)
+        required_terms = fallback_terms[:2] if len(fallback_terms) >= 2 else fallback_terms[:1]
+        support_terms = [token for token in fallback_terms if token not in required_terms][:3]
       filtered_academic_count = 0
+      academic_candidates = academic.get("results", [])
+      zotero_candidates = zotero.get("items", [])
+      candidate_pool_limit = max(limit * 3, 12)
 
-      for result in academic.get("results", [])[:limit]:
+      for result in academic_candidates[:candidate_pool_limit]:
         if not isinstance(result, dict):
           continue
-        if not is_relevant_academic_result(result, query_tokens):
+        if not is_relevant_academic_result(result, required_terms, support_terms):
           filtered_academic_count += 1
           continue
         paper_key = make_paper_key("academic", result)
@@ -207,21 +502,25 @@ steps:
         snippet = result.get("snippet") if isinstance(result.get("snippet"), str) else ""
         provider = result.get("provider") if isinstance(result.get("provider"), str) else "academic"
         title = result.get("title") if isinstance(result.get("title"), str) else paper_key
+        matched_query = result.get("_matched_query") if isinstance(result.get("_matched_query"), str) else normalized_focus_query
         items.append({
           "paper_key": paper_key,
           "title": title,
           "decision": "defer",
-          "reason": snippet or f"Matched {provider} academic search result for query '{query}'.",
+          "reason": snippet or f"Matched planned {provider} query '{matched_query}'.",
           "role": "candidate evidence",
           "recommended_usage": "requires review",
           "limitations": "Search-stage result only; full text not yet reviewed.",
           "query": query,
+          "matched_query": matched_query,
           "source": provider,
           "source_url": result.get("url"),
           "metadata": result.get("metadata", {}),
         })
+        if len(items) >= limit:
+          break
 
-      for result in zotero.get("items", [])[:limit]:
+      for result in zotero_candidates[:candidate_pool_limit]:
         if not isinstance(result, dict):
           continue
         raw_zotero_key = result.get("key") if isinstance(result.get("key"), str) else ""
@@ -230,6 +529,7 @@ steps:
           continue
         seen.add(paper_key)
         title = result.get("title") if isinstance(result.get("title"), str) else paper_key
+        matched_query = result.get("_matched_query") if isinstance(result.get("_matched_query"), str) else normalized_focus_query
         items.append({
           "paper_key": paper_key,
           "zotero_key": raw_zotero_key.strip() or paper_key,
@@ -240,9 +540,12 @@ steps:
           "recommended_usage": "fulltext review",
           "limitations": "Content trust still depends on downstream review.",
           "query": query,
+          "matched_query": matched_query,
           "source": "zotero",
           "metadata": result,
         })
+        if len(items) >= limit:
+          break
 
       result_count = len(items)
       if result_count == 0:
@@ -267,7 +570,21 @@ steps:
           "academic_result_count": academic.get("result_count"),
           "zotero_result_count": zotero.get("result_count"),
           "academic_warning": academic.get("warning"),
+          "zotero_warning": zotero.get("warning"),
           "filtered_academic_result_count": filtered_academic_count,
+          "plan_applied": bool(search_profile.get("plan_applied")),
+          "planned_query_count": len(search_queries),
+          "academic_queries_used": academic.get("queries_used", search_queries),
+          "zotero_queries_used": zotero.get("queries_used", search_queries),
+          "required_terms": required_terms,
+          "support_terms": support_terms,
+        },
+        "search_profile": {
+          "plan_applied": bool(search_profile.get("plan_applied")),
+          "normalized_focus_query": normalized_focus_query,
+          "search_queries": search_queries,
+          "required_terms": required_terms,
+          "support_terms": support_terms,
         },
         "source_stage": "screening",
       }))

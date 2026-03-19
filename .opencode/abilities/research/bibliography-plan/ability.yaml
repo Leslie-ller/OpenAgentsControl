@@ -44,10 +44,19 @@ steps:
       python3 - <<'PY'
       import json
       import os
+      import re
       from datetime import datetime
 
       topic = "{{inputs.topic}}".strip()
       step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+
+      GENERIC_TOPIC_TOKENS = {
+        "analysis", "approach", "approaches", "background", "chapter", "chapters",
+        "dissertation", "graduate", "graduation", "introduction", "literature",
+        "mapping", "master", "overview", "paper", "papers", "related", "research",
+        "review", "reviews", "section", "sections", "state", "study", "studies",
+        "survey", "surveys", "systematic", "thesis", "work", "works",
+      }
 
       def load_step_output(step_id):
         payload = step_outputs.get(step_id, {})
@@ -60,6 +69,63 @@ steps:
         except Exception:
           return {"raw": raw}
 
+      def tokenize(text):
+        if not isinstance(text, str):
+          return []
+        return re.findall(r"[a-z0-9]+", text.lower())
+
+      def normalize_token(token):
+        if len(token) > 4 and token.endswith("ies"):
+          return token[:-3] + "y"
+        if len(token) > 5 and token.endswith("ing"):
+          return token[:-3]
+        if len(token) > 4 and token.endswith("s") and not token.endswith("sis"):
+          return token[:-1]
+        return token
+
+      def unique(items):
+        seen = set()
+        ordered = []
+        for item in items:
+          if not isinstance(item, str):
+            continue
+          value = item.strip()
+          if not value or value in seen:
+            continue
+          seen.add(value)
+          ordered.append(value)
+        return ordered
+
+      def derive_focus_terms(text):
+        terms = []
+        seen = set()
+        for token in tokenize(text):
+          normalized = normalize_token(token)
+          if len(normalized) < 4 or normalized in GENERIC_TOPIC_TOKENS or normalized in seen:
+            continue
+          seen.add(normalized)
+          terms.append(normalized)
+        return terms
+
+      def derive_focus_phrases(text, focus_terms):
+        focus_set = set(focus_terms)
+        tokens = [normalize_token(token) for token in tokenize(text)]
+        phrases = []
+        current = []
+        for token in tokens:
+          if token in focus_set:
+            current.append(token)
+          else:
+            if current:
+              phrases.append(" ".join(current))
+              current = []
+        if current:
+          phrases.append(" ".join(current))
+        phrases = [phrase for phrase in phrases if phrase]
+        if not phrases and focus_terms:
+          phrases.append(" ".join(focus_terms[:3]))
+        return unique(phrases)
+
       academic = load_step_output("search-academic-landscape")
       zotero = load_step_output("search-zotero-coverage")
 
@@ -70,24 +136,22 @@ steps:
       if not isinstance(zotero_items, list):
         zotero_items = []
 
-      queries = [topic]
-      lowered_topic = topic.lower()
-      if "systematic review" not in lowered_topic and "review" not in lowered_topic:
-        queries.append(f"{topic} systematic review")
+      focus_terms = derive_focus_terms(topic)
+      focus_phrases = derive_focus_phrases(topic, focus_terms)
+      primary_focus_query = focus_phrases[0] if focus_phrases else topic
 
-      has_review_like_result = False
-      for result in academic_results:
-        if not isinstance(result, dict):
-          continue
-        title = str(result.get("title", "")).lower()
-        result_type = str((result.get("metadata") or {}).get("type", "")).lower() if isinstance(result.get("metadata"), dict) else ""
-        if "review" in title or "survey" in title or result_type == "review":
-          has_review_like_result = True
-          break
-      if not has_review_like_result and "survey" not in lowered_topic:
-        queries.append(f"{topic} survey")
+      required_terms = focus_terms[:2] if len(focus_terms) >= 2 else focus_terms[:1]
+      support_terms = [term for term in focus_terms if term not in required_terms][:3]
 
-      queries = list(dict.fromkeys(query.strip() for query in queries if query.strip()))
+      query_candidates = [primary_focus_query]
+      if support_terms:
+        query_candidates.append(" ".join(required_terms + support_terms[:1]).strip())
+      query_candidates.append(f"{primary_focus_query} systematic review")
+      query_candidates.append(f"{primary_focus_query} survey")
+      if support_terms:
+        query_candidates.append(f"{primary_focus_query} {support_terms[0]}")
+
+      queries = unique(query for query in query_candidates if query.strip())
 
       years = []
       for result in academic_results:
@@ -140,20 +204,45 @@ steps:
       elif academic_count >= 5 or zotero_count >= 2:
         target_count = 12
 
+      screening_hints = {
+        "min_anchor_matches": 2 if len(required_terms) >= 2 else 1,
+        "require_support_field_match": len(required_terms) >= 2,
+        "prefer_recent_years_from": year_floor,
+      }
+
+      direction_summary = primary_focus_query
+      if support_terms:
+        direction_summary = (
+          f"Prioritize papers anchored on {' + '.join(required_terms)} "
+          f"and prefer ones that also connect to {' + '.join(support_terms)}."
+        )
+      elif required_terms:
+        direction_summary = f"Prioritize papers anchored on {' + '.join(required_terms)}."
+
       print(json.dumps({
         "topic": topic,
         "queries": queries,
         "inclusion_criteria": [
-          f"Title or abstract clearly matches {topic}",
+          f"Title or abstract clearly matches the planned focus: {primary_focus_query}",
           "Prefer peer-reviewed or strongly cited academic sources",
           f"Prioritize results from {year_floor}-{current_year}",
         ],
         "exclusion_criteria": [
           "Weak topical match in title/snippet",
           "Duplicate library entries with no added evidence value",
+          "Results that only match broad thesis/review wording without the planned focus terms",
           f"Results published before {year_floor} unless historically foundational",
         ],
         "target_count": target_count,
+        "direction_summary": direction_summary,
+        "search_profile": {
+          "normalized_focus_query": primary_focus_query,
+          "search_queries": queries,
+          "required_terms": required_terms,
+          "support_terms": support_terms,
+          "excluded_terms": [],
+          "screening_hints": screening_hints,
+        },
         "search_summary": {
           "academic_result_count": academic_count,
           "zotero_result_count": zotero_count,

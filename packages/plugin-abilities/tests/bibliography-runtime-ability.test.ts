@@ -15,6 +15,21 @@ function shellEchoJson(payload: Record<string, unknown>): string {
   return `echo '${JSON.stringify(payload).replace(/'/g, `'\\''`)}'`
 }
 
+function overrideStepRunById(
+  ability: { steps: Array<{ id: string; run: string }> },
+  stepId: string,
+  run: string
+): void {
+  const index = ability.steps.findIndex((step) => step.id === stepId)
+  if (index === -1) {
+    throw new Error(`Step '${stepId}' not found in ability '${(ability as any).name ?? 'unknown'}'`)
+  }
+  ability.steps[index] = {
+    ...ability.steps[index],
+    run,
+  }
+}
+
 describe('bibliography runtime abilities', () => {
   const projectDir = resolve(import.meta.dir, '..', '..', '..', '.opencode', 'abilities')
 
@@ -26,9 +41,7 @@ describe('bibliography runtime abilities', () => {
     expect(loaded).not.toBeNull()
 
     const ability = structuredClone(loaded!.ability)
-    ability.steps[0] = {
-      ...ability.steps[0],
-      run: shellEchoJson({
+    overrideStepRunById(ability as any, 'search-academic-landscape', shellEchoJson({
         query: 'agent safety',
         result_count: 2,
         results: [
@@ -51,11 +64,8 @@ describe('bibliography runtime abilities', () => {
             },
           },
         ],
-      }),
-    }
-    ability.steps[1] = {
-      ...ability.steps[1],
-      run: shellEchoJson({
+      }))
+    overrideStepRunById(ability as any, 'search-zotero-coverage', shellEchoJson({
         query: 'agent safety',
         result_count: 1,
         items: [
@@ -66,8 +76,7 @@ describe('bibliography runtime abilities', () => {
             item_type: 'journalArticle',
           },
         ],
-      }),
-    }
+      }))
 
     const execution = await executeAbility(
       ability,
@@ -83,6 +92,15 @@ describe('bibliography runtime abilities', () => {
       'agent safety systematic review',
       'agent safety survey',
     ])
+    expect(output.direction_summary).toContain('agent + safety')
+    expect(output.search_profile.normalized_focus_query).toBe('agent safety')
+    expect(output.search_profile.search_queries).toEqual([
+      'agent safety',
+      'agent safety systematic review',
+      'agent safety survey',
+    ])
+    expect(output.search_profile.required_terms).toEqual(['agent', 'safety'])
+    expect(output.search_profile.screening_hints.require_support_field_match).toBe(true)
     expect(output.search_summary.academic_result_count).toBe(2)
     expect(output.search_summary.zotero_result_count).toBe(1)
     expect(output.candidate_papers.academic[0].title).toBe('Agent safety benchmark')
@@ -97,15 +115,12 @@ describe('bibliography runtime abilities', () => {
     expect(loaded).not.toBeNull()
 
     const ability = structuredClone(loaded!.ability)
-    ability.steps[0] = {
-      ...ability.steps[0],
-      run: shellEchoJson({
+    overrideStepRunById(ability as any, 'read-zotero-pdf', shellEchoJson({
         item_key: 'TEST1234',
         text_preview: 'Preview sentence one. Preview sentence two.',
         text_length: 2048,
         extraction_status: 'ok',
-      }),
-    }
+      }))
 
     const execution = await executeAbility(
       ability,
@@ -129,9 +144,7 @@ describe('bibliography runtime abilities', () => {
     expect(loaded).not.toBeNull()
 
     const ability = structuredClone(loaded!.ability)
-    ability.steps[0] = {
-      ...ability.steps[0],
-      run: shellEchoJson({
+    overrideStepRunById(ability as any, 'search-academic', shellEchoJson({
         query: 'agent safety',
         result_count: 3,
         results: [
@@ -157,11 +170,10 @@ describe('bibliography runtime abilities', () => {
             metadata: { year: 2023 },
           },
         ],
-      }),
-    }
-    ability.steps[1] = {
-      ...ability.steps[1],
-      run: shellEchoJson({
+        queries_used: ['agent safety', 'agent safety review'],
+        plan_applied: false,
+      }))
+    overrideStepRunById(ability as any, 'search-zotero', shellEchoJson({
         query: 'agent safety',
         result_count: 1,
         items: [
@@ -172,8 +184,9 @@ describe('bibliography runtime abilities', () => {
             item_type: 'journalArticle',
           },
         ],
-      }),
-    }
+        queries_used: ['agent safety'],
+        plan_applied: false,
+      }))
 
     const execution = await executeAbility(
       ability,
@@ -190,6 +203,8 @@ describe('bibliography runtime abilities', () => {
       'Existing Zotero agent safety paper',
     ])
     expect(output.search_summary.filtered_academic_result_count).toBe(1)
+    expect(output.search_summary.plan_applied).toBe(false)
+    expect(output.search_summary.academic_queries_used).toEqual(['agent safety', 'agent safety review'])
     expect(output.anchors_count).toBe(3)
     expect(output.uncertainty_level).toBe('moderate')
   })
@@ -202,9 +217,7 @@ describe('bibliography runtime abilities', () => {
     expect(loaded).not.toBeNull()
 
     const ability = structuredClone(loaded!.ability)
-    ability.steps[0] = {
-      ...ability.steps[0],
-      run: shellEchoJson({
+    overrideStepRunById(ability as any, 'search-academic', shellEchoJson({
         query: 'zzzxxyyqqq unlikely thesis query',
         result_count: 2,
         results: [
@@ -223,16 +236,16 @@ describe('bibliography runtime abilities', () => {
             metadata: { year: 2020 },
           },
         ],
-      }),
-    }
-    ability.steps[1] = {
-      ...ability.steps[1],
-      run: shellEchoJson({
+        queries_used: ['zzzxxyyqqq unlikely thesis query'],
+        plan_applied: false,
+      }))
+    overrideStepRunById(ability as any, 'search-zotero', shellEchoJson({
         query: 'zzzxxyyqqq unlikely thesis query',
         result_count: 0,
         items: [],
-      }),
-    }
+        queries_used: ['zzzxxyyqqq unlikely thesis query'],
+        plan_applied: false,
+      }))
 
     const execution = await executeAbility(
       ability,
@@ -248,6 +261,97 @@ describe('bibliography runtime abilities', () => {
     expect(output.uncertainty_level).toBe('high')
   })
 
+  it('paper-screening uses bibliography plan search profile before searching', async () => {
+    const loaded = await loadAbility('research/paper-screening', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const ability = structuredClone(loaded!.ability)
+    overrideStepRunById(ability as any, 'search-academic', `python3 - <<'PY'
+import json
+import os
+
+step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+profile = json.loads(step_outputs["derive-search-profile"]["output"])
+print(json.dumps({
+  "query": "graduation thesis literature review on agent safety for optimization",
+  "result_count": 1,
+  "queries_used": profile["search_queries"],
+  "plan_applied": profile["plan_applied"],
+  "results": [
+    {
+      "title": "Agent safety for optimization systems",
+      "provider": "openalex",
+      "url": "https://openalex.org/W42",
+      "snippet": "Optimization workflows require explicit agent safety checks.",
+      "metadata": {"year": 2024},
+      "_matched_query": profile["search_queries"][0],
+    }
+  ],
+}))
+PY`)
+    overrideStepRunById(ability as any, 'search-zotero', `python3 - <<'PY'
+import json
+import os
+
+step_outputs = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+profile = json.loads(step_outputs["derive-search-profile"]["output"])
+print(json.dumps({
+  "query": "graduation thesis literature review on agent safety for optimization",
+  "result_count": 0,
+  "queries_used": profile["search_queries"],
+  "plan_applied": profile["plan_applied"],
+  "items": [],
+}))
+PY`)
+
+    const execution = await executeAbility(
+      ability,
+      {
+        query: 'graduation thesis literature review on agent safety for optimization',
+        limit: 10,
+      },
+      {
+        ...createContext(),
+        stageOutputs: {
+          plan: [
+            {
+              topic: 'graduation thesis literature review on agent safety for optimization',
+              search_profile: {
+                normalized_focus_query: 'agent safety optimization',
+                search_queries: [
+                  'agent safety optimization',
+                  'agent safety optimization systematic review',
+                ],
+                required_terms: ['agent', 'safety'],
+                support_terms: ['optimization'],
+                excluded_terms: [],
+                screening_hints: {
+                  min_anchor_matches: 2,
+                  require_support_field_match: true,
+                },
+              },
+            },
+          ],
+        },
+      }
+    )
+
+    expect(execution.status).toBe('completed')
+    const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, any>
+    expect(output.search_summary.plan_applied).toBe(true)
+    expect(output.search_summary.academic_queries_used).toEqual([
+      'agent safety optimization',
+      'agent safety optimization systematic review',
+    ])
+    expect(output.search_profile.normalized_focus_query).toBe('agent safety optimization')
+    expect(output.search_profile.support_terms).toEqual(['optimization'])
+    expect(output.items).toHaveLength(1)
+    expect(output.items[0].matched_query).toBe('agent safety optimization')
+  })
+
   it('paper-fulltext-review fails when zotero-read returns an error payload', async () => {
     const loaded = await loadAbility('research/paper-fulltext-review', {
       projectDir,
@@ -256,13 +360,10 @@ describe('bibliography runtime abilities', () => {
     expect(loaded).not.toBeNull()
 
     const ability = structuredClone(loaded!.ability)
-    ability.steps[0] = {
-      ...ability.steps[0],
-      run: shellEchoJson({
+    overrideStepRunById(ability as any, 'read-zotero-pdf', shellEchoJson({
         error: 'No PDF attachment found',
         item_key: 'TEST1234',
-      }),
-    }
+      }))
 
     const execution = await executeAbility(
       ability,
