@@ -55,6 +55,11 @@ inputs:
     required: false
     default: ""
     description: Semicolon-separated blocking review findings
+  commit_message:
+    type: string
+    required: false
+    default: ""
+    description: Optional explicit git commit message for workflow-generated changes
 
 obligations:
   - key: requirements_checked
@@ -409,21 +414,168 @@ steps:
     tags: [review-completed]
     needs: [validation-gate]
 
+  - id: commit
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      import os
+      import re
+      import subprocess
+      import sys
+
+      def parse_json(value, default):
+          try:
+              return json.loads(value)
+          except Exception:
+              return default
+
+      def parse_step_payload(raw_output):
+          if not raw_output or not isinstance(raw_output, str):
+              return {}
+          text = raw_output.strip()
+          if not text:
+              return {}
+          try:
+              return json.loads(text)
+          except Exception:
+              return {}
+
+      def run_git(args):
+          return subprocess.run(
+              ["git", *args],
+              capture_output=True,
+              text=True,
+              timeout=60,
+          )
+
+      inputs = parse_json(os.environ.get("ABILITY_INPUTS_JSON", "{}"), {})
+      steps = parse_json(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"), {})
+
+      repo_check = run_git(["rev-parse", "--is-inside-work-tree"])
+      if repo_check.returncode != 0 or repo_check.stdout.strip() != "true":
+          print(json.dumps({
+              "status": "skipped",
+              "committed": False,
+              "reason": "not a git repository",
+          }))
+          raise SystemExit(0)
+
+      candidate_files = []
+      affected_files = str(inputs.get("affected_files") or "")
+      for item in affected_files.split(","):
+          cleaned = item.strip()
+          if cleaned:
+              candidate_files.append(cleaned)
+
+      for step_id in ("execute-small", "execute-complex", "repair-after-validate"):
+          payload = parse_step_payload(steps.get(step_id, {}).get("output"))
+          for item in payload.get("changed_files", []):
+              if isinstance(item, str) and item.strip():
+                  candidate_files.append(item.strip())
+
+      ordered_files = []
+      seen = set()
+      for file_path in candidate_files:
+          if file_path not in seen:
+              seen.add(file_path)
+              ordered_files.append(file_path)
+
+      dirty_files = []
+      for file_path in ordered_files:
+          status = run_git(["status", "--short", "--", file_path])
+          if status.returncode == 0 and status.stdout.strip():
+              dirty_files.append(file_path)
+
+      if not dirty_files:
+          print(json.dumps({
+              "status": "skipped",
+              "committed": False,
+              "reason": "no workflow-managed diff detected",
+              "candidate_files": ordered_files,
+          }))
+          raise SystemExit(0)
+
+      add = run_git(["add", "-A", "--", *dirty_files])
+      if add.returncode != 0:
+          print(json.dumps({
+              "status": "failed",
+              "committed": False,
+              "reason": add.stderr.strip() or "git add failed",
+              "candidate_files": dirty_files,
+          }))
+          raise SystemExit(add.returncode)
+
+      staged = run_git(["diff", "--cached", "--quiet", "--", *dirty_files])
+      if staged.returncode == 0:
+          print(json.dumps({
+              "status": "skipped",
+              "committed": False,
+              "reason": "no staged diff after git add",
+              "candidate_files": dirty_files,
+          }))
+          raise SystemExit(0)
+
+      explicit_message = str(inputs.get("commit_message") or "").strip()
+      objective = str(inputs.get("objective") or "").strip()
+      if explicit_message:
+          commit_message = explicit_message
+      else:
+          normalized = re.sub(r"\\s+", " ", objective).strip()
+          commit_message = f"feat: {normalized}" if normalized else "feat: apply workflow changes"
+
+      commit = run_git(["commit", "-m", commit_message])
+      if commit.returncode != 0:
+          print(json.dumps({
+              "status": "failed",
+              "committed": False,
+              "reason": commit.stderr.strip() or commit.stdout.strip() or "git commit failed",
+              "candidate_files": dirty_files,
+              "commit_message": commit_message,
+          }))
+          raise SystemExit(commit.returncode)
+
+      rev = run_git(["rev-parse", "HEAD"])
+      print(json.dumps({
+          "status": "committed",
+          "committed": True,
+          "candidate_files": dirty_files,
+          "commit_message": commit_message,
+          "commit_sha": rev.stdout.strip() if rev.returncode == 0 else "",
+      }))
+      PY
+    on_failure: continue
+    tags: [commit]
+    needs: [review]
+
   - id: complete
     type: script
     run: |
       python3 - <<'PY'
       import json
+      import os
+
       remaining = [item.strip() for item in "{{inputs.dependency_violations}}".split(';') if item.strip()]
       status = "partial" if remaining else "completed"
       next_actions = ["Resolve dependency violations before final completion claim"] if remaining else []
+      try:
+          steps = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+      except Exception:
+          steps = {}
+      commit_output = steps.get("commit", {}).get("output", "")
+      committed = False
+      if isinstance(commit_output, str) and commit_output.strip():
+          try:
+              committed = bool(json.loads(commit_output).get("committed"))
+          except Exception:
+              committed = False
       print(json.dumps({
         "status": status,
         "validated": True,
         "reviewed": True,
+        "committed": committed,
         "remaining_risks": remaining,
         "next_actions": next_actions,
       }))
       PY
-    tags: [commit]
-    needs: [review]
+    needs: [review, commit]

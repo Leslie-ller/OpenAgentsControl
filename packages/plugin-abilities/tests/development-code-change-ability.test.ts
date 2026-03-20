@@ -10,10 +10,11 @@ import type { ExecutorContext } from '../src/types/index.js'
 
 interface MockAgentOptions {
   repairOnValidationFailure?: boolean
+  implementationEdits?: Array<{ path: string; content: string }>
 }
 
 function createContext(cwd = process.cwd(), options: MockAgentOptions = {}): ExecutorContext {
-  const { repairOnValidationFailure = true } = options
+  const { repairOnValidationFailure = true, implementationEdits = [] } = options
   return {
     cwd,
     env: {},
@@ -28,8 +29,16 @@ function createContext(cwd = process.cwd(), options: MockAgentOptions = {}): Exe
           })
         }
 
+        for (const edit of implementationEdits) {
+          const target = path.join(cwd, edit.path)
+          await fs.mkdir(path.dirname(target), { recursive: true })
+          await fs.writeFile(target, edit.content, 'utf-8')
+        }
+
         return JSON.stringify({
-          changed_files: ['packages/plugin-abilities/src/opencode-plugin.ts'],
+          changed_files: implementationEdits.length > 0
+            ? implementationEdits.map((edit) => edit.path)
+            : ['packages/plugin-abilities/src/opencode-plugin.ts'],
           implementation_summary: 'Applied requested implementation changes',
           deliverables_completed: ['implementation'],
         })
@@ -161,6 +170,65 @@ describe('development/code-change ability', () => {
       expect(execution.completedSteps.some((step) => step.stepId === 'repair-after-validate' && step.status === 'completed')).toBe(true)
       expect(execution.completedSteps.some((step) => step.stepId === 'validate-after-repair' && step.status === 'completed')).toBe(true)
       expect(execution.control?.gate.verdict).toBe('allow')
+    } finally {
+      await fs.rm(cwd, { recursive: true, force: true })
+    }
+  })
+
+  it('creates a git commit for workflow-managed diffs after review passes', async () => {
+    const loaded = await loadAbility('development/code-change', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const bus = new ControlEventBus()
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'code-change-commit-'))
+
+    try {
+      await fs.mkdir(path.join(cwd, 'src'), { recursive: true })
+      await fs.writeFile(path.join(cwd, 'src/example.ts'), 'export const value = 1\n', 'utf-8')
+
+      const run = async (args: string[]) => {
+        const proc = Bun.spawn({
+          cmd: ['git', ...args],
+          cwd,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        })
+        return {
+          exitCode: await proc.exited,
+          stdout: await new Response(proc.stdout).text(),
+        }
+      }
+
+      expect((await run(['init'])).exitCode).toBe(0)
+      expect((await run(['config', 'user.name', 'Workflow Test'])).exitCode).toBe(0)
+      expect((await run(['config', 'user.email', 'workflow@example.com'])).exitCode).toBe(0)
+      expect((await run(['add', 'src/example.ts'])).exitCode).toBe(0)
+      expect((await run(['commit', '-m', 'chore: baseline'])).exitCode).toBe(0)
+
+      const execution = await executeAbility(
+        loaded!.ability,
+        {
+          objective: 'Update example export',
+          acceptance_criteria: 'example file updated',
+          path: 'small',
+          affected_files: 'src/example.ts',
+          validation_command: "grep -q 'value = 2' src/example.ts",
+        },
+        createContext(cwd, {
+          implementationEdits: [{ path: 'src/example.ts', content: 'export const value = 2\n' }],
+        }),
+        { eventBus: bus }
+      )
+
+      expect(execution.status).toBe('completed')
+      expect(execution.completedSteps.some((step) => step.stepId === 'commit' && step.status === 'completed')).toBe(true)
+
+      const head = await run(['log', '-1', '--pretty=%s'])
+      expect(head.exitCode).toBe(0)
+      expect(head.stdout.trim()).toBe('feat: Update example export')
     } finally {
       await fs.rm(cwd, { recursive: true, force: true })
     }
