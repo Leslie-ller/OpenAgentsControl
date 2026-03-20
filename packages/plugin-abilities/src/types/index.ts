@@ -379,9 +379,9 @@ export interface ExecutorContext {
   /** Callback fired when a step starts */
   onStepStart?: (step: Step) => void
   /** Callback fired when a step completes */
-  onStepComplete?: (step: Step, result: StepResult) => void
+  onStepComplete?: (step: Step, result: StepResult, execution: AbilityExecution) => void
   /** Callback fired when a step fails */
-  onStepFail?: (step: Step, error: string) => void
+  onStepFail?: (step: Step, error: string, execution: AbilityExecution) => void
 }
 
 /**

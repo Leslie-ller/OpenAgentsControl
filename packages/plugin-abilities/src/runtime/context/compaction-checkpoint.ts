@@ -2,6 +2,7 @@ import type { AbilityExecution } from '../../types/index.js'
 import type { CheckpointStore } from './checkpoint-store.js'
 import type { DetailCapsule, StateCapsule } from './types.js'
 import { resolveTopicFromExecution } from './topic-resolver.js'
+import type { TaskPlanData } from '../../coding/artifact-store.js'
 
 function parseOutputs(execution: AbilityExecution): Array<Record<string, unknown>> {
   return execution.completedSteps
@@ -30,6 +31,27 @@ function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' && value.trim().length > 0 ? value : fallback
 }
 
+function buildPlanOutline(taskPlan?: TaskPlanData): string[] {
+  if (!taskPlan) return []
+
+  const lines: string[] = []
+  if (taskPlan.objective) lines.push(`objective: ${taskPlan.objective}`)
+  for (const item of taskPlan.acceptance_criteria) {
+    lines.push(`acceptance: ${item}`)
+  }
+  for (const item of taskPlan.deliverables) {
+    lines.push(`deliverable: ${item}`)
+  }
+  for (const item of taskPlan.context_files) {
+    lines.push(`context_file: ${item}`)
+  }
+  for (const item of taskPlan.reference_files) {
+    lines.push(`reference_file: ${item}`)
+  }
+
+  return lines
+}
+
 function buildStateCapsule(execution: AbilityExecution, topic: string): StateCapsule {
   const now = new Date().toISOString()
   const constraints: string[] = []
@@ -49,7 +71,11 @@ function buildStateCapsule(execution: AbilityExecution, topic: string): StateCap
   }
 }
 
-function buildDetailCapsule(execution: AbilityExecution, topic: string): DetailCapsule {
+function buildDetailCapsule(
+  execution: AbilityExecution,
+  topic: string,
+  taskPlan?: TaskPlanData
+): DetailCapsule {
   const now = new Date().toISOString()
   const outputs = parseOutputs(execution)
   const commands_run = outputs.flatMap((item) => asStringArray(item.commands))
@@ -61,6 +87,7 @@ function buildDetailCapsule(execution: AbilityExecution, topic: string): DetailC
 
   return {
     topic,
+    plan_outline: buildPlanOutline(taskPlan),
     critical_details: outputs
       .map((item) => asString(item.implementation_summary))
       .filter((item) => item.length > 0),
@@ -77,7 +104,8 @@ function buildDetailCapsule(execution: AbilityExecution, topic: string): DetailC
 }
 
 function renderCheckpointSummary(state: StateCapsule, detail: DetailCapsule): string {
-  const detailProjection = detail.critical_details.slice(0, 3)
+  const detailProjection = detail.plan_outline.slice(0, 3)
+    .concat(detail.critical_details.slice(0, 3))
     .concat(detail.unresolved_edges.slice(0, 3))
 
   const lines = [
@@ -97,11 +125,12 @@ function renderCheckpointSummary(state: StateCapsule, detail: DetailCapsule): st
 
 export async function createCompactionCheckpoint(
   execution: AbilityExecution,
-  store: CheckpointStore
+  store: CheckpointStore,
+  options?: { taskPlan?: TaskPlanData }
 ): Promise<{ topic: string; state: StateCapsule; detail: DetailCapsule; summary: string }> {
   const topic = resolveTopicFromExecution(execution)
   const state = buildStateCapsule(execution, topic)
-  const detail = buildDetailCapsule(execution, topic)
+  const detail = buildDetailCapsule(execution, topic, options?.taskPlan)
 
   await store.saveState(state)
   await store.saveDetail(detail)

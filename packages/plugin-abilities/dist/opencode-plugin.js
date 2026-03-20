@@ -117,6 +117,66 @@ export const AbilitiesPlugin = async (ctx) => {
             return 0;
         }
     };
+    const readString = (value) => {
+        return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+    };
+    const readStringArray = (value) => {
+        if (!Array.isArray(value))
+            return [];
+        return value
+            .filter((item) => typeof item === 'string' && item.trim().length > 0)
+            .map((item) => item.trim());
+    };
+    const deriveTaskId = (inputs, fallback) => {
+        return readString(inputs.task_id) ?? fallback;
+    };
+    const deriveTaskPlanData = (inputs, fallbackTaskId) => {
+        const objective = readString(inputs.objective);
+        const acceptanceCriteria = readStringArray(inputs.acceptance_criteria);
+        const deliverables = readStringArray(inputs.deliverables);
+        const contextFiles = readStringArray(inputs.context_files);
+        const referenceFiles = readStringArray(inputs.reference_files);
+        const complexity = inputs.complexity === 'complex' ? 'complex' : 'small';
+        const subtaskCount = typeof inputs.subtask_count === 'number' ? inputs.subtask_count : 0;
+        if (!objective && acceptanceCriteria.length === 0 && deliverables.length === 0) {
+            return null;
+        }
+        return {
+            task_id: deriveTaskId(inputs, fallbackTaskId),
+            objective: objective ?? 'Execute the dispatched workflow plan.',
+            context_files: contextFiles,
+            reference_files: referenceFiles,
+            acceptance_criteria: acceptanceCriteria,
+            deliverables,
+            complexity,
+            subtask_count: subtaskCount,
+        };
+    };
+    const persistTaskPlanArtifact = async (execution) => {
+        if (execution.ability.task_type !== 'code_change')
+            return undefined;
+        const taskId = deriveTaskId(execution.inputs, execution.id);
+        const taskPlan = deriveTaskPlanData(execution.inputs, taskId);
+        if (!taskPlan)
+            return undefined;
+        await codingArtifactStore.save('task-plan', taskId, taskId, taskPlan);
+        return taskPlan;
+    };
+    const persistExecutionCheckpoint = async (execution) => {
+        try {
+            const taskId = deriveTaskId(execution.inputs, execution.id);
+            const taskPlan = await persistTaskPlanArtifact(execution);
+            const loadedPlan = taskPlan
+                ? { data: taskPlan }
+                : await codingArtifactStore.load('task-plan', taskId);
+            await createCompactionCheckpoint(execution, checkpointStore, {
+                taskPlan: loadedPlan?.data,
+            });
+        }
+        catch (err) {
+            console.error('[abilities] Failed to persist execution checkpoint:', err);
+        }
+    };
     // Load abilities on startup
     try {
         const loaded = await loadAbilities({ projectDir: abilitiesDir, includeGlobal: false });
@@ -142,6 +202,12 @@ export const AbilitiesPlugin = async (ctx) => {
                 agent: runtime?.agent,
                 model: inheritedModel,
             }),
+            onStepComplete: (_step, _result, execution) => {
+                void persistExecutionCheckpoint(execution);
+            },
+            onStepFail: (_step, _error, execution) => {
+                void persistExecutionCheckpoint(execution);
+            },
         };
     };
     const buildAbilityContextInjection = (execution) => {
@@ -181,11 +247,11 @@ export const AbilitiesPlugin = async (ctx) => {
         }
         try {
             const execution = await executionManager.execute(ability, inputs, createExecutorContext(runtime));
+            await persistExecutionCheckpoint(execution);
             if (ability.task_type === 'code_change' && execution.control) {
-                const taskId = typeof inputs.task_id === 'string' && inputs.task_id.trim().length > 0
-                    ? inputs.task_id
-                    : `task_${Date.now()}`;
+                const taskId = deriveTaskId(inputs, execution.id);
                 try {
+                    await persistTaskPlanArtifact(execution);
                     const summary = deriveCompletionSummary(execution);
                     if (summary) {
                         await codingArtifactStore.save('completion-summary', taskId, taskId, summary);
@@ -375,13 +441,17 @@ export const AbilitiesPlugin = async (ctx) => {
         // Hook: Cleanup on session deletion
         async event({ event }) {
             try {
-                if (event.type === 'session.compacted') {
-                    const activeExecution = executionManager.getActive();
-                    if (activeExecution) {
-                        const checkpoint = await createCompactionCheckpoint(activeExecution, checkpointStore);
-                        const sessionID = event?.properties?.info?.id;
-                        pendingCheckpointSummaries.put(typeof sessionID === 'string' ? sessionID : undefined, checkpoint.summary);
-                        console.log(`[abilities] Compaction checkpoint saved for topic '${checkpoint.topic}'`);
+        if (event.type === 'session.compacted') {
+            const activeExecution = executionManager.getActive();
+            if (activeExecution) {
+                const taskId = deriveTaskId(activeExecution.inputs, activeExecution.id);
+                const taskPlan = await codingArtifactStore.load('task-plan', taskId);
+                const checkpoint = await createCompactionCheckpoint(activeExecution, checkpointStore, {
+                    taskPlan: taskPlan?.data,
+                });
+                const sessionID = event?.properties?.info?.id;
+                pendingCheckpointSummaries.put(typeof sessionID === 'string' ? sessionID : undefined, checkpoint.summary);
+                console.log(`[abilities] Compaction checkpoint saved for topic '${checkpoint.topic}'`);
                     }
                 }
                 if (event.type === 'session.deleted') {

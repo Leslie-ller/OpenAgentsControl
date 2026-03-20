@@ -8,6 +8,7 @@ export function selectDetailFields(capsule: DetailCapsule, useCase: DetailUseCas
   switch (useCase) {
     case 'continue_implementation':
       return {
+        plan_outline: uniq(capsule.plan_outline),
         critical_details: uniq(capsule.critical_details),
         decisions: uniq(capsule.decisions),
       }
@@ -18,6 +19,7 @@ export function selectDetailFields(capsule: DetailCapsule, useCase: DetailUseCas
       }
     case 'recover_execution_context':
       return {
+        plan_outline: uniq(capsule.plan_outline),
         file_refs: uniq(capsule.file_refs),
         commands_run: uniq(capsule.commands_run),
       }

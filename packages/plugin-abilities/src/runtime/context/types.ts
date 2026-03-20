@@ -10,6 +10,7 @@ export interface StateCapsule {
 
 export interface DetailCapsule {
   topic: string
+  plan_outline: string[]
   critical_details: string[]
   decisions: string[]
   evidence: string[]

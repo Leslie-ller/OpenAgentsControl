@@ -709,7 +709,7 @@ export async function executeAbility(
         }
 
         // Fire onStepComplete callback
-        if (ctx.onStepComplete) ctx.onStepComplete(step, skippedResult)
+        if (ctx.onStepComplete) ctx.onStepComplete(step, skippedResult, execution)
         continue
       }
     }
@@ -752,7 +752,7 @@ export async function executeAbility(
         }
 
         // Fire onStepFail callback
-        if (ctx.onStepFail) ctx.onStepFail(step, permError)
+        if (ctx.onStepFail) ctx.onStepFail(step, permError, execution)
 
         // Respect on_failure policy
         const permFailPolicy = step.on_failure
@@ -911,7 +911,7 @@ export async function executeAbility(
 
     if (result.status === 'failed') {
       // Fire onStepFail callback
-      if (ctx.onStepFail) ctx.onStepFail(step, result.error || 'Unknown error')
+      if (ctx.onStepFail) ctx.onStepFail(step, result.error || 'Unknown error', execution)
 
       // Check on_failure policy (retry already handled above)
       if (failPolicy === 'continue') {
@@ -932,7 +932,7 @@ export async function executeAbility(
       return execution
     } else {
       // Fire onStepComplete callback
-      if (ctx.onStepComplete) ctx.onStepComplete(step, result)
+      if (ctx.onStepComplete) ctx.onStepComplete(step, result, execution)
     }
   }
 
