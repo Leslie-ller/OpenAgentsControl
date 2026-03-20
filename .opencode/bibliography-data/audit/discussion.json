@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "type": "audit",
+    "key": "discussion",
+    "createdAt": "2026-03-20T02:44:59.415Z",
+    "updatedAt": "2026-03-20T02:44:59.415Z",
+    "executionId": "exec_1773974699386_5ucdpt",
+    "sourceStage": "audit"
+  },
+  "data": {
+    "section": "discussion",
+    "selected_paper_keys": [
+      "EDMGRV46",
+      "EYYET7D2",
+      "F4UBRWXW",
+      "HHX2YPIT",
+      "8S52RDDV",
+      "QVZ89PZS",
+      "QMCNK2IN",
+      "67J97N7U",
+      "GFAX4VBM",
+      "BVJWFEF5",
+      "JYHZ6R6E",
+      "X47F6IKW",
+      "N2NZU362"
+    ],
+    "status": "pass",
+    "issues": [],
+    "coverage_score": 1,
+    "anchors_count": 13,
+    "grounded_claims": 13,
+    "total_claims": 13,
+    "source_stage": "audit"
+  }
+}

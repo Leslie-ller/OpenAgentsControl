@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "type": "audit",
+    "key": "advanced-methods",
+    "createdAt": "2026-03-20T02:43:23.594Z",
+    "updatedAt": "2026-03-20T02:43:23.594Z",
+    "executionId": "exec_1773974603567_rzc0yi",
+    "sourceStage": "audit"
+  },
+  "data": {
+    "section": "advanced-methods",
+    "selected_paper_keys": [
+      "EDMGRV46",
+      "EYYET7D2",
+      "F4UBRWXW",
+      "8S52RDDV",
+      "MWPFTLUA",
+      "QMCNK2IN",
+      "67J97N7U",
+      "GFAX4VBM",
+      "BVJWFEF5",
+      "JYHZ6R6E",
+      "X47F6IKW",
+      "N2NZU362"
+    ],
+    "status": "pass",
+    "issues": [],
+    "coverage_score": 1,
+    "anchors_count": 12,
+    "grounded_claims": 12,
+    "total_claims": 12,
+    "source_stage": "audit"
+  }
+}

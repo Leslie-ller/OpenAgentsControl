@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "type": "reading-card",
+    "key": "sxa2p46h",
+    "createdAt": "2026-03-20T08:16:16.240Z",
+    "updatedAt": "2026-03-20T08:33:00.000Z",
+    "executionId": "exec_1773994542428_i5m7mk",
+    "sourceStage": "review"
+  },
+  "data": {
+    "paper_key": "SXA2P46H",
+    "title": "Sequential versus Integrated Optimization: Production, Location, Inventory Control and Distribution",
+    "summary": "This work should be read as a core integrated-supply-chain optimization reference rather than an AI paper. In the most thesis-relevant chapter, it compares sequential (siloed) and integrated optimization for a multi-product, multi-plant, multi-period, multi-echelon supply chain with production, inventory, direct-shipment distribution, dynamic distribution-center location, and delivery-time windows. The paper formulates the integrated problem as a MILP, studies exact CPLEX performance on realistic instances, and introduces an ALNS-plus-exact matheuristic to handle the large binary decision space. Its main value for the thesis is to justify why integrated MILP modeling matters and why computational acceleration is needed.",
+    "key_findings": [
+      "Problem scope: integrated production, location, inventory, and distribution planning in a multi-product, multi-plant, multi-period, multi-echelon supply chain with direct shipment and delivery-time windows.",
+      "Modeling contribution: provides a concrete MILP formulation for integrated supply-chain planning with binary setup and facility-location decisions plus downstream flow and inventory decisions.",
+      "Computational finding: exact CPLEX solves only the smallest instances to optimality; on larger instances, optimality gaps become substantial within a one-hour limit, which is direct evidence that realistic integrated MILPs are hard to solve exactly.",
+      "Managerial finding: sequential planning is materially worse than integrated planning, so the paper strongly supports the thesis argument against siloed supply-chain decision making.",
+      "Methodological finding: the ALNS-plus-exact matheuristic is a relevant predecessor pattern for thesis methods that combine heuristic search over hard binary decisions with exact optimization of the remaining subproblem.",
+      "Literature-review value: the broader Darvish 2017 thesis also contains a useful integrated-supply-chain literature classification, so this source is not only a single experiment paper but part of a larger methodological reference set."
+    ],
+    "methodology": "The thesis-relevant core is a MILP-based integrated production-location-inventory-distribution model with direct shipment and delivery-time windows. The study compares multiple sequential planning procedures against a fully integrated formulation, then solves the integrated model using both exact branch-and-bound with CPLEX and an ALNS-based matheuristic that searches difficult binary design and setup decisions while repeatedly solving the remaining flow subproblem exactly.",
+    "relevance_notes": "High relevance for the graduation thesis. This is one of the strongest references for the modeling legitimacy of integrated supply-chain MILP, because it directly shows why production, location, inventory, and distribution should be optimized jointly instead of sequentially. It is also useful as a methodological bridge: not because it proves ML works, but because it documents an exact-plus-matheuristic decomposition pattern and the computational intractability that motivates later learning-assisted acceleration. In writing, it should support the integrated-model rationale, the complexity argument, and the design logic of heuristic-plus-exact hybrid solving. It should not be presented as an ML, ANN, or LLM paper.",
+    "anchors_count": 7,
+    "sufficiency_score": 0.93,
+    "uncertainty_level": "medium",
+    "source_text_length": 65507,
+    "source_excerpt": "Integrated production, location, inventory, and distribution problem. The objective is to operate a production-distribution system that minimizes production, location, inventory, and distribution costs while satisfying demands within a predetermined delivery time window.",
+    "source_stage": "review",
+    "stage": "full-review"
+  }
+}

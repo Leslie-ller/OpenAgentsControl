@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "type": "audit",
+    "key": "thesis-positioning",
+    "createdAt": "2026-03-20T02:46:14.821Z",
+    "updatedAt": "2026-03-20T02:46:14.821Z",
+    "executionId": "exec_1773974774791_nmhccv",
+    "sourceStage": "audit"
+  },
+  "data": {
+    "section": "thesis-positioning",
+    "selected_paper_keys": [
+      "EDMGRV46",
+      "EYYET7D2",
+      "F4UBRWXW",
+      "HHX2YPIT",
+      "8S52RDDV",
+      "QVZ89PZS",
+      "MWPFTLUA",
+      "QMCNK2IN",
+      "67J97N7U",
+      "GFAX4VBM",
+      "BVJWFEF5",
+      "JYHZ6R6E",
+      "X47F6IKW",
+      "N2NZU362"
+    ],
+    "status": "pass",
+    "issues": [],
+    "coverage_score": 1,
+    "anchors_count": 14,
+    "grounded_claims": 14,
+    "total_claims": 14,
+    "source_stage": "audit"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "type": "evidence-pack",
+    "key": "thesis-positioning",
+    "createdAt": "2026-03-20T02:46:14.786Z",
+    "updatedAt": "2026-03-20T02:46:14.786Z",
+    "executionId": "exec_1773974699423_l4e33w",
+    "sourceStage": "evidence-pack"
+  },
+  "data": {
+    "section": "thesis-positioning",
+    "selected_paper_keys": [
+      "EDMGRV46",
+      "EYYET7D2",
+      "F4UBRWXW",
+      "HHX2YPIT",
+      "8S52RDDV",
+      "QVZ89PZS",
+      "MWPFTLUA",
+      "QMCNK2IN",
+      "67J97N7U",
+      "GFAX4VBM",
+      "BVJWFEF5",
+      "JYHZ6R6E",
+      "X47F6IKW",
+      "N2NZU362"
+    ],
+    "papers": [
+      {
+        "paper_key": "EDMGRV46",
+        "claim": "LLMs are best positioned as an interaction and explainability layer over combinatorial/MILP optimization rather than as the core optimization method.",
+        "evidence": "Decision identifies future-facing what-if and stakeholder support value, but not core contribution to integrated production-inventory-distribution modeling (defer).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "EYYET7D2",
+        "claim": "A thesis can credibly position MILP as the structural backbone and add RL/heuristic modules for tractability in end-to-end integrated supply chains.",
+        "evidence": "Decision reports integrated production-transport-storage-shipping MILP plus PPO and relax-and-fix acceleration with consistent full-review support.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "F4UBRWXW",
+        "claim": "Constraint-learning within MIO provides a principled way to augment MILP when parts of the decision structure are data-derived.",
+        "evidence": "Decision cites embedding learned constraints/objectives with trust-region and ensemble mechanisms, highly aligned with MILP-first advanced extensions.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "HHX2YPIT",
+        "claim": "Detailed production-inventory MIP formulations with operational constraints provide a practical baseline block for broader integrated thesis models.",
+        "evidence": "Decision reports multi-product, multi-line, multi-period constraints and CPLEX case gains, while acknowledging limited distribution/supplier integration.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "8S52RDDV",
+        "claim": "Cross-domain evidence supports positioning learning-assisted MILP as speed-enhancing with explicit guarantee tradeoffs in repeated planning contexts.",
+        "evidence": "Decision documents exact optimization core plus ML screening/warm-start/subspace methods and quantified speedups (4.3x with guarantees, 10.2x without).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "QVZ89PZS",
+        "claim": "Logistics-performance indicators are suitable for contextual framing and parameter realism, not as direct evidence for optimization-method contributions.",
+        "evidence": "Decision states strong background relevance on delays/reliability KPIs but no prescriptive MILP or advanced optimization formulation (defer).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "MWPFTLUA",
+        "claim": "Matheuristics that combine GA with MILP support a thesis position of exact-structure retention plus scalable search for integrated planning.",
+        "evidence": "Decision indicates direct production-distribution integration focus and sufficient low-uncertainty evidence for GA+MILP in supply-chain planning.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "QMCNK2IN",
+        "claim": "A MILP-first thesis can use ML-for-CO taxonomies to justify where learning augmentation is methodologically appropriate and where risks remain.",
+        "evidence": "Decision highlights decision-point and generalization-risk screening value, with high methodological but limited domain-model specificity.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "67J97N7U",
+        "claim": "Forecast-plus-control pipelines can be positioned as screened advanced extensions that improve inventory decisions in narrower operational scopes.",
+        "evidence": "Decision reports LR/RF/SVR forecasting coupled with dynamic (t,R,S) inventory control outperforming EOQ, but not full integrated network modeling.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "GFAX4VBM",
+        "claim": "ML-augmented branch-and-bound is a valid post-formulation acceleration path for MILP-centric thesis workflows.",
+        "evidence": "Decision cites branching/cuts/node selection/heuristics/configuration acceleration relevance, while noting lack of supply-chain-specific model evidence.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "BVJWFEF5",
+        "claim": "Iterative prediction-and-optimization can preserve MILP rigor while capturing demand-network feedback in logistics network design.",
+        "evidence": "Decision reports ANN+MILP iterative framework with heuristic decomposition for scaling and strong alignment to baseline-plus-extension thesis structure.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "JYHZ6R6E",
+        "claim": "Strategic network-design optimization with cooperation analysis broadens thesis positioning from operational MILP to digital-manufacturing strategic coordination.",
+        "evidence": "Decision notes formal objective/constraint model solved via branch-and-bound plus evolutionary-game layer and case cost-reduction evidence.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "X47F6IKW",
+        "claim": "Prescriptive ML for repeated mixed-integer convex solves supports feasibility-focused AI-OR extensions atop exact optimization baselines.",
+        "evidence": "Decision reports OPT-based repeated-solve advantages with strong relevance and sufficient full-review support for advanced-methods positioning.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "N2NZU362",
+        "claim": "Integrated location-production-inventory-distribution exact optimization is a core anchor for positioning the thesis around coordinated decision superiority over sequential planning.",
+        "evidence": "Decision reports direct scope match, integrated-vs-sequential benchmarking, and practical extensions (time windows, multi-echelon, environmental criteria).",
+        "strength": "strong"
+      }
+    ],
+    "anchors_count": 14,
+    "sufficiency_score": 0.77,
+    "grounded_claims": 14,
+    "total_claims": 14,
+    "source_stage": "evidence-pack"
+  }
+}

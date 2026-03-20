@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "type": "evidence-pack",
+    "key": "advanced-methods",
+    "createdAt": "2026-03-20T02:43:23.562Z",
+    "updatedAt": "2026-03-20T02:43:23.562Z",
+    "executionId": "exec_1773974540556_qam6f3",
+    "sourceStage": "evidence-pack"
+  },
+  "data": {
+    "section": "advanced-methods",
+    "selected_paper_keys": [
+      "EDMGRV46",
+      "EYYET7D2",
+      "F4UBRWXW",
+      "8S52RDDV",
+      "MWPFTLUA",
+      "QMCNK2IN",
+      "67J97N7U",
+      "GFAX4VBM",
+      "BVJWFEF5",
+      "JYHZ6R6E",
+      "X47F6IKW",
+      "N2NZU362"
+    ],
+    "papers": [
+      {
+        "paper_key": "EDMGRV46",
+        "claim": "LLM layers can operationalize optimization workflows through explainable stakeholder-facing what-if analysis without replacing the MILP/combinatorial core.",
+        "evidence": "Decision artifact classifies it as a screened advanced extension with moderate certainty (sufficiency 0.62) and defers it as non-core for formulation/solution quality evidence.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "EYYET7D2",
+        "claim": "A MILP-first integrated supply-chain model can be made more tractable by adding PPO-based learning support and relax-and-fix heuristics while preserving exact-optimization structure.",
+        "evidence": "Full-review decision notes end-to-end integrated decisions with MILP baseline plus RL-assisted acceleration; sufficiency reported as 0.78.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "F4UBRWXW",
+        "claim": "Learning unknown constraints/objectives and embedding them into MIO provides a principled advanced-method path for partially observed decision systems.",
+        "evidence": "Decision cites trust-region and ensemble mechanisms as directly relevant to learning-assisted optimization over MILP/MIO, with high sufficiency (0.87).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "8S52RDDV",
+        "claim": "Prediction-augmented MILP pipelines can deliver large runtime gains while making speed-versus-guarantee tradeoffs explicit in recurring planning settings.",
+        "evidence": "Decision artifact reports exact-core plus constraint screening/warm starts/subspace restriction, including 4.3x speedup with guarantees and 10.2x without; sufficiency 0.88.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "MWPFTLUA",
+        "claim": "GA+MILP matheuristics are an effective advanced extension for integrated production-distribution planning when exact models face scalability limits.",
+        "evidence": "Decision artifact indicates direct supply-chain planning fit, low uncertainty, and sufficient support (0.82) for coordinated production-distribution decisions.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "QMCNK2IN",
+        "claim": "A MILP-first thesis can rigorously screen AI-OR methods using a taxonomy of prediction-and-optimization, policy learning, and ML-guided heuristics with generalization-risk criteria.",
+        "evidence": "Decision artifact identifies high methodological relevance for advanced-methods framing, with moderate sufficiency (0.78) and limited domain-specific modeling evidence.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "67J97N7U",
+        "claim": "Coupling ML demand forecasting with dynamic inventory control provides a practical prediction-and-optimization extension that improves over EOQ baselines.",
+        "evidence": "Decision artifact reports LR/RF/SVR plus dynamic (t,R,S) control with performance gains vs EOQ; sufficiency 0.82, but scoped as extension rather than core integrated MILP.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "GFAX4VBM",
+        "claim": "ML augmentation of branch-and-bound components offers a solver-level pathway to speed up MILP after model formulation.",
+        "evidence": "Decision artifact highlights branching/cuts/node-selection/heuristics/configuration acceleration relevance, with moderate support and lower sufficiency (0.66).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "BVJWFEF5",
+        "claim": "Iterative ANN prediction plus MILP network optimization can handle endogenous demand-network feedback while retaining an optimization backbone and scalable decomposition.",
+        "evidence": "Decision artifact reports an ANN+MILP iterative framework with two-stage heuristic scaling and strong alignment to advanced extensions; sufficiency 0.86.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "JYHZ6R6E",
+        "claim": "Combining formal network optimization with an evolutionary-game cooperation layer extends classical optimization to digitally coordinated supply-chain strategy design.",
+        "evidence": "Decision artifact cites objective/constraint model solved by branch-and-bound plus strategic layer and case cost reduction; anchors_count 8 and sufficiency 0.78.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "X47F6IKW",
+        "claim": "Prescriptive ML for repeated mixed-integer convex solves can improve feasibility performance as an AI-OR acceleration layer over exact optimization.",
+        "evidence": "Decision artifact indicates high relevance to advanced-methods track and sufficient evidence (0.84) under moderate uncertainty.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "N2NZU362",
+        "claim": "Exact integrated location-production-inventory-distribution optimization with integrated-vs-sequential benchmarking provides a robust baseline for evaluating advanced-method extensions.",
+        "evidence": "Decision artifact reports high relevance, anchors_count 6, and sufficiency 0.86, including practical extension dimensions (time windows, multi-echelon, environmental criteria).",
+        "strength": "strong"
+      }
+    ],
+    "anchors_count": 12,
+    "sufficiency_score": 0.8,
+    "grounded_claims": 12,
+    "total_claims": 12,
+    "source_stage": "evidence-pack"
+  }
+}

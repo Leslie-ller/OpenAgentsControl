@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "type": "evidence-pack",
+    "key": "discussion",
+    "createdAt": "2026-03-20T02:44:59.380Z",
+    "updatedAt": "2026-03-20T02:44:59.380Z",
+    "executionId": "exec_1773974603602_x2rr0y",
+    "sourceStage": "evidence-pack"
+  },
+  "data": {
+    "section": "discussion",
+    "selected_paper_keys": [
+      "EDMGRV46",
+      "EYYET7D2",
+      "F4UBRWXW",
+      "HHX2YPIT",
+      "8S52RDDV",
+      "QVZ89PZS",
+      "QMCNK2IN",
+      "67J97N7U",
+      "GFAX4VBM",
+      "BVJWFEF5",
+      "JYHZ6R6E",
+      "X47F6IKW",
+      "N2NZU362"
+    ],
+    "papers": [
+      {
+        "paper_key": "EDMGRV46",
+        "claim": "LLMs are more defensible as interaction and explainability layers around optimization workflows than as core optimization-method evidence.",
+        "evidence": "Deferred as future-facing context; reading-card basis reports moderate certainty (sufficiency 0.62) and non-core fit for MILP formulation/solution quality.",
+        "strength": "weak"
+      },
+      {
+        "paper_key": "EYYET7D2",
+        "claim": "A discussion-ready pattern is to keep integrated MILP as the decision backbone and use RL/heuristics to improve tractability.",
+        "evidence": "Kept due to end-to-end integrated MILP scope (production, transport, storage, shipping) plus PPO and relax-and-fix extensions; sufficiency 0.78.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "F4UBRWXW",
+        "claim": "Constraint learning can extend MILP/MIO under partial observability while preserving optimization structure for coordinated decisions.",
+        "evidence": "Kept with strong relevance; rationale cites learned constraints/objectives embedded in optimization and trust-region/ensemble mechanisms; sufficiency 0.87.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "HHX2YPIT",
+        "claim": "Production-inventory MILP with explicit capacity, shortage, and line-switch constraints provides a practical baseline for discussing integrated planning trade-offs.",
+        "evidence": "Kept based on case-validated CPLEX implementation and reusable coordinated planning structure, with explicit note that full distribution integration is limited.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "8S52RDDV",
+        "claim": "Learning-assisted MILP can deliver large runtime gains with explicit guarantee-vs-speed trade-offs, which is central to discussion of advanced extensions.",
+        "evidence": "Kept with reported 4.3x speedup under guarantees and 10.2x without guarantees, while retaining exact optimization core; sufficiency 0.88.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "QVZ89PZS",
+        "claim": "Logistics reliability and delay KPIs should be used in discussion to justify realistic assumptions, not as optimization-method evidence.",
+        "evidence": "Deferred because it provides contextual grounding but no explicit MILP/stochastic/RL prescriptive formulation.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "QMCNK2IN",
+        "claim": "A MILP-first thesis discussion can be strengthened by a formal screening lens for ML-assisted combinatorial optimization methods.",
+        "evidence": "Kept for methodological framing of prediction-and-optimization, policy learning, and ML-guided heuristics, with caution on limited domain specificity; sufficiency 0.78.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "67J97N7U",
+        "claim": "Coupling demand forecasting with dynamic inventory control supports prediction-and-optimization arguments in discussion, but as an extension rather than a core integrated model.",
+        "evidence": "Kept as advanced-method reference showing LR/RF/SVR with dynamic (t,R,S) control and gains versus EOQ; scope limitation acknowledged; sufficiency 0.82.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "GFAX4VBM",
+        "claim": "ML augmentation of branch-and-bound components is a practical post-formulation path to accelerate MILP workflows.",
+        "evidence": "Kept as methodological evidence on branching/cuts/node selection/heuristics/configuration acceleration, with non-domain-specific positioning; sufficiency 0.66.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "BVJWFEF5",
+        "claim": "Iterative prediction-and-optimization can preserve MILP rigor while handling endogenous demand-network feedback at larger scales.",
+        "evidence": "Kept with ANN+MILP iterative framework and two-stage heuristic scaling reported as strongly relevant to baseline-plus-extension thesis structure; sufficiency 0.86.",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "JYHZ6R6E",
+        "claim": "Strategic network design optimization with cooperation dynamics broadens discussion beyond operational planning while remaining compatible with MILP-style reasoning.",
+        "evidence": "Kept based on formal objective/constraint model solved by branch-and-bound and case-reported cost reduction; strategic scope noted; sufficiency 0.78.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "X47F6IKW",
+        "claim": "Prescriptive ML is best positioned in discussion as a repeated-solve enhancement that complements MILP/MICO baselines via improved feasibility behavior.",
+        "evidence": "Kept with high relevance to advanced-method track and adequate evidence quality (sufficiency 0.84, moderate uncertainty).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "N2NZU362",
+        "claim": "Integrated location-production-inventory-distribution optimization is a core anchor for arguing the value of coordinated versus sequential planning.",
+        "evidence": "Kept as direct thesis-core match with exact integrated modeling, integrated-vs-sequential benchmarking, and practical extensions; anchors_count 6 and sufficiency 0.86.",
+        "strength": "strong"
+      }
+    ],
+    "anchors_count": 13,
+    "sufficiency_score": 0.76,
+    "grounded_claims": 13,
+    "total_claims": 13,
+    "source_stage": "evidence-pack"
+  }
+}

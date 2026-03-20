@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "type": "evidence-pack",
+    "key": "methods",
+    "createdAt": "2026-03-18T09:07:52.650Z",
+    "updatedAt": "2026-03-20T02:42:20.510Z",
+    "executionId": "exec_1773974481260_11dvhh",
+    "sourceStage": "evidence-pack"
+  },
+  "data": {
+    "section": "methods",
+    "selected_paper_keys": [
+      "EYYET7D2",
+      "F4UBRWXW",
+      "HHX2YPIT",
+      "8S52RDDV",
+      "MWPFTLUA",
+      "QMCNK2IN",
+      "67J97N7U",
+      "GFAX4VBM",
+      "BVJWFEF5",
+      "JYHZ6R6E",
+      "X47F6IKW",
+      "N2NZU362"
+    ],
+    "papers": [
+      {
+        "paper_key": "EYYET7D2",
+        "claim": "A rigorous methods pattern is to retain an integrated MILP core and add RL plus relax-and-fix modules to improve tractability in end-to-end planning.",
+        "evidence": "Decision artifact reports full-review support for integrated production/transport/storage/shipping MILP with PPO-assisted acceleration and relax-and-fix (sufficiency 0.78).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "F4UBRWXW",
+        "claim": "Constraint-learning can be embedded into mixed-integer optimization to extend MILP/MIO methods when parts of structure are data-derived.",
+        "evidence": "Decision rationale explicitly cites learned constraints/objectives with trust-region and ensemble mechanisms, with strong full-review support (sufficiency 0.87).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "HHX2YPIT",
+        "claim": "A practical baseline method for thesis modeling is multi-product, multi-line, multi-period MILP production-inventory planning with explicit operational constraints.",
+        "evidence": "Artifact states coordinated production-inventory MILP including capacity, shortage, and line-switch constraints, validated via CPLEX case study.",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "8S52RDDV",
+        "claim": "Learning-assisted MILP methods can systematically trade optimality guarantees for speed through prediction-based screening and warm starts.",
+        "evidence": "Decision card reports exact optimization core plus constraint screening/warm starts/affine-subspace restriction, with quantified speedups (4.3x with guarantees, 10.2x without; sufficiency 0.88).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "MWPFTLUA",
+        "claim": "Matheuristic design combining GA and MILP is a viable methods extension for integrated production-distribution planning.",
+        "evidence": "Decision evidence indicates direct integrated planning scope and GA+MILP formulation with low uncertainty and sufficient support (sufficiency 0.82).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "QMCNK2IN",
+        "claim": "A MILP-first methods section can be structured by an ML-for-CO taxonomy that screens where learning should intervene in optimization pipelines.",
+        "evidence": "Decision rationale highlights a methodological framework covering prediction-and-optimization, policy learning, and ML-guided heuristics with moderate certainty (sufficiency 0.78).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "67J97N7U",
+        "claim": "Prediction-and-optimization methods can couple ML demand forecasting with dynamic inventory control to outperform classical inventory baselines.",
+        "evidence": "Artifact reports LR/RF/SVR forecasting linked to dynamic (t,R,S) control and improvements versus EOQ, while noting limited integrated network scope (sufficiency 0.82).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "GFAX4VBM",
+        "claim": "Post-formulation MILP performance can be improved by learning-augmented branch-and-bound components.",
+        "evidence": "Decision notes method relevance for branching, cuts, node selection, heuristics, and configuration; evidence is method-strong but domain-nonspecific (sufficiency 0.66).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "BVJWFEF5",
+        "claim": "Iterative prediction-and-optimization methods can preserve MILP structure while updating demand estimates through ANN loops.",
+        "evidence": "Decision artifact reports ANN+MILP iterative framework with endogenous demand-network feedback and scalable two-stage heuristic decomposition (sufficiency 0.86).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "JYHZ6R6E",
+        "claim": "Methods for digitally enabled supply chain design can combine formal network optimization with strategic interaction modeling.",
+        "evidence": "Decision entry indicates objective/constraint network design solved by branch-and-bound (LINGO) and an added evolutionary game layer, with moderate evidence quality (sufficiency 0.78).",
+        "strength": "moderate"
+      },
+      {
+        "paper_key": "X47F6IKW",
+        "claim": "Prescriptive ML can be used as an advanced methods layer for repeated mixed-integer convex solve settings to improve feasibility-oriented performance.",
+        "evidence": "Decision artifact cites OPT-style prescriptive ML in repeated solve contexts with strong relevance to advanced methods and solid support (sufficiency 0.84).",
+        "strength": "strong"
+      },
+      {
+        "paper_key": "N2NZU362",
+        "claim": "An exact integrated modeling baseline should jointly optimize location, production, inventory, and distribution and benchmark against sequential planning.",
+        "evidence": "Decision notes direct thesis-core alignment, integrated-vs-sequential comparison, and practical extensions (time windows, multi-echelon, environmental criteria), with high sufficiency (0.86).",
+        "strength": "strong"
+      }
+    ],
+    "anchors_count": 12,
+    "sufficiency_score": 0.8,
+    "grounded_claims": 12,
+    "total_claims": 12,
+    "source_stage": "evidence-pack"
+  }
+}
