@@ -114,6 +114,29 @@ Result:
 
 So the certificate issue is real noise, but it is **not sufficient** to explain the direct SDK/session-command failure.
 
+### 6. CLI `run --command` follow-up
+
+Additional CLI probing clarified that `opencode run` has an explicit `--command` option, so raw slash-command text should no longer be treated as the only command-entry experiment.
+
+Observed CLI help:
+
+- `opencode run --help` shows `--command     the command to run, use message for args`
+
+Observed behavior in this environment:
+
+- attach mode against `http://127.0.0.1:4096` returned `Session not found`
+- standalone `run --command` under the default data directory failed first with `attempt to write a readonly database`
+- rerunning with `XDG_DATA_HOME=/tmp` removed the readonly-db failure
+- with writable temp data, `run --command` bootstrapped OpenCode, loaded project plugins, and created fresh sessions in `/tmp/opencode/opencode.db`
+- however, those sessions contained **no messages or parts**
+- log inspection showed `POST /session` during bootstrap, but did **not** show a completed `POST /session/{id}/command` in that temp-data run
+
+Implication:
+
+- `run --command` is a more legitimate proof target than raw slash-command text in `message`
+- but in the current local environment it still does **not** yield a usable end-to-end bibliography command result
+- this narrows the ambiguity: part of the earlier confusion came from testing the wrong entrypoint, but there is still a real runtime gap even on the more official command path
+
 ## Runtime Findings
 
 ### Confirmed
@@ -122,12 +145,15 @@ So the certificate issue is real noise, but it is **not sufficient** to explain 
 2. Plain OpenCode model calls can succeed.
 3. Bibliography-like invocations through `opencode run` are being intercepted by OpenCode's built-in command/task behavior before they prove plugin command execution.
 4. Direct SDK `session.command()` is not currently giving usable message data in this environment.
+5. `opencode run --command` is the more appropriate CLI entrypoint to test command execution, but in this environment it currently creates empty sessions rather than producing usable command output.
 
 ### Still Unclear
 
 1. Whether `session.command()` is incomplete or intentionally no-op in this local serve/runtime combination.
 2. Whether command handling for slash commands under `opencode run` is expected to delegate into the built-in task/general-agent path instead of plugin command handlers.
 3. Whether the desktop app's local server at `4096` has additional routing behavior that differs from standalone `serve`.
+4. Why standalone `run --command` with a writable temp data directory creates sessions but records no messages/parts.
+5. Whether attach mode requires an already-known session context before `run --command` can succeed against a live server.
 
 ## Practical Status
 
@@ -146,8 +172,9 @@ Do not continue changing bibliography workflow code yet.
 Instead, investigate the OpenCode runtime/command layer with this order:
 
 1. confirm expected semantics of `session.command()` in this OpenCode version
-2. identify a direct command-handler entry that bypasses model interpretation and built-in `task` detours
-3. only after that, rerun `/paper-fulltext-review` and confirm the plugin path reaches `ability.command` and then the bibliography runtime ability
+2. treat `opencode run --command` as the primary CLI proof target instead of raw slash-command message text
+3. identify why `run --command` currently creates empty sessions in this local environment
+4. only after that, rerun `/paper-fulltext-review` and confirm the plugin path reaches `ability.command` and then the bibliography runtime ability
 
 ## Workspace Notes
 

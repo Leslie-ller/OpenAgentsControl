@@ -458,6 +458,20 @@ Acceptance criteria:
 1. Complex tasks can be represented without relying only on freeform text.
 2. Validation and review results have structured storage.
 
+Implementation mapping (2026-03-19):
+- Coding artifact contract and typed persistence store are implemented in:
+  - `packages/plugin-abilities/src/coding/artifact-store.ts`
+  - `createCodingArtifactStore(...)` persists canonical artifact types under `.opencode/coding-data/`
+- Artifact compatibility bridge for existing task-breakdown workflow is implemented in:
+  - `packages/plugin-abilities/src/coding/task-breakdown-bridge.ts`
+  - writes `.tmp/tasks/{feature}/task.json` and ordered `subtask_XX.json`
+
+Verification coverage (2026-03-19):
+- `packages/plugin-abilities/tests/coding-artifact-store.test.ts`
+  - validates artifact save/load/list semantics and metadata stability
+- `packages/plugin-abilities/tests/task-breakdown-bridge.test.ts`
+  - validates compatibility artifact generation for complex-path decomposition
+
 ### WS2: Harden `code_change` Obligations
 
 Objective:
@@ -508,6 +522,18 @@ Acceptance criteria:
 1. There is a deterministic code-change execution path.
 2. Validation and completion are explicit stages.
 
+Implementation mapping (2026-03-19):
+- High-level deterministic coding ability is implemented at:
+  - `.opencode/abilities/development/code-change/ability.yaml`
+  - includes explicit stages: analyze, plan, load-context, execute (small/complex), validate, review, complete
+- Plugin runtime exposure for ability execution is integrated at:
+  - `packages/plugin-abilities/src/opencode-plugin.ts`
+  - `ability.run` executes loaded abilities with deterministic script-step enforcement via `tool.execute.before`
+
+Verification coverage (2026-03-19):
+- `packages/plugin-abilities/tests/development-code-change-ability.test.ts`
+  - validates stage structure and complex-path behavior for the high-level ability
+
 ### WS4: Integrate Review and Verification Skills
 
 Objective:
@@ -526,6 +552,21 @@ Implementation tasks:
 Acceptance criteria:
 1. Completion claims require fresh verification evidence.
 2. Blocking review findings prevent workflow completion.
+
+Implementation mapping (2026-03-19):
+- Review and verification evidence are wired into hard control gates via:
+  - `packages/plugin-abilities/src/coding/gates.ts`
+  - `validation_gate`, `review_gate`, and `completion_claim_gate` consume structured evidence payloads
+- Control evaluation integration path is implemented in:
+  - `packages/plugin-abilities/src/control/index.ts`
+  - `packages/plugin-abilities/src/executor/index.ts`
+  - final completion is blocked when gate verdict is `block`
+
+Verification coverage (2026-03-19):
+- `packages/plugin-abilities/tests/control.test.ts`
+  - validates block behavior for failed validation evidence, blocking review findings, and forced gate path for `development/code-change`
+- `packages/plugin-abilities/tests/executor.test.ts`
+  - validates completion formatting aligns with gate-constrained outcomes
 
 ### WS5: Add Complex Task Decomposition Support
 

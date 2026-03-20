@@ -227,3 +227,11 @@ tasks/
 integrations/claude-code/converter/generated/
 .cursorrules
 bun.lock
+
+# Local opencode runtime artifacts
+.opencode/abilities/kb/
+.opencode/bibliography-data/
+.opencode/bibliography-runs/
+.opencode/coding-data/
+.opencode/context-checkpoints/
+.opencode/control-logs/

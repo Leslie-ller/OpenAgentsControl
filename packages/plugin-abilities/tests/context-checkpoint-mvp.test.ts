@@ -176,6 +176,19 @@ describe('context checkpoint MVP runtime', () => {
     expect(await store.loadDetail('coding-workflow')).toBeNull()
   })
 
+  it('returns null when checkpoint files contain malformed JSON', async () => {
+    const rootDir = path.join(tempDir, 'checkpoints')
+    const store = new CheckpointStore({ rootDir })
+
+    await fs.mkdir(path.join(rootDir, 'state'), { recursive: true })
+    await fs.mkdir(path.join(rootDir, 'detail'), { recursive: true })
+    await fs.writeFile(path.join(rootDir, 'state', 'broken-topic.json'), '{ invalid-json', 'utf-8')
+    await fs.writeFile(path.join(rootDir, 'detail', 'broken-topic.json'), '{ invalid-json', 'utf-8')
+
+    expect(await store.loadState('broken-topic')).toBeNull()
+    expect(await store.loadDetail('broken-topic')).toBeNull()
+  })
+
   it('renders short focus refresh block from state capsule', () => {
     const block = renderFocusRefreshBlock({
       topic: 'coding-workflow',
