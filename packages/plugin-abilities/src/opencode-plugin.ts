@@ -39,10 +39,10 @@ import { join } from 'path'
 
 // Tools that are ALWAYS allowed (read-only)
 const ALWAYS_ALLOWED_TOOLS = [
-  'ability.list',
-  'ability.status',
-  'ability.context.detail',
-  'ability.cancel',
+  'ability_list',
+  'ability_status',
+  'ability_context_detail',
+  'ability_cancel',
   'read',
   'glob',
   'grep',
@@ -463,7 +463,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     },
 
     tool: {
-      'ability.list': tool({
+      'ability_list': tool({
         description: 'List all available abilities',
         args: {},
         async execute() {
@@ -478,7 +478,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
       }),
 
-      'ability.run': tool({
+      'ability_run': tool({
         description: `Execute an ability workflow. Available: ${Array.from(abilities.keys()).join(', ') || 'none loaded'}`,
         args: {
           name: tool.schema.string().describe('Ability name to run'),
@@ -493,7 +493,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
       }),
 
-      'ability.command': tool({
+      'ability_command': tool({
         description: 'Bridge bibliography slash commands to runtime abilities',
         args: {
           command: tool.schema.string().describe('Slash command name, e.g. /paper-screening or /bibliography'),
@@ -509,7 +509,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
       }),
 
-      'ability.bibliography.scan': tool({
+      'ability_bibliography_scan': tool({
         description: 'Scan bibliography artifacts for audit issues',
         args: {},
         async execute() {
@@ -518,7 +518,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
       }),
 
-      'ability.status': tool({
+      'ability_status': tool({
         description: 'Get status of active ability execution',
         args: {},
         async execute() {
@@ -544,7 +544,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
       }),
 
-      'ability.context.detail': tool({
+      'ability_context_detail': tool({
         description: 'Get selective detail reinjection block for current ability topic',
         args: {
           use_case: tool.schema.enum([
@@ -582,7 +582,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
       }),
 
-      'ability.coding.artifacts': tool({
+      'ability_coding_artifacts': tool({
         description: 'List or load coding workflow artifacts (task plans, validation reports, etc.)',
         args: {
           action: tool.schema.enum(['list', 'load']).describe('Action: list all or load specific'),
@@ -625,7 +625,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         },
       }),
 
-      'ability.cancel': tool({
+      'ability_cancel': tool({
         description: 'Cancel the active ability execution',
         args: {},
         async execute() {

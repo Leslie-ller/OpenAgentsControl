@@ -8,10 +8,15 @@ const DEFAULT_PROXY_DIR = process.env.OPENCODE_QUESTION_PROXY_DIR
   || join(homedir(), ".local", "share", "opencode", "question-proxy");
 const REPORT_TRIGGER_TOOLS = new Set([
   "ability.run",
+  "ability_run",
   "ability.command",
+  "ability_command",
   "ability.status",
+  "ability_status",
   "ability.context.detail",
+  "ability_context_detail",
   "ability.coding.artifacts",
+  "ability_coding_artifacts",
   "task",
 ]);
 
