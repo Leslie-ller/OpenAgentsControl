@@ -181,34 +181,62 @@ steps:
     needs: [plan, plan-complex-subtasks]
 
   - id: execute-small
-    type: script
-    run: |
-      python3 - <<'PY'
-      import json
-      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
-      print(json.dumps({
-        "changed_files": files,
-        "implementation_summary": "Applied small-path implementation changes",
-        "deliverables_completed": ["implementation"],
-      }))
-      PY
+    type: agent
+    agent: coder-agent
+    prompt: |
+      You are the workflow's implementation executor for a small code-change task.
+
+      Objective:
+      {{inputs.objective}}
+
+      Acceptance criteria:
+      {{inputs.acceptance_criteria}}
+
+      Allowed target files:
+      {{inputs.affected_files}}
+
+      Requirements:
+      - Make the real file edits needed to satisfy the objective.
+      - Limit changes to the allowed target files unless a tiny adjacent change is unavoidable.
+      - Update code, tests, and docs as needed to satisfy the acceptance criteria.
+      - Do not just describe the work. Actually perform the edits in the workspace.
+      - Return strict JSON only with this shape:
+        {
+          "changed_files": ["file1", "file2"],
+          "implementation_summary": "what was implemented",
+          "deliverables_completed": ["implementation"]
+        }
     when: inputs.path == "small"
     tags: [implementation-recorded]
     needs: [load-context]
 
   - id: execute-complex
-    type: script
-    run: |
-      python3 - <<'PY'
-      import json
-      files = [f.strip() for f in "{{inputs.affected_files}}".split(',') if f.strip()]
-      print(json.dumps({
-        "changed_files": files,
-        "subtask_count": len(files) if files else 1,
-        "implementation_summary": "Applied complex-path implementation changes",
-        "deliverables_completed": ["implementation"],
-      }))
-      PY
+    type: agent
+    agent: coder-agent
+    prompt: |
+      You are the workflow's implementation executor for a complex code-change task.
+
+      Objective:
+      {{inputs.objective}}
+
+      Acceptance criteria:
+      {{inputs.acceptance_criteria}}
+
+      Allowed target files:
+      {{inputs.affected_files}}
+
+      Requirements:
+      - Make the real file edits needed to satisfy the objective.
+      - Respect the planned file boundaries unless a tiny adjacent change is required.
+      - If the work can be broken into smaller internal chunks, do so mentally, but keep this as one implementation pass.
+      - Update code, tests, and docs as needed to satisfy the acceptance criteria.
+      - Return strict JSON only with this shape:
+        {
+          "changed_files": ["file1", "file2"],
+          "subtask_count": 1,
+          "implementation_summary": "what was implemented",
+          "deliverables_completed": ["implementation"]
+        }
     when: inputs.path == "complex"
     tags: [implementation-recorded]
     needs: [load-context]
@@ -248,9 +276,121 @@ steps:
         "stderr_tail": stderr[-500:] if stderr else "",
         "validated_claims": ["acceptance criteria covered"] if verdict == "pass" else [],
       }))
+      if actual_exit_code != 0:
+          raise SystemExit(actual_exit_code)
       PY
+    on_failure: continue
     tags: [test, validation, verification-evidence]
     needs: [execute-small, execute-complex]
+
+  - id: repair-after-validate
+    type: agent
+    agent: coder-agent
+    prompt: |
+      The previous validation step failed for this workflow task.
+
+      Objective:
+      {{inputs.objective}}
+
+      Acceptance criteria:
+      {{inputs.acceptance_criteria}}
+
+      Allowed target files:
+      {{inputs.affected_files}}
+
+      Your job:
+      - Inspect the validation output from the previous step.
+      - Fix the implementation or tests so the task can pass validation.
+      - Make real workspace edits, not just a plan.
+      - Return strict JSON only with this shape:
+        {
+          "changed_files": ["file1", "file2"],
+          "implementation_summary": "what you fixed after validation failed",
+          "deliverables_completed": ["implementation", "repair"]
+        }
+    when: steps.validate.status == "failed"
+    tags: [implementation-recorded]
+    needs: [validate]
+
+  - id: validate-after-repair
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json, os, subprocess
+
+      try:
+          inputs = json.loads(os.environ.get("ABILITY_INPUTS_JSON", "{}"))
+      except Exception:
+          inputs = {}
+
+      cmd = str(inputs.get("validation_command") or "{{inputs.validation_command}}")
+      try:
+          result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+          actual_exit_code = result.returncode
+          stdout = result.stdout.strip()
+          stderr = result.stderr.strip()
+      except subprocess.TimeoutExpired:
+          actual_exit_code = 124
+          stdout = ""
+          stderr = "Command timed out after 300s"
+      except Exception as err:
+          actual_exit_code = 1
+          stdout = ""
+          stderr = str(err)
+
+      verdict = "pass" if actual_exit_code == 0 else "fail"
+      print(json.dumps({
+        "commands": [cmd],
+        "exit_codes": [actual_exit_code],
+        "results": [verdict],
+        "stdout_tail": stdout[-500:] if stdout else "",
+        "stderr_tail": stderr[-500:] if stderr else "",
+        "validated_claims": ["acceptance criteria covered after repair"] if verdict == "pass" else [],
+      }))
+      if actual_exit_code != 0:
+          raise SystemExit(actual_exit_code)
+      PY
+    when: steps.repair-after-validate.status == "completed"
+    on_failure: continue
+    tags: [test, validation, verification-evidence]
+    needs: [repair-after-validate]
+
+  - id: validation-gate
+    type: script
+    run: |
+      python3 - <<'PY'
+      import json
+      import os
+      import sys
+
+      try:
+          steps = json.loads(os.environ.get("ABILITY_STEP_OUTPUTS_JSON", "{}"))
+      except Exception:
+          steps = {}
+
+      validate_status = steps.get("validate", {}).get("status", "pending")
+      repair_status = steps.get("repair-after-validate", {}).get("status", "pending")
+      revalidate_status = steps.get("validate-after-repair", {}).get("status", "pending")
+
+      passed = validate_status == "completed" or revalidate_status == "completed"
+      if not passed:
+          print(json.dumps({
+            "status": "failed",
+            "validate_status": validate_status,
+            "repair_status": repair_status,
+            "revalidate_status": revalidate_status,
+            "error": "Validation did not pass, even after repair attempt.",
+          }))
+          sys.exit(1)
+
+      print(json.dumps({
+        "status": "passed",
+        "validate_status": validate_status,
+        "repair_status": repair_status,
+        "revalidate_status": revalidate_status,
+      }))
+      PY
+    needs: [validate, repair-after-validate, validate-after-repair]
 
   - id: review
     type: script
@@ -267,7 +407,7 @@ steps:
       }))
       PY
     tags: [review-completed]
-    needs: [validate]
+    needs: [validation-gate]
 
   - id: complete
     type: script

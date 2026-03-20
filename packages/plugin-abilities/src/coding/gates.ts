@@ -20,6 +20,16 @@ function readNumberArray(payloads: Array<Record<string, unknown>>, key: string):
   return values
 }
 
+function readLastNumberArray(payloads: Array<Record<string, unknown>>, key: string): number[] {
+  for (let i = payloads.length - 1; i >= 0; i -= 1) {
+    const value = payloads[i][key]
+    if (!Array.isArray(value)) continue
+    const numbers = value.filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
+    if (numbers.length > 0) return numbers
+  }
+  return []
+}
+
 function readStringArray(payloads: Array<Record<string, unknown>>, key: string): string[] {
   const values: string[] = []
   for (const payload of payloads) {
@@ -30,6 +40,16 @@ function readStringArray(payloads: Array<Record<string, unknown>>, key: string):
     }
   }
   return values
+}
+
+function readLastStringArray(payloads: Array<Record<string, unknown>>, key: string): string[] {
+  for (let i = payloads.length - 1; i >= 0; i -= 1) {
+    const value = payloads[i][key]
+    if (!Array.isArray(value)) continue
+    const strings = value.filter((item): item is string => typeof item === 'string')
+    if (strings.length > 0) return strings
+  }
+  return []
 }
 
 function readString(payloads: Array<Record<string, unknown>>, key: string): string | undefined {
@@ -79,8 +99,8 @@ export function evaluateCodeChangeGates(
     ]
   }
 
-  const validationExitCodes = readNumberArray(evidencePayloads, 'exit_codes')
-  const validationResults = readStringArray(evidencePayloads, 'results').map((item) => item.toLowerCase())
+  const validationExitCodes = readLastNumberArray(evidencePayloads, 'exit_codes')
+  const validationResults = readLastStringArray(evidencePayloads, 'results').map((item) => item.toLowerCase())
   const validationEvidenceFailed = validationExitCodes.some((code) => code !== 0)
     || validationResults.some((value) => value === 'fail' || value === 'failed')
 

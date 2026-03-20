@@ -54,7 +54,7 @@ describe('createOpencodeAgentContext', () => {
     })
     expect(calls.map((call) => call.type)).toEqual(['create', 'prompt', 'delete'])
     expect(calls[0].payload.body.parentID).toBe('ses_parent')
-    expect(calls[1].payload.body.agent).toBe('opencoder')
+    expect(calls[1].payload.body.agent).toBe('research-synthesizer')
     expect(calls[1].payload.body.model).toEqual({
       providerID: 'github-copilot',
       modelID: 'gpt-5.3-codex',
@@ -141,5 +141,43 @@ describe('createOpencodeAgentContext', () => {
       provider: 'github-copilot',
       model: 'gpt-5.3-codex',
     })
+  })
+
+  it('falls back to configured runtime agent when call does not specify one', async () => {
+    const calls: Array<{ type: string; payload: any }> = []
+
+    const ctx = createOpencodeAgentContext({
+      client: {
+        session: {
+          async create() {
+            return { data: { id: 'ses_child_4' } }
+          },
+          async prompt(options) {
+            calls.push({ type: 'prompt', payload: options })
+            return {
+              data: {
+                info: {
+                  providerID: 'github-copilot',
+                  modelID: 'gpt-5.3-codex',
+                },
+                parts: [{ type: 'text', text: '{"ok":true}' }],
+              },
+            }
+          },
+          async delete() {
+            return { data: true }
+          },
+        },
+      },
+      directory: '/tmp/project',
+      agent: 'opencoder',
+    })
+
+    await ctx.call({
+      agent: '',
+      prompt: 'Return strict JSON only',
+    })
+
+    expect(calls[0].payload.body.agent).toBe('opencoder')
   })
 })

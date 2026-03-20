@@ -146,6 +146,69 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
       .map((item) => item.trim())
   }
 
+  const splitStringList = (value: string): string[] => {
+    return value
+      .split(/[;,]/)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+  }
+
+  const joinNormalizedList = (fieldName: string, items: string[]): string => {
+    const delimiter = fieldName.includes('file') ? ', ' : '; '
+    return items.join(delimiter)
+  }
+
+  const normalizeAbilityInputs = (
+    ability: Ability,
+    inputs: Record<string, unknown>
+  ): Record<string, unknown> => {
+    if (!ability.inputs) return { ...inputs }
+
+    const normalized: Record<string, unknown> = { ...inputs }
+
+    for (const [name, definition] of Object.entries(ability.inputs)) {
+      const value = normalized[name]
+      if (value === undefined) continue
+
+      if (definition.type === 'string') {
+        if (Array.isArray(value)) {
+          const items = value
+            .map((item) => (typeof item === 'string' ? item.trim() : String(item).trim()))
+            .filter((item) => item.length > 0)
+          normalized[name] = joinNormalizedList(name, items)
+          continue
+        }
+
+        if (value && typeof value === 'object') {
+          normalized[name] = JSON.stringify(value)
+          continue
+        }
+
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          normalized[name] = String(value)
+        }
+      }
+
+      if (definition.type === 'array' && typeof value === 'string') {
+        normalized[name] = splitStringList(value)
+        continue
+      }
+
+      if (definition.type === 'number' && typeof value === 'string') {
+        const parsed = Number(value)
+        if (!Number.isNaN(parsed)) normalized[name] = parsed
+        continue
+      }
+
+      if (definition.type === 'boolean' && typeof value === 'string') {
+        if (value === 'true') normalized[name] = true
+        if (value === 'false') normalized[name] = false
+      }
+    }
+
+    return normalized
+  }
+
   const deriveTaskId = (inputs: Record<string, unknown>, fallback: string): string => {
     return readString(inputs.task_id) ?? fallback
   }
@@ -155,10 +218,22 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     fallbackTaskId: string
   ): TaskPlanData | null => {
     const objective = readString(inputs.objective)
-    const acceptanceCriteria = readStringArray(inputs.acceptance_criteria)
+    const acceptanceCriteria = Array.isArray(inputs.acceptance_criteria)
+      ? readStringArray(inputs.acceptance_criteria)
+      : typeof inputs.acceptance_criteria === 'string'
+        ? splitStringList(inputs.acceptance_criteria)
+        : []
     const deliverables = readStringArray(inputs.deliverables)
-    const contextFiles = readStringArray(inputs.context_files)
-    const referenceFiles = readStringArray(inputs.reference_files)
+    const contextFiles = Array.isArray(inputs.context_files)
+      ? readStringArray(inputs.context_files)
+      : typeof inputs.context_files === 'string'
+        ? splitStringList(inputs.context_files)
+        : []
+    const referenceFiles = Array.isArray(inputs.reference_files)
+      ? readStringArray(inputs.reference_files)
+      : typeof inputs.reference_files === 'string'
+        ? splitStringList(inputs.reference_files)
+        : []
     const complexity = inputs.complexity === 'complex' ? 'complex' : 'small'
     const subtaskCount = typeof inputs.subtask_count === 'number' ? inputs.subtask_count : 0
 
@@ -278,24 +353,26 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     }
 
     const ability = loaded.ability
-    const inputErrors = validateInputs(ability, inputs)
+    const normalizedInputs = normalizeAbilityInputs(ability, inputs)
+    const inputErrors = validateInputs(ability, normalizedInputs)
     if (inputErrors.length > 0) {
       return JSON.stringify({
         error: 'Input validation failed',
         details: inputErrors.map(e => e.message),
+        normalizedInputs,
       })
     }
 
     try {
       const execution = await executionManager.execute(
         ability,
-        inputs,
+        normalizedInputs,
         createExecutorContext(runtime)
       )
       await persistExecutionCheckpoint(execution)
 
       if (ability.task_type === 'code_change' && execution.control) {
-        const taskId = deriveTaskId(inputs, execution.id)
+        const taskId = deriveTaskId(normalizedInputs, execution.id)
 
         try {
           await persistTaskPlanArtifact(execution)

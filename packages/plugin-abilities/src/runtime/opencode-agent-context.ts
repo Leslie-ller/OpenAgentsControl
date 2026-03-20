@@ -131,10 +131,14 @@ export function createOpencodeAgentContext(
 ): AgentContext {
   return {
     async call(callOptions: AgentCallOptions): Promise<AgentCallReturn> {
+      const requestedAgent = typeof callOptions.agent === 'string' && callOptions.agent.trim().length > 0
+        ? callOptions.agent
+        : options.agent
+
       const created = await options.client.session.create({
         body: {
           parentID: options.parentSessionID,
-          title: `Ability agent: ${callOptions.agent}`,
+          title: `Ability agent: ${requestedAgent ?? 'default'}`,
         },
         query: { directory: options.directory },
       })
@@ -149,7 +153,7 @@ export function createOpencodeAgentContext(
           path: { id: sessionID },
           query: { directory: options.directory },
           body: {
-            agent: options.agent ?? callOptions.agent,
+            agent: requestedAgent,
             model: options.model,
             noReply: false,
             system: options.system ?? DEFAULT_SYSTEM,
