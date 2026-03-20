@@ -47,6 +47,8 @@ inputs:
 steps:
   - id: read-zotero-pdf
     type: script
+    on_failure: retry
+    max_retries: 2
     run: |
       python3 - <<'PY'
       import json
@@ -74,6 +76,38 @@ steps:
           return ""
         return normalized
 
+      def is_transient_error(message):
+        if not isinstance(message, str):
+          return False
+        normalized = message.strip().lower()
+        transient_markers = (
+          "ssl",
+          "unexpected eof",
+          "eof occurred in violation",
+          "timed out",
+          "timeout",
+          "temporary failure",
+          "temporarily unavailable",
+          "connection reset",
+          "connection aborted",
+          "connection refused",
+          "service unavailable",
+          "bad gateway",
+          "http error 429",
+          "http error 500",
+          "http error 502",
+          "http error 503",
+          "http error 504",
+          "failed to fetch",
+        )
+        return any(marker in normalized for marker in transient_markers)
+
+      def fail(message, allow_retry=False):
+        error_message = (message or "Unknown full-text acquisition error").strip()
+        if allow_retry and is_transient_error(error_message):
+          raise RuntimeError(error_message)
+        raise SystemExit(error_message)
+
       item_key = normalize_input("{{inputs.zotero_key}}")
       requested_collection_key = normalize_input("{{inputs.collection_key}}")
       default_collection_key = os.environ.get("BIBLIOGRAPHY_DEFAULT_COLLECTION_KEY", "").strip()
@@ -86,12 +120,10 @@ steps:
       zotero = ZoteroAdapter.from_env()
       item_result = zotero.get_item(item_key=item_key)
       item = item_result.get("item") if isinstance(item_result, dict) else None
+      if isinstance(item_result, dict) and isinstance(item_result.get("error"), str) and item_result.get("error").strip():
+        fail(item_result["error"], allow_retry=True)
       if not isinstance(item, dict):
-        print(json.dumps({
-          "error": "Zotero item not found",
-          "item_key": item_key,
-        }))
-        raise SystemExit(0)
+        fail(f"Zotero item not found for {item_key}")
 
       item_data = item.get("data", {}) or {}
       title = item_data.get("title", "") or item_key
@@ -219,19 +251,14 @@ steps:
         })
 
       if not candidate_sources:
-        error_message = None
+        error_messages = []
         for payload in (remote_pdf, remote_web, fallback_pdf):
           if isinstance(payload, dict) and isinstance(payload.get("error"), str) and payload.get("error", "").strip():
-            error_message = payload["error"].strip()
-            break
-        print(json.dumps({
-          "error": error_message or "No usable full-text content found",
-          "item_key": item_key,
-          "title": title,
-          "source_url": source_url,
-          "collection_key": target_collection_key,
-        }))
-        raise SystemExit(0)
+            error_messages.append(payload["error"].strip())
+        transient_error = next((message for message in error_messages if is_transient_error(message)), None)
+        if transient_error:
+          fail(transient_error, allow_retry=True)
+        fail(error_messages[0] if error_messages else "No usable full-text content found")
 
       selected = candidate_sources[0]
       clean_text = re.sub(r"\s+", " ", selected["text"]).strip()

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test'
+import { existsSync, readFileSync, rmSync } from 'fs'
 import { resolve } from 'path'
 import { loadAbility } from '../src/loader/index.js'
 import { executeAbility } from '../src/executor/index.js'
@@ -778,5 +779,56 @@ PY`,
     expect(execution.status).toBe('failed')
     expect(execution.completedSteps.at(-1)?.status).toBe('failed')
     expect(execution.completedSteps.at(-1)?.error).toContain('No PDF attachment found')
+  })
+
+  it('paper-fulltext-review retries transient full-text acquisition failures', async () => {
+    const loaded = await loadAbility('research/paper-fulltext-review', {
+      projectDir,
+      includeGlobal: false,
+    })
+    expect(loaded).not.toBeNull()
+
+    const ability = structuredClone(loaded!.ability)
+    const counterPath = `/tmp/paper-fulltext-review-retry-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`
+    overrideStepRunById(ability as any, 'read-zotero-pdf', `
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+counter_path = Path(${JSON.stringify(counterPath)})
+attempt = int(counter_path.read_text()) if counter_path.exists() else 0
+attempt += 1
+counter_path.write_text(str(attempt), encoding='utf-8')
+
+if attempt == 1:
+    raise SystemExit('SSL EOF while reading from Zotero API')
+
+print(json.dumps({
+    "item_key": "TESTRETRY",
+    "content": "Structured retry content for the reading card.",
+    "text_length": 1024,
+    "source_excerpt": "Structured retry content excerpt.",
+}))
+PY`)
+
+    try {
+      const execution = await executeAbility(
+        ability,
+        { zotero_key: 'TESTRETRY' },
+        createContext({
+          agents: createResearchAgentMock(),
+        })
+      )
+
+      expect(execution.status).toBe('completed')
+      expect(existsSync(counterPath)).toBe(true)
+      expect(readFileSync(counterPath, 'utf8')).toBe('2')
+
+      const output = JSON.parse(execution.completedSteps.at(-1)?.output ?? '{}') as Record<string, unknown>
+      expect(output.paper_key).toBe('TESTRETRY')
+      expect(output.summary).toContain('Structured summary for TESTRETRY')
+    } finally {
+      rmSync(counterPath, { force: true })
+    }
   })
 })
