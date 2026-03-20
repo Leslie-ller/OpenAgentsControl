@@ -153,3 +153,4 @@ export type {
 // Plugin
 export { AbilitiesPlugin } from './opencode-plugin.js'
 export { default } from './opencode-plugin.js'
+export { createOpencodeAgentContext } from './runtime/opencode-agent-context.js'

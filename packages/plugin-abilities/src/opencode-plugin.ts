@@ -22,6 +22,7 @@ import { PendingCheckpointSummaries } from './runtime/context/pending-checkpoint
 import { resolveTopicFromExecution } from './runtime/context/topic-resolver.js'
 import type { DetailUseCase } from './runtime/context/types.js'
 import type { FocusTrigger } from './runtime/context/focus-refresh.js'
+import { createOpencodeAgentContext } from './runtime/opencode-agent-context.js'
 import { join } from 'path'
 
 /**
@@ -52,6 +53,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
   const pendingCheckpointSummaries = new PendingCheckpointSummaries()
   const pendingFocusTriggers = new Map<string, FocusTrigger>()
   const lastActiveStepBySession = new Map<string, string>()
+  const modelBySession = new Map<string, { providerID: string; modelID: string }>()
 
   // Initialize control event infrastructure
   const controlLogDir = join(ctx.directory, '.opencode', 'control-logs')
@@ -143,10 +145,24 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     console.log(`[abilities] Could not load abilities:`, err instanceof Error ? err.message : err)
   }
 
-  const createExecutorContext = (): ExecutorContext => {
+  const createExecutorContext = (runtime?: {
+    sessionID?: string
+    agent?: string
+  }): ExecutorContext => {
+    const inheritedModel = runtime?.sessionID
+      ? modelBySession.get(runtime.sessionID)
+      : undefined
+
     return {
       cwd: ctx.directory,
       env: {},
+      agents: createOpencodeAgentContext({
+        client: ctx.client as any,
+        directory: ctx.directory,
+        parentSessionID: runtime?.sessionID,
+        agent: runtime?.agent,
+        model: inheritedModel,
+      }),
     }
   }
 
@@ -175,7 +191,11 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     return lines.join('\n')
   }
 
-  const executeAbilityByName = async (name: string, inputs: Record<string, unknown> = {}) => {
+  const executeAbilityByName = async (
+    name: string,
+    inputs: Record<string, unknown> = {},
+    runtime?: { sessionID?: string; agent?: string }
+  ) => {
     const loaded = abilities.get(name)
     if (!loaded) {
       return JSON.stringify({ error: `Ability '${name}' not found` })
@@ -194,7 +214,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
       const execution = await executionManager.execute(
         ability,
         inputs,
-        createExecutorContext()
+        createExecutorContext(runtime)
       )
 
       if (ability.task_type === 'code_change' && execution.control) {
@@ -248,7 +268,11 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     }
   }
 
-  const executeBibliographyCommand = async (command: string, args: Record<string, unknown>) => {
+  const executeBibliographyCommand = async (
+    command: string,
+    args: Record<string, unknown>,
+    runtime?: { sessionID?: string; agent?: string }
+  ) => {
     const routed = routeBibliographyCommand(command, args)
 
     if (!routed) {
@@ -288,7 +312,7 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
         routed.stage,
         ability,
         routed.inputs,
-        createExecutorContext(),
+        createExecutorContext(runtime),
         { executorOptions: { eventBus } }
       )
 
@@ -320,6 +344,10 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
     // Hook: Inject ability context into every chat message
     async 'chat.message'(input, output) {
       try {
+        if (input.model?.providerID && input.model?.modelID) {
+          modelBySession.set(input.sessionID, input.model)
+        }
+
         const sessionID = extractSessionID(input)
         const injections: string[] = []
         const pendingSummary = pendingCheckpointSummaries.consume(
@@ -423,6 +451,9 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
           pendingCheckpointSummaries.clear(typeof sessionID === 'string' ? sessionID : undefined)
           pendingFocusTriggers.delete(normalizeSessionKey(sessionID))
           lastActiveStepBySession.delete(normalizeSessionKey(sessionID))
+          if (typeof sessionID === 'string') {
+            modelBySession.delete(sessionID)
+          }
           executionManager.cleanup()
           eventBus.reset()
         }
@@ -453,8 +484,12 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
           name: tool.schema.string().describe('Ability name to run'),
           inputs: tool.schema.optional(tool.schema.any()).describe('Input values for the ability'),
         },
-        async execute({ name, inputs = {} }) {
-          return executeAbilityByName(name, inputs as Record<string, unknown>)
+        async execute({ name, inputs = {} }, toolCtx) {
+          return executeAbilityByName(
+            name,
+            inputs as Record<string, unknown>,
+            { sessionID: toolCtx.sessionID, agent: toolCtx.agent }
+          )
         },
       }),
 
@@ -464,9 +499,13 @@ export const AbilitiesPlugin: Plugin = async (ctx) => {
           command: tool.schema.string().describe('Slash command name, e.g. /paper-screening or /bibliography'),
           arguments: tool.schema.string().optional().describe('Raw command arguments as plain text or JSON object string'),
         },
-        async execute({ command, arguments: commandArguments }) {
+        async execute({ command, arguments: commandArguments }, toolCtx) {
           const parsedArgs = parseCommandInput(commandArguments)
-          return executeBibliographyCommand(command, parsedArgs)
+          return executeBibliographyCommand(
+            command,
+            parsedArgs,
+            { sessionID: toolCtx.sessionID, agent: toolCtx.agent }
+          )
         },
       }),
 
