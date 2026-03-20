@@ -143,6 +143,62 @@ function makeScopedDecisionAbility(): Ability {
   }
 }
 
+function makeFreshDecisionAbility(): Ability {
+  return {
+    name: 'research/literature-decision',
+    description: 'Fresh decision test',
+    task_type: 'literature_decision',
+    inputs: {
+      paper_key: { type: 'string', required: true },
+      reading_card_execution_id: { type: 'string', required: false },
+    },
+    steps: [
+      {
+        id: 'prepare-decision-input',
+        type: 'script',
+        run: [
+          "python3 - <<'PY'",
+          'import json, os',
+          'paper_key = "{{inputs.paper_key}}"',
+          'required_execution_id = "{{inputs.reading_card_execution_id}}".strip()',
+          'if required_execution_id.startswith("{{") and required_execution_id.endswith("}}"):',
+          '    required_execution_id = ""',
+          'stage = json.loads(os.environ["ABILITY_STAGE_OUTPUTS_JSON"])',
+          'cards = stage.get("reading-card", [])',
+          'matched = []',
+          'for card in cards:',
+          '    if not isinstance(card, dict) or card.get("paper_key") != paper_key:',
+          '        continue',
+          '    meta = card.get("_artifact_meta", {})',
+          '    execution_id = meta.get("executionId") if isinstance(meta, dict) else None',
+          '    if required_execution_id and execution_id != required_execution_id:',
+          '        continue',
+          '    matched.append(card)',
+          'if not matched:',
+          '    raise SystemExit(f"No fresh reading card available for {paper_key} with execution {required_execution_id}")',
+          'print(json.dumps(matched[0]))',
+          'PY',
+        ].join('\n'),
+      },
+      {
+        id: 'record-decision-card',
+        type: 'script',
+        run: [
+          "python3 - <<'PY'",
+          'import json, os',
+          'steps = json.loads(os.environ["ABILITY_STEP_OUTPUTS_JSON"])',
+          'prepared = json.loads(steps["prepare-decision-input"]["output"])',
+          'meta = prepared.get("_artifact_meta", {})',
+          'print(json.dumps({"paper_key":"{{inputs.paper_key}}","decision":"keep","matched_execution_id":meta.get("executionId")}))',
+          'PY',
+        ].join('\n'),
+        needs: ['prepare-decision-input'],
+        tags: ['decision-card'],
+      },
+    ],
+  }
+}
+
 function makeEvidencePackAbility(): Ability {
   return {
     name: 'research/section-evidence-pack',
@@ -501,6 +557,61 @@ describe('BibliographyPipeline', () => {
       expect(result.artifact).not.toBeNull()
       expect((result.artifact!.data as any).matched_count).toBe(1)
       expect((result.artifact!.data as any).matched_keys).toEqual(['p2'])
+    })
+
+    it('decision stage can require a fresh reading-card execution id', async () => {
+      await store.save(
+        'reading-card',
+        'p1',
+        {
+          paper_key: 'p1',
+          title: 'Paper 1',
+          summary: 'Good paper',
+          key_findings: ['f1'],
+        },
+        {
+          executionId: 'exec_old',
+          sourceStage: 'review',
+        }
+      )
+
+      const result = await pipeline.runStage(
+        'decision',
+        makeFreshDecisionAbility(),
+        { paper_key: 'p1', reading_card_execution_id: 'exec_old' },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('completed')
+      expect((result.artifact!.data as any).matched_execution_id).toBe('exec_old')
+    })
+
+    it('decision stage fails when the required fresh reading-card is unavailable', async () => {
+      await store.save(
+        'reading-card',
+        'p1',
+        {
+          paper_key: 'p1',
+          title: 'Paper 1',
+          summary: 'Good paper',
+          key_findings: ['f1'],
+        },
+        {
+          executionId: 'exec_old',
+          sourceStage: 'review',
+        }
+      )
+
+      const result = await pipeline.runStage(
+        'decision',
+        makeFreshDecisionAbility(),
+        { paper_key: 'p1', reading_card_execution_id: 'exec_new' },
+        baseCtx(tmpDir)
+      )
+
+      expect(result.execution.status).toBe('failed')
+      expect(result.execution.error).toContain('No fresh reading card available for p1 with execution exec_new')
+      expect(result.artifact).toBeNull()
     })
 
     it('evidence-pack stage can scope decisions to an explicit paper set', async () => {

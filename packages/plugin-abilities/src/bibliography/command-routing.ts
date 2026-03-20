@@ -71,6 +71,10 @@ export function routeBibliographyCommand(
         abilityName: 'research/literature-decision',
         inputs: {
           paper_key: String(args.paper_key ?? value),
+          reading_card_execution_id:
+            typeof args.reading_card_execution_id === 'string'
+              ? args.reading_card_execution_id.trim()
+              : undefined,
         },
       }
     case '/section-evidence-pack':
@@ -126,7 +130,13 @@ export function routeBibliographyCommand(
         return {
           stage: 'decision',
           abilityName: 'research/literature-decision',
-          inputs: { paper_key: rest },
+          inputs: {
+            paper_key: rest,
+            reading_card_execution_id:
+              typeof args.reading_card_execution_id === 'string'
+                ? args.reading_card_execution_id.trim()
+                : undefined,
+          },
         }
       }
       if (stage === 'evidence-pack') {

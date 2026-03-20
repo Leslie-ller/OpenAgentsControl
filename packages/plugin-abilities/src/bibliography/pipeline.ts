@@ -154,7 +154,7 @@ export class BibliographyPipeline {
     for (const depType of config.dependsOn) {
       const artifacts = await this.store.listAll(depType)
       stageOutputs[depType] = filterDependencyArtifacts(stage, depType, artifacts, inputs)
-        .map((artifact) => artifact.data)
+        .map((artifact) => attachArtifactMeta(artifact))
     }
 
     // Build enriched context
@@ -396,6 +396,13 @@ function toRecord(value: unknown): Record<string, unknown> {
     return value as Record<string, unknown>
   }
   return {}
+}
+
+function attachArtifactMeta(artifact: Artifact): Record<string, unknown> {
+  return {
+    ...toRecord(artifact.data),
+    _artifact_meta: artifact.meta,
+  }
 }
 
 export function createBibliographyPipeline(store: BibliographyStore): BibliographyPipeline {

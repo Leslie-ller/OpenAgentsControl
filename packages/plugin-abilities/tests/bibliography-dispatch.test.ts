@@ -57,6 +57,14 @@ describe('bibliography command dispatch', () => {
       expect(r!.inputs.paper_key).toBe('paper_001')
     })
 
+    it('/literature-decision forwards reading-card execution id when provided', () => {
+      const r = route('/literature-decision', {
+        paper_key: 'paper_001',
+        reading_card_execution_id: 'exec_123',
+      })
+      expect(r!.inputs.reading_card_execution_id).toBe('exec_123')
+    })
+
     it('/section-evidence-pack routes correctly', () => {
       const r = route('/section-evidence-pack', { section: 'chapter-3' })
       expect(r!.abilityName).toBe('research/section-evidence-pack')
@@ -127,6 +135,15 @@ describe('bibliography command dispatch', () => {
       const r = route('/bibliography', { stage: 'decision', payload: 'paper_001' })
       expect(r!.abilityName).toBe('research/literature-decision')
       expect(r!.inputs.paper_key).toBe('paper_001')
+    })
+
+    it('decision stage forwards reading-card execution id', () => {
+      const r = route('/bibliography', {
+        stage: 'decision',
+        payload: 'paper_001',
+        reading_card_execution_id: 'exec_456',
+      })
+      expect(r!.inputs.reading_card_execution_id).toBe('exec_456')
     })
 
     it('evidence-pack stage routes correctly (was missing)', () => {

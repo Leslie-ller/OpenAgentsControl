@@ -26,6 +26,9 @@ inputs:
   paper_key:
     type: string
     required: true
+  reading_card_execution_id:
+    type: string
+    required: false
 
 steps:
   - id: prepare-decision-input
@@ -36,6 +39,9 @@ steps:
       import os
 
       paper_key = "{{inputs.paper_key}}"
+      required_execution_id = "{{inputs.reading_card_execution_id}}".strip()
+      if required_execution_id.startswith("{{") and required_execution_id.endswith("}}"):
+        required_execution_id = ""
       stage_outputs = json.loads(os.environ.get("ABILITY_STAGE_OUTPUTS_JSON", "{}"))
       reading_cards = stage_outputs.get("reading-card", [])
       if not isinstance(reading_cards, list):
@@ -43,11 +49,20 @@ steps:
 
       card = None
       for candidate in reading_cards:
-        if isinstance(candidate, dict) and candidate.get("paper_key") == paper_key:
-          card = candidate
-          break
+        if not isinstance(candidate, dict) or candidate.get("paper_key") != paper_key:
+          continue
+        meta = candidate.get("_artifact_meta", {})
+        execution_id = meta.get("executionId") if isinstance(meta, dict) else None
+        if required_execution_id and execution_id != required_execution_id:
+          continue
+        card = candidate
+        break
 
       if card is None:
+        if required_execution_id:
+          raise SystemExit(
+            f"No fresh reading card available for {paper_key} with execution {required_execution_id}"
+          )
         raise SystemExit(f"No reading card available for {paper_key}")
 
       print(json.dumps(card))
