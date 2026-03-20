@@ -30,3 +30,19 @@ These map to the same underlying runtime behaviors as the dotted internal names 
 ## Reporting Path
 
 In Copilot sessions, post-workflow reporting should go through `question_proxy`, not direct assistant text.
+
+## Planner Handoff Mode
+
+Default handoff mode for this workspace:
+
+- The assistant prepares the plan.
+- The assistant dispatches the plan to the workflow runtime.
+- After dispatch, the assistant does not monitor, poll, supervise, or intervene by default.
+- The workflow executes independently until completion or failure.
+- The assistant only re-enters if the user explicitly asks to inspect, review, intervene, or take over.
+
+This keeps planning and execution separate:
+
+- `planner` owns plan creation and dispatch
+- `workflow` owns execution
+- post-dispatch monitoring is opt-in, not automatic
